@@ -1,0 +1,89 @@
+# What each skill owns, what it does not, and the words that select it.
+#
+# `not:` is the only place a boundary is written. Putting boundaries in
+# descriptions means every skill added rewrites its neighbours, and the
+# marginal cost of an addition stops being O(1).
+#
+# `signals` are the words a request actually uses. Each must appear literally
+# in that skill's description: the listing carries name and description only,
+# so a signal that lives here and nowhere else never reaches the engine.
+
+coding-explore:
+  class: read-only
+  does: [where-is, how-it-works, blast-radius, structure, history, dependencies]
+  not:
+    - what: "something that is broken"
+      go: coding-debug
+    - what: "deciding a design once the code is understood"
+      go: coding-plan
+  signals: [where, how a path works, blast radius, structure, history, unfamiliar]
+
+coding-plan:
+  class: doc-write
+  does: [interfaces, data-model, error-design, state-design, build-order, options]
+  not:
+    - what: "locating code that already exists"
+      go: coding-explore
+    - what: "writing the code once the shape is settled"
+      go: coding-implement
+  signals: [interfaces, signatures, data model, error, state, build order, options, trade-off]
+
+coding-implement:
+  class: full
+  does: [feature, endpoint, screen, business-logic, cli, integration, upgrade, performance]
+  not:
+    - what: "cleanup that preserves behaviour"
+      go: coding-refactor
+    - what: "a defect in code that already ran"
+      go: coding-debug
+  signals: [feature, endpoint, screen, business logic, CLI, integration, dependency upgrade, performance]
+
+coding-debug:
+  class: full
+  does: [reproduce, isolate, root-cause, minimal-fix, regression-diagnosis]
+  not:
+    - what: "reading code that works"
+      go: coding-explore
+    - what: "the guard kept after the fix"
+      go: coding-test
+  signals: [broken, bug, reproduce, root cause, failing, why]
+
+coding-refactor:
+  class: full
+  does: [extract, rename, duplication, dead-code, module-boundary, mechanical-migration]
+  not:
+    - what: "any change a caller can observe"
+      go: coding-implement
+    - what: "reading a diff for defects"
+      go: coding-review
+  signals: [extraction, renaming, duplication, dead code, module boundaries, migration, hard to work with]
+
+coding-test:
+  class: full
+  does: [test-cases, coverage, regression-test, flaky-repair, suite-repair, test-design]
+  not:
+    - what: "diagnosing why the code is wrong"
+      go: coding-debug
+    - what: "the check that only evidences one run"
+      go: "the skill making that run"
+  signals: [test cases, coverage, regression tests, assert, suite, proof]
+
+coding-review:
+  class: read-only
+  does: [defect-finding, correctness, boundaries, security, over-engineering]
+  not:
+    - what: "writing the check that catches the finding"
+      go: coding-test
+    - what: "a defect observed at runtime"
+      go: coding-debug
+  signals: [review, defects, diff, correctness, boundaries, security, more code than]
+
+coding-ship:
+  class: full
+  does: [commit-granularity, commit-message, history, branch, merge-order, split, changelog, release]
+  not:
+    - what: "fixing code so a commit looks tidy"
+      go: coding-implement
+    - what: "judging whether the change is correct"
+      go: coding-review
+  signals: [commit, history shape, branch, merge, splitting, pull request, changelog, release notes]

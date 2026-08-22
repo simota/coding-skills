@@ -1,0 +1,41 @@
+# A record of misroutes.
+#
+# This does not reproduce how a model chooses. It is a proxy for finding
+# missing and duplicated signals, and "fixtures pass" does not mean "nothing
+# will be misrouted".
+#
+# When a misroute happens in real use, append the request here. This grows as a
+# record of accidents, not as a designed artifact.
+
+- ask: "where does the retry logic live"
+  expect: coding-explore
+- ask: "what would this change break, blast radius please"
+  expect: coding-explore
+- ask: "what interfaces should these two modules expose"
+  expect: coding-plan
+- ask: "compare the two options and pick a build order"
+  expect: coding-plan
+- ask: "add an endpoint for cancelling a subscription"
+  expect: coding-implement
+- ask: "do the dependency upgrade and keep the build passing"
+  expect: coding-implement
+- ask: "login is broken after the last deploy, find the root cause"
+  expect: coding-debug
+- ask: "reproduce this bug and tell me why it happens"
+  expect: coding-debug
+- ask: "this module has duplication, clean it up without changing behaviour"
+  expect: coding-refactor
+- ask: "extraction and renaming pass over the billing code"
+  expect: coding-refactor
+- ask: "the suite is flaky, and coverage of the boundary cases is thin"
+  expect: coding-test
+- ask: "write regression tests for the fix"
+  expect: coding-test
+- ask: "read this diff for defects before it lands"
+  expect: coding-review
+- ask: "is there a security problem in this change"
+  expect: coding-review
+- ask: "split this into commits and write the changelog"
+  expect: coding-ship
+- ask: "the pull request is too big, what merge order do you suggest"
+  expect: coding-ship

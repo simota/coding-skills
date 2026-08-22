@@ -1,0 +1,79 @@
+# Wire this repo into a skills directory, and keep it inside its budgets.
+#
+# The repo is the single source of truth: each coding-* directory is symlinked
+# individually, so a skills directory keeps whatever else it already carries.
+
+REPO       := $(CURDIR)
+CLAUDE_DIR ?= $(HOME)/.claude/skills
+
+.DEFAULT_GOAL := help
+.PHONY: help check validate test figures engines refute render hooks link unlink status
+
+help:
+	@echo "make check     validate + test + figures (what CI runs)"
+	@echo "make validate  static rules over the corpus"
+	@echo "make test      prove every rule still fires"
+	@echo "make figures   re-run the git behaviour the reference layer states"
+	@echo "make refute CLAIMS=f.json RUNNING=claude   put each claim to the engines that did not make it"
+	@echo "make engines  ask each checker engine for one object; reports what is unreachable"
+	@echo "make render    write the delivered blocks back into every SKILL.md"
+	@echo "make hooks     install the pre-commit hook"
+	@echo "make link      symlink the skills into $(CLAUDE_DIR)"
+	@echo "make unlink    remove those symlinks"
+	@echo "make status    show what is linked"
+
+check: validate test figures
+
+validate:
+	@python3 coding-tools/validate.py
+
+test:
+	@python3 coding-tools/test_validate.py
+
+figures:
+	@python3 coding-tools/figures_check.py
+
+engines:
+	@python3 coding-tools/engine.py --selftest
+
+refute:
+	@test -n "$(CLAIMS)" || { echo "usage: make refute CLAIMS=claims.json RUNNING=claude"; exit 2; }
+	@python3 coding-tools/refute.py --running "$(or $(RUNNING),claude)" "$(CLAIMS)"
+
+render:
+	@python3 coding-tools/render.py
+
+hooks:
+	@mkdir -p .git/hooks
+	@cp coding-tools/githooks/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "pre-commit installed"
+
+# A skill is a directory holding a SKILL.md, under skills/ where the plugin
+# format expects it. The prefix alone is not the test: coding-registry/ and
+# coding-tools/ share it and must never be installed.
+SKILL_DIRS := $(patsubst %/SKILL.md,%,$(wildcard skills/coding-*/SKILL.md))
+
+link:
+	@mkdir -p "$(CLAUDE_DIR)"
+	@for path in $(SKILL_DIRS); do \
+		name=$$(basename "$$path"); target="$(CLAUDE_DIR)/$$name"; \
+		if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+			echo "skip $$name (a real path is already there)"; \
+		else \
+			ln -sfn "$(REPO)/$$path" "$$target"; echo "link $$name"; \
+		fi; \
+	done
+
+unlink:
+	@for path in $(SKILL_DIRS); do \
+		name=$$(basename "$$path"); target="$(CLAUDE_DIR)/$$name"; \
+		if [ -L "$$target" ]; then rm "$$target"; echo "unlink $$name"; fi; \
+	done
+
+status:
+	@for path in $(SKILL_DIRS); do \
+		name=$$(basename "$$path"); target="$(CLAUDE_DIR)/$$name"; \
+		if [ -L "$$target" ]; then echo "linked   $$name"; \
+		else echo "unlinked $$name"; fi; \
+	done

@@ -1,0 +1,53 @@
+# Chains that recur, as control structure rather than prose.
+#
+# A chain of names expresses linear work only. Where a stage repeats until a
+# condition holds, the condition, the judge, and the hard stop are required —
+# without them "until it is good" has no stopping rule.
+
+bug-fix:
+  pattern: linear
+  when: "something is broken"
+  chain: [coding-debug, coding-test, coding-ship]
+  gate: "the cause fits in one sentence before anything is edited"
+
+feature:
+  pattern: linear
+  when: "new behaviour, shape not obvious"
+  chain: [coding-explore, coding-plan, coding-implement, coding-test, coding-review, coding-ship]
+  gate: "the brief's open_questions is empty before coding-implement starts"
+
+small-feature:
+  pattern: linear
+  when: "new behaviour, shape fits in one sentence"
+  chain: [coding-implement, coding-test, coding-ship]
+
+cleanup:
+  pattern: linear
+  when: "correct code that is hard to work with"
+  chain: [coding-explore, coding-test, coding-refactor, coding-test]
+  gate: "a characterisation net exists and is green before coding-refactor starts"
+
+coverage-gap:
+  pattern: linear
+  when: "behaviour is unguarded"
+  chain: [coding-explore, coding-test]
+
+locate:
+  pattern: report-only
+  when: "where does X happen"
+  chain: [coding-explore]
+  stops_at: "the answer and the paths it rests on. Nothing is edited"
+
+pre-merge:
+  pattern: report-only
+  when: "is this safe to land"
+  chain: [coding-review]
+  stops_at: "classified findings. Nothing is edited"
+
+review-to-zero:
+  pattern: loop
+  when: "land it with no outstanding findings"
+  chain: [coding-review, coding-implement]
+  oracle: "no unresolved finding at severity major or above, and one full pass adds none"
+  checker: other-engine          # resolved at run time to one that is not running this
+  max_cycles: 4              # hand back rather than loop again
