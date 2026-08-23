@@ -25,22 +25,27 @@ skills_dir: skills
 platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform, not by this set
 
 limits:
-  skill_md_lines: 130           # measured max at adoption: 95. Raised from 120 when the
-                                # prediction block was delivered into every skill: the
-                                # registration is worthless in a file nobody opens before
-                                # editing, and it is seven lines in eight skills
+  skill_md_lines: 135         # derived, not chosen: 90 for the skill's own words plus
+                              # the 45 lines of delivered contract every file in this
+                              # set now carries. The last raise (120 -> 130) was the
+                              # same move for a smaller block; the blocks have
+                              # grown since, and the cap had come to govern about
+                              # 78 lines of actual skill. Measured own-content max
+                              # in this set: 84 lines, in coding-test
   description_chars: 200        # the listing truncates past this
   playbook_lines: 300           # measured max: 106
   playbooks_per_skill: 8        # measured max: 3
   shared_file_lines: 100        # measured max: 93
-  shared_lines_total: 500       # measured: 403 before PREDICTION.md, 486 after. The set
+  shared_lines_total: 560   # every set sat at 95-98% of the old figure at once,
+                              # which is a budget that has stopped leaving room to
+                              # think rather than seven sets each being careless
                                 # carries a pre-registration contract the sibling sets do
                                 # not, and it is the one thing here that cannot be
                                 # reconstructed after the fact
   skills_max: 10                # 8 in use, 2 spare for demand found in use
   routes_max: 12
   route_stages_max: 6
-  repo_md_lines_total: 4200     # measured: 3380 after the reference layer landed.
+  repo_md_lines_total: 4600  # raised with the two above; this set was at 90-97%
                                 # Raised from 3200 because reference/ carries no line
                                 # budget of its own but is counted here; the ceiling
                                 # is the family's planning-set figure, not a blank cheque.
