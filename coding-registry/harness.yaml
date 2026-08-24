@@ -26,16 +26,20 @@ platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform,
 
 limits:
   skill_md_lines: 152         # derived, not chosen: 90 for the skill's own words plus
-                              # the 55 lines of delivered contract every file in this
+                              # the 54 lines of delivered contract every file in this
                               # set now carries. Each raise has been the same move for
                               # a block that grew (120 -> 130 -> 135), and this one is
-                              # the sixth axis arriving: 10 delivered lines that bound
+                              # the sixth axis arriving: 17 delivered lines that bound
                               # what the run says at the end. Measured own-content max
                               # in this set: 84 lines, in coding-test
   description_chars: 200        # the listing truncates past this
   playbook_lines: 300           # measured max: 106
   playbooks_per_skill: 8        # measured max: 3
-  shared_file_lines: 100        # measured max: 93
+  shared_file_lines: 115   # raised for the sixth axis. REPORT.md is the densest of the
+                              # six — four moments, the order at the end, the ceiling and the
+                              # proportion rule — and 100 was the figure from when there were
+                              # five. Two compression passes over the file came back with the
+                              # same content in fewer words and no fewer lines
   shared_lines_total: 620   # raised by the sixth axis: REPORT.md arrived and
                               # every set landed at 97-99% of the old figure at once,
                               # which is a budget that has stopped leaving room to think
@@ -217,6 +221,6 @@ delivered:
   # The sixth axis. The other five bind what has to be true; this one binds what
   # reaches the reader, and it is delivered for the same reason as the rest — a
   # rule about the last step of a run is worth nothing if it is read on two
-  # launches in seven. Ten delivered lines that buy back the thirty a handoff
+  # launches in seven. 17 delivered lines that buy back the thirty a handoff
   # rendered field by field spends.
   surface: { section: "Done when" }
