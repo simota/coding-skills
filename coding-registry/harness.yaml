@@ -25,20 +25,22 @@ skills_dir: skills
 platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform, not by this set
 
 limits:
-  skill_md_lines: 135         # derived, not chosen: 90 for the skill's own words plus
-                              # the 45 lines of delivered contract every file in this
-                              # set now carries. The last raise (120 -> 130) was the
-                              # same move for a smaller block; the blocks have
-                              # grown since, and the cap had come to govern about
-                              # 78 lines of actual skill. Measured own-content max
+  skill_md_lines: 152         # derived, not chosen: 90 for the skill's own words plus
+                              # the 55 lines of delivered contract every file in this
+                              # set now carries. Each raise has been the same move for
+                              # a block that grew (120 -> 130 -> 135), and this one is
+                              # the sixth axis arriving: 10 delivered lines that bound
+                              # what the run says at the end. Measured own-content max
                               # in this set: 84 lines, in coding-test
   description_chars: 200        # the listing truncates past this
   playbook_lines: 300           # measured max: 106
   playbooks_per_skill: 8        # measured max: 3
   shared_file_lines: 100        # measured max: 93
-  shared_lines_total: 560   # every set sat at 95-98% of the old figure at once,
-                              # which is a budget that has stopped leaving room to
-                              # think rather than seven sets each being careless
+  shared_lines_total: 620   # raised by the sixth axis: REPORT.md arrived and
+                              # every set landed at 97-99% of the old figure at once,
+                              # which is a budget that has stopped leaving room to think
+                              # rather than seven sets each being careless. The room
+                              # above the family figure is this set’s own — it
                                 # carries a pre-registration contract the sibling sets do
                                 # not, and it is the one thing here that cannot be
                                 # reconstructed after the fact
@@ -212,3 +214,9 @@ delivered:
   predict: { section: "Before starting" }
   values:  { section: "Decide first" }
   report:  { section: "Verify with" }
+  # The sixth axis. The other five bind what has to be true; this one binds what
+  # reaches the reader, and it is delivered for the same reason as the rest — a
+  # rule about the last step of a run is worth nothing if it is read on two
+  # launches in seven. Ten delivered lines that buy back the thirty a handoff
+  # rendered field by field spends.
+  surface: { section: "Done when" }

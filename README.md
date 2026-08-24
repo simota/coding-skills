@@ -97,6 +97,7 @@ line: `<!-- coding:contract -->` binds, `<!-- coding:guidance -->` is consulted.
 | [`skills/_coding/HANDOFF.md`](skills/_coding/HANDOFF.md) | What passes between skills, and the seven checks the receiver runs |
 | [`skills/_coding/VALUES.md`](skills/_coding/VALUES.md) | The order that decides when two goods conflict, and the escape hatch |
 | [`skills/_coding/ROUTING.md`](skills/_coding/ROUTING.md) | Guidance. Read when the owner is unclear or the work spans several |
+| [`skills/_coding/REPORT.md`](skills/_coding/REPORT.md) | What a person reads: the order, the ceiling per tier, and why the handoff is the record |
 
 **Registry — the machine-readable definitions.**
 

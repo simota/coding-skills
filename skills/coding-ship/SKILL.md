@@ -123,3 +123,18 @@ passes (evidence: `executed`), and the diff was read hunk by hunk (evidence:
 Every commit stands alone and is green, the messages say why, the description
 tells a reviewer what they cannot see in the diff, nothing left the machine
 without permission, and the residuals are visible to whoever picks this up next.
+<!-- deliver:surface -->
+- **Say only what the moment needs.** Start: one line naming what will be done and what
+  is excluded. Mid-run: silence, unless the reader must act now — a divergence from what
+  was agreed, a path found blocked, work that would grow the scope. Progress is not
+  information, and a tool call is already visible. Asking counts as speaking: one question,
+  the decision it unblocks, the default taken if nobody answers
+- **End with the answer in one line** — status and what changed; then the sweep line, then
+  one line per residual a human must decide, then what is next. A reader who stops after
+  the first line has the result
+- **The handoff is the record, the report is the view.** The brief, the per-file grades and
+  the working log travel in the handoff and are shown when asked
+- **Ceiling: `T0` one line · `T1` six · `T2` ten**, plus the deliverable itself — linked,
+  never pasted. Over it means cutting content, not reformatting it: no restatement of the
+  request, no closing summary, no narration of what was read or tried (`_coding/REPORT.md`)
+<!-- /deliver:surface -->
