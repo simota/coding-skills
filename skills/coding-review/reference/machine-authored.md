@@ -3,6 +3,7 @@
 
 Purpose: The defect classes that concentrate in generated code, each with the check that decides it.
 Read when: reviewing a diff an agent wrote — including one this session wrote.
+Source: git — the checks are git invocations, re-run against whatever is installed.
 Verified: 2026-08-21 — catalogue of defect classes and their checks; the checks are runnable, the frequency claims are deliberately absent — no automated check.
 
 Generated code fails differently from hand-written code. It is fluent, locally

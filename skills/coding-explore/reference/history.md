@@ -3,6 +3,7 @@
 
 Purpose: The commands that answer "why is it like this", and the ones that look right and answer something else.
 Read when: the question is about the past — when a value changed, who introduced a line, where deleted code went, why a decision was made.
+Source: git — the commands below are re-run against the git actually installed, so there is no version to pin.
 Verified: 2026-08-21 — every fenced output below was produced by running the command in a fixture
 repository; the table rows name flags that were confirmed to run, not outputs that were captured.
 Re-run by `make figures` on every commit, against the git actually installed: a release that

@@ -1,6 +1,7 @@
 <!-- coding:deferred -->
 Purpose: the copy-paste form for each trigger, so a diagram costs a minute rather than a decision.
 Read when: a finding has hit one of the triggers and the shape is not obvious.
+Source: none — the shapes are this set's own; nothing outside the page can move them.
 Verified: 2026-08-23 — no automated check reads the drawings. What is checked is
 that this page and `visualise` between them define every trigger, form and floor
 word the registry declares; a rule in `coding-tools/validate.py` re-runs that on

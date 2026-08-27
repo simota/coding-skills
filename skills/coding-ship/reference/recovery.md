@@ -3,6 +3,7 @@
 
 Purpose: Which destructive operations are reversible, by what command, and which destroy work no record holds.
 Read when: before running anything that discards state — reset, restore, checkout, clean, stash, rebase, amend, force-push — or after one already ran.
+Source: git — every row was produced against the git actually installed, so there is no version to pin.
 Verified: 2026-08-21 — every row except the last two was produced by performing the operation in a fixture
 repository and attempting the recovery; `git checkout <sha>` and `rm -rf` are stated without a run.
 Re-run by `make figures` on every commit, against the git actually installed: a release that

@@ -320,6 +320,33 @@ def _(r): sub(r / f"{S}coding-review/SKILL.md",
 def _(r): sub(r / "coding-registry/harness.yaml", "finding_visuals:", "unused_visuals:")
 
 
+@case("V37")
+def _(r):
+    """A page that leans on git and does not say so."""
+    sub(r / f"{S}coding-ship/reference/recovery.md",
+        "Source: git — every row was produced against the git actually installed, "
+        "so there is no version to pin.",
+        "Source: none — nothing outside this page can move it.")
+
+
+@case("V37-unused")
+def _(r):
+    """A source named in the header that the page never uses."""
+    sub(r / f"{S}coding-test/reference/oracles.md", "Source: none —", "Source: git —")
+
+
+@case("V37-silent")
+def _(r):
+    """Neither a source nor the admission that there is none."""
+    sub(r / f"{S}coding-test/reference/oracles.md",
+        "Source: none — the catalogue is this set's own; nothing outside the page can move it.",
+        "Source:")
+
+
+@case("V37-none-declared")
+def _(r): sub(r / "coding-registry/harness.yaml", "source_authorities:", "unused_authorities:")
+
+
 def main() -> int:
     baseline = run(ROOT)
     if "green" not in baseline:

@@ -3,6 +3,7 @@
 
 Purpose: The sources a test's expected value can legitimately have, what each one can falsify, and the shapes that assert nothing.
 Read when: writing any assertion, reviewing a suite that passes while behaviour is wrong, or deciding whether a test is worth keeping.
+Source: none — the catalogue is this set's own; nothing outside the page can move it.
 Verified: 2026-08-21 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule — no automated check.
 
 To test something you must already know the right answer. Where that answer came
