@@ -60,7 +60,7 @@ wrong does not change that.
 | Starting a review of any size | [passes](playbooks/passes.md) — one concern per pass, correctness first |
 | Deciding whether a finding is worth reporting | [severity](playbooks/severity.md) |
 | A finding spans places, an order, a disagreement, or a region | [visualise](playbooks/visualise.md) — a reader who has to reassemble it will skim it. ASCII by default, and the drawing carries the finding's rung, never a better one |
-| It is style the codebase does not enforce, or just not how you would have written it | Drop it. Only a difference that is a defect, a risk, or a real cost is a finding. Taste presented as a defect is how reviews get ignored |
+| It is style the codebase does not enforce, or just not how you would have written it | Drop it. Only a difference that is a defect, a risk, or a real cost is a finding. Taste presented as a defect is how reviews get ignored. **A comment that restates the line under it is not taste** — it is the code failing to say what it does, and it costs every later reader |
 | An agent wrote the diff — including this session | [machine-authored](reference/machine-authored.md). Fluent code fails at the level of fact: a symbol that does not exist, a value nobody derived |
 | The diff looks empty, or smaller than the work described | [diff-scoping](reference/diff-scoping.md). Untracked files appear in no diff, and a repo with no commits has everything untracked |
 | Something looks wrong but you are not sure | Say so, with the specific input that worries you. An honest uncertainty beats a confident guess in both directions. If it would be expensive to get wrong, [refute](refute.py) puts it to the engines that did not make it, asked to break it |

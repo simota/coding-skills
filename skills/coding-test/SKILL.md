@@ -93,6 +93,8 @@ green honestly.
   over many inputs, which is the opposite problem
 - Never: commit a test that depends on the wall clock, the network, the
   filesystem outside a temp dir, or a specific machine
+- Never: comment a test with what its assertion already says. The name carries
+  the case; the one comment a test owes is the identifier of its oracle
 
 ## Verify with
 

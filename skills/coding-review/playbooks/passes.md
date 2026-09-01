@@ -71,6 +71,8 @@ Short, mechanical, non-negotiable:
   second one?
 - **Naming**: would a reader who does not know this change guess right?
 - **The comment that lies**: a stale comment above changed code is worse than none
+- **The comment that says what**: cover it and read the code. Nothing lost means
+  the comment is deletable; something lost means the code should have said it
 
 ## Pass 5 — the checks
 

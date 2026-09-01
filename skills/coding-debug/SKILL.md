@@ -88,6 +88,8 @@ though this skill writes the failing case that proves the diagnosis.
   add a retry to make a flake pass. That deletes the evidence
 - Never: leave debug instrumentation, added logging, or a loosened timeout in
   the diff
+- Never: leave a comment narrating the fix. What changed is the commit message's
+  job; the code keeps only the why that outlived the bug
 - Never: expand the fix into nearby improvements. The diff must be small enough
   to be obviously about this bug
 

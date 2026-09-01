@@ -96,6 +96,9 @@ skills, though this one writes enough of a check to prove its own work.
   `--no-verify` to make a failure disappear. The failure is the information
 - Never: leave commented-out code, a stray debug print, or a `TODO` without the
   `#TODO(agent):` class marker
+- Never: write a comment that says what the line under it already says. Cover it
+  and read the code: nothing lost, delete it; something lost, rename or extract
+  until the code says it. A comment carries the why, never the what
 
 ## Verify with
 

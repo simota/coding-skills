@@ -79,6 +79,26 @@ file written with no evidence is an unverified change leaving.
 
 A run that left no residual reports `swept, 0 markers; 7 changed / 7 evidenced`.
 
+## Comments — the code says what, a comment says why
+
+A comment that restates the line under it is a defect in the code, not a
+sentence missing from it. **The test is mechanical: cover the comment and read
+the code.** Nothing lost — delete the comment. Something lost — put it in the
+code, renaming or extracting until the comment has become the name, and delete
+it anyway.
+
+What survives that test is what code cannot carry: why this way and not the
+obvious way, the outside constraint that forces it, the ordering that looks
+arbitrary and is not, the citation with its identifier. **Deleting those is the
+opposite failure and costs more** — a `why` that lived in one head is
+unrecoverable, where a `what` is re-read off the code. A `#TODO(agent):`
+marker, a licence or provenance header, and the identifier a test quotes for
+its oracle are never trimmed by this rule.
+
+**Nothing checks this automatically.** It is a reading pass over the files this
+run wrote, made before the sweep is reported, and it binds those alone —
+stripping comments elsewhere is a change nobody asked for.
+
 ## Boundary cases
 
 - **A test that was written but not run** is `inspected`, not `executed`.
