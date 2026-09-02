@@ -34,18 +34,6 @@ means switching to an observable anchor, not a third guess.
 Stop when the answer artifact named at the start exists. Not before, and
 emphatically not after.
 
-## Reading a path efficiently
-
-- **Read the test before the implementation.** It states intended behaviour in
-  less code and names the edge cases someone already thought about
-- **Read the interface before the body.** Types, signatures, and schema tell you
-  what can flow before you learn how it flows
-- **Follow the data, not the control flow.** For "where does this value come
-  from", trace the value; control flow will drag you through framework layers
-  that touch it without changing it
-- **Read the newest and the oldest commit touching the file.** The first tells
-  you where it is going, the second why it started
-
 ## What hides from grep
 
 Any of these means a name search will under-report, and the report must say so:

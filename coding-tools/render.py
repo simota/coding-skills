@@ -20,13 +20,26 @@ PREFIX = H["prefix"]
 SKILLS_ROOT = ROOT / H["skills_dir"] if H.get("skills_dir") else ROOT
 
 
+def delivered_to(spec: dict, skill: str) -> bool:
+    """A block with `only: signature` goes to the skills that owe the mechanism."""
+    if spec.get("only") == "signature":
+        return skill in H["signature"]["required_of"]
+    return True
+
+
 def render(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
     original = text
     for key, spec in H["delivered"].items():
+        open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
+        if not delivered_to(spec, path.parent.name):
+            if open_m in text and close_m in text:
+                head, rest = text.split(open_m, 1)
+                _, tail = rest.split(close_m, 1)
+                text = head.rstrip("\n") + tail
+            continue
         block = (ROOT / "coding-registry" / "delivered" / f"{key}.md").read_text(
             encoding="utf-8").rstrip("\n")
-        open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
         payload = f"{open_m}\n{block}\n{close_m}"
         if open_m in text and close_m in text:
             head, rest = text.split(open_m, 1)

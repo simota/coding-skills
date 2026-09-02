@@ -230,7 +230,10 @@ signature:
 
 delivered:
   sizing:  { section: "Before starting" }
-  predict: { section: "Before starting" }
+  # Delivered only to `signature.required_of`: a skill that causes no observable
+  # change has nothing to predict, and a read-only skill told "before the edit"
+  # performs the rule rather than meaning it.
+  predict: { section: "Before starting", only: signature }
   values:  { section: "Decide first" }
   report:  { section: "Verify with" }
   # The sixth axis. The other five bind what has to be true; this one binds what

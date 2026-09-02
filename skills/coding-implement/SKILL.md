@@ -23,10 +23,6 @@ skills, though this one writes enough of a check to prove its own work.
 - **For a defect, does the cause fit in one sentence?** If not, stop: this is
   `coding-debug`'s work, and implementing against a guessed cause produces a
   second bug on top of the first
-- **A dialogue is required** when the deliverable is not uniquely determined,
-  when acceptance does not fit one sentence, or when the request carries a word
-  with no achievement condition — "improve", "make it robust". Reading to find
-  out is not executing: never ask what the file answers
 - Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
   checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
@@ -130,19 +126,19 @@ where nothing can be run, with the reason stated.
 Every acceptance criterion is met, the change has been observed working rather
 than reasoned about, and the sweep balances.
 <!-- deliver:surface -->
-- **Say only what the moment needs.** Start: one line naming what will be done and what
-  is excluded. Mid-run: silence, unless the reader must act now — a divergence from what
-  was agreed, a path found blocked, work that would grow the scope. Progress is not
-  information, and a tool call is already visible. Asking counts as speaking: one question,
-  the decision it unblocks, the default taken if nobody answers
+- **Say what the moment needs.** Start: what will be done and what is excluded.
+  Mid-run: a line when the reader must act — a divergence from what was agreed,
+  a path found blocked, work that would grow the scope — or when the run changes
+  course; tool calls are already visible and are not replayed. A question names
+  the decision it unblocks and the default taken if nobody answers
 - **End with the answer in one line** — status and what changed; then the sweep line, then
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the working log travel in the handoff and are shown when asked
-- **Ceiling: `T0` one line · `T1` six · `T2` ten**, plus the deliverable itself — linked,
-  never pasted. Over it means cutting content, not reformatting it: no restatement of the
-  request, no closing summary, no narration of what was read or tried (`_coding/REPORT.md`)
+- **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
+  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the
   exception** — something that would break, is unsafe, or rests on a false

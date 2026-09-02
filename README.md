@@ -107,7 +107,7 @@ line: `<!-- coding:contract -->` binds, `<!-- coding:guidance -->` is consulted.
 | [`coding-registry/capabilities.yaml`](coding-registry/capabilities.yaml) | Per skill: permission class, what it does, `not:`, and its signals |
 | [`coding-registry/routes.yaml`](coding-registry/routes.yaml) | The chains that recur, with their control structure |
 | [`coding-registry/fixtures.yaml`](coding-registry/fixtures.yaml) | A record of misroutes, grown from accidents |
-| [`coding-registry/delivered/`](coding-registry/delivered) | The blocks copied verbatim into every `SKILL.md` |
+| [`coding-registry/delivered/`](coding-registry/delivered) | The blocks copied verbatim into each `SKILL.md` that owes them |
 
 ## Layout
 

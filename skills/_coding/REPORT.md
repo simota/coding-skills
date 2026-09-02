@@ -2,10 +2,9 @@
 # REPORT — what a person reads
 
 Binding on every `coding-*` skill. The other axes decide what must be true;
-this one decides what reaches the reader. A run that satisfies all of them and
-returns forty lines has still failed: **a report that gets skimmed is a report
-that did not happen**, and everything the other axes bought is lost at the last
-step.
+this one decides what reaches the reader: **a report that gets skimmed is a
+report that did not happen**, and everything the other axes bought is lost at
+the last step.
 
 ## Record and view are different objects
 
@@ -23,18 +22,17 @@ paragraph, and it is the failure this file was added to stop.
 Four, and no others. Each owes something different, and **what is right at one moment is
 noise at the next.**
 
-| Moment | What it owes | Ceiling |
+| Moment | What it owes | Form |
 |---|---|---|
-| **Start** | What will be done and what is excluded, with the tier if it is not obvious | one line |
-| **A question** | The one decision that is blocked, and the default taken if nobody answers | one question, one line |
-| **Mid-run** | Nothing — unless the reader must act now: a divergence from what was agreed, a path found blocked, work that would grow the scope, a second prediction miss in one area | one line each, or silence |
-| **End** | The report below | the ceiling below |
+| **Start** | What will be done and what is excluded, with the tier if it is not obvious | stated once, before work begins |
+| **A question** | The one decision that is blocked, and the default taken if nobody answers | one question, with its default |
+| **Mid-run** | A line when the reader must act — a divergence from what was agreed, a path found blocked, work that would grow the scope, a second prediction miss in one area — and when the run changes course | a line per event; tool calls are not replayed |
+| **End** | The report below | the order below, sized by the proportion rule |
 
-**Progress is not information.** "reading the tests", "now editing the
-handler", "found it" tell the reader nothing they can act on, and they cost
-the same attention as the line that matters. A tool call is already visible;
-narrating it a second time is the commonest way a run fills a screen while
-saying nothing.
+**A tool call is already visible; what it changed is not.** "reading the
+tests" tells the reader nothing they can act on; "the handler is not where the
+bug is, moving to the parser" does. Say the second kind when it changes what
+the reader would do next, and nothing otherwise.
 
 **A question is not a status update.** Ask when guessing wrong would be
 expensive to undo, ask one thing, and say what happens if the answer never
@@ -53,23 +51,20 @@ comes.
 
 A run with nothing unresolved reports lines 1 and 2 and stops.
 
-## Ceiling
+## Proportion
 
-| Tier (`_coding/SIZING.md`) | The whole report |
-|---|---|
-| `T0` | one line |
-| `T1` | six lines |
-| `T2` | ten lines, plus the deliverable itself |
-
-**Over the ceiling means cutting content, not reformatting it.** A table, a
-nested list, and a heading per item are the three ways a report grows while
-appearing to have been tightened.
+The report is sized by the tier (`_coding/SIZING.md`): a `T0` is the answer
+line alone; a `T1` adds the evidence line and what is unresolved; a `T2` adds
+what is next and where the deliverable is. **Trimming cuts content the reader
+already has, never the answer** — and structure (a table, a list, a heading)
+is used when it lets the reader find a thing faster, not to make the same
+content look shorter.
 
 ## The deliverable is not the report
 
 A plan, a diff, a review, a test suite is an artifact with a location. The
 report says where it is and what it says in one line; it does not reproduce it.
-Pasting the artifact into the report is how the ceiling gets defeated honestly.
+Pasting the artifact into the report is how a short report becomes a long one.
 
 ## Not bigger than it is
 
@@ -84,13 +79,11 @@ choice is the reader's to make.
 is unsafe, or rests on a false premise, say what is wrong, why, and the
 options, at whatever length that takes. **Cut noise, never risk.**
 
-## Never in a report
+## What the report leaves out
 
-- A restatement of the request, or of what the run was about to do
-- A closing summary of what was just said
-- Files the diff already lists, or commands whose output was already quoted
-- Narration of process: what was read, what was tried first, which tool ran
-- Hedging that changes no decision, and confidence about things nobody doubted
+Whatever the reader already has: the request, the diff's own file list, output
+already quoted, and the path taken to the answer. Confidence and hedging appear
+where they would change a decision.
 
 ## Asked for more
 

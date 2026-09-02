@@ -268,8 +268,14 @@ def v17_delivery():
     for key, spec in H["delivered"].items():
         want = read(ROOT / "coding-registry" / "delivered" / f"{key}.md").rstrip("\n")
         open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
+        owners = set(SIGNATURE["required_of"]) if spec.get("only") == "signature" else set(SKILLS)
         for d in SKILL_DIRS:
             text = read(d / "SKILL.md")
+            if d.name not in owners:
+                if open_m in text:
+                    fail("V17", f"{d.name}/SKILL.md carries the {key} block, which is "
+                                f"delivered only to {sorted(owners)} (run: make render)")
+                continue
             if open_m not in text or close_m not in text:
                 fail("V17", f"{d.name}/SKILL.md is missing the {key} delivery block")
                 continue
