@@ -25,9 +25,11 @@ skills_dir: skills
 platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform, not by this set
 
 limits:
-  skill_md_lines: 152         # derived, not chosen: 90 for the skill's own words plus
-                              # the 54 lines of delivered contract every file in this
-                              # set now carries. Each raise has been the same move for
+  skill_md_lines: 156         # derived, not chosen: 90 for the skill's own words plus
+                              # the 58 lines of delivered contract every file in this
+                              # set now carries (the last four: a term with two meanings
+                              # is a question, never a silent choice — the same move as
+                              # the sixth axis, for the same reason). Each raise has been the same move for
                               # a block that grew (120 -> 130 -> 135), and this one is
                               # the sixth axis arriving: 17 delivered lines that bound
                               # what the run says at the end. Measured own-content max

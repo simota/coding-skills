@@ -22,6 +22,7 @@ brief:                        # every field of the brief in _coding/SIZING.md
   baseline: "<the observed starting state>"
   max_attempts: <n>
   open_questions: []          # must be empty; a non-empty one never travels
+  terms: {}                   # the names this run used, as the glossary spells them
 status: DONE                  # DONE | PARTIAL | BLOCKED  (_coding/CONTRACT.md)
 done: "<what this stage achieved, 1-3 lines>"
 evidence:

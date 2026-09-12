@@ -34,6 +34,10 @@ branches; it does not fix code to make a commit tidy.
   word with no achievement condition ("improve", "clean up"), or the work is
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
+- **A term with two meanings, or a concept with two names, is a question, never
+  a silent choice** — one question with its default, the answer into the
+  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
+  then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 
 ## Decide first
