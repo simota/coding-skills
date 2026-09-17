@@ -23,7 +23,7 @@ messages, ordering, and timing that anything depends on.
   work, not an afterthought ([safety-net](playbooks/safety-net.md))
 - **Confirm the code is correct.** Refactoring around a bug bakes it in and
   hides where it lives. A defect found first goes to `coding-debug`
-- **Here `T0`** is a rename in one file; a module split is not, and a ten-file
+- **Here `T0`** is a local rename; a module split is not, and a ten-file
   sweep needs permission
 - Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
   checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
@@ -66,7 +66,7 @@ messages, ordering, and timing that anything depends on.
 | The refactor keeps growing | Stop at the first green point and commit. A half-finished restructuring is worse than either end state |
 | Duplication found in three places | Check whether they are the same thing or three things that currently look alike. Wrong abstraction costs more than duplication |
 | Code appears unused | Prove it: grep, dynamic dispatch check, then history. Then delete it — do not comment it out |
-| The tests break during the refactor | The behaviour changed. Revert to green and take a smaller step — do not adjust the test |
+| The tests break during the refactor | Distinguish changed behaviour from broken imports or names. Revert behaviour changes; update only mechanical test references for the latter |
 | Someone else is working in these files | Coordinate or defer. A large refactor across an active branch is a merge conflict with a delay on it |
 | A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
 | About to run the safety net | **Predict that it stays green and that nothing else moves.** A refactor whose honest prediction includes a changed output is not a refactor |
@@ -93,7 +93,8 @@ messages, ordering, and timing that anything depends on.
 - Never: change behaviour. Not the return value in an edge case, not an error
   message, not the log format, not the iteration order, not the exception type.
   If any of those must change, this is `coding-implement`'s work
-- Never: edit tests to make a refactor pass. The test is the invariant
+- Never: weaken assertions or change expected behaviour to make a refactor pass.
+  Mechanical import and symbol updates may follow the move; the cases stay fixed
 - Never: mix a rename with a logic change in one commit — it makes the logic
   change invisible in review
 - Never: introduce an abstraction for a second caller that does not exist
@@ -128,7 +129,7 @@ says why nothing could be run.
 
 ## Done when
 
-The named difficulty is gone, the same tests pass unchanged, the diff contains
+The named difficulty is gone, the same cases and assertions pass, the diff contains
 no behaviour change, and every commit in the sequence is independently green.
 <!-- deliver:surface -->
 - **Say what the moment needs.** Start: what will be done and what is excluded.

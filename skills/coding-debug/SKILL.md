@@ -8,13 +8,12 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ## Owns
 
 Getting from a symptom to a proved cause, and then to the smallest fix that
-removes it. The regression test that keeps it gone belongs to `coding-test`,
-though this skill writes the failing case that proves the diagnosis.
+removes it, with the failing case that proves the diagnosis.
 
 ## Before starting
 
-- **Reproduce it before reading anything.** A bug you cannot trigger cannot be
-  proved fixed, and every hypothesis about it is unfalsifiable
+- **Reproduce it before fixing.** Read what is needed to identify the trigger
+  and a safe setup first. A bug you cannot trigger cannot be claimed fixed
   ([reproduce](playbooks/reproduce.md))
 - **Write down the symptom precisely**: what was expected, what happened, and
   the exact input, environment, and version. "It's broken" is a report, not a symptom
@@ -57,7 +56,7 @@ though this skill writes the failing case that proves the diagnosis.
 
 | Situation | How to proceed |
 |---|---|
-| It cannot be reproduced yet | [reproduce](playbooks/reproduce.md). Everything else is premature |
+| It cannot be reproduced yet | [reproduce](playbooks/reproduce.md). Inspect the input and environment; defer the fix, not the investigation |
 | It worked before and does not now | [bisect](playbooks/bisect.md) — find the commit, then read it |
 | It reproduces sometimes | Do not chase it by rerunning. Find what differs between runs — order, time, concurrency, leftover state |
 | You have a hypothesis | Design the observation that would **disprove** it, and run that. A confirmation-only test confirms anything |
