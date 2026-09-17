@@ -71,7 +71,7 @@ property, and it is only ever one merge conflict from being thrown away.
 
 ## Before committing a move
 
-- Tests were green before, and are green now, unchanged
+- Tests were green before and are green now, with the same cases and assertions
 - The diff contains exactly one kind of move
 - Something is smaller: fewer lines, fewer branches, fewer call sites, fewer concepts
 - No behaviour changed — including error messages, ordering, and exception types

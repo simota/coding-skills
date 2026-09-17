@@ -6,26 +6,26 @@
 
 bug-fix:
   pattern: linear
-  when: "something is broken"
-  chain: [coding-debug, coding-test, coding-ship]
+  when: "fix a bug and prepare commits or a PR"
+  chain: [coding-debug, coding-ship]
   gate: "the cause fits in one sentence before anything is edited"
 
 feature:
   pattern: linear
-  when: "new behaviour, shape not obvious"
+  when: "new behaviour with design, independent test work, review, and shipping requested"
   chain: [coding-explore, coding-plan, coding-implement, coding-test, coding-review, coding-ship]
   gate: "the brief's open_questions is empty before coding-implement starts"
 
 small-feature:
   pattern: linear
-  when: "new behaviour, shape fits in one sentence"
-  chain: [coding-implement, coding-test, coding-ship]
+  when: "new behaviour with a settled shape, and commits or a PR requested"
+  chain: [coding-implement, coding-ship]
 
 cleanup:
   pattern: linear
-  when: "correct code that is hard to work with"
-  chain: [coding-explore, coding-test, coding-refactor, coding-test]
-  gate: "a characterisation net exists and is green before coding-refactor starts"
+  when: "map unfamiliar code, then restructure it without changing behaviour"
+  chain: [coding-explore, coding-refactor]
+  gate: "coding-refactor establishes a green characterisation net before structural edits"
 
 coverage-gap:
   pattern: linear

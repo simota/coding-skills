@@ -44,7 +44,7 @@ coding-debug:
   not:
     - what: "reading code that works"
       go: coding-explore
-    - what: "the guard kept after the fix"
+    - what: "standalone regression-test work beyond the current fix"
       go: coding-test
   signals: [broken, bug, reproduce, root cause, failing, why]
 
@@ -64,9 +64,9 @@ coding-test:
   not:
     - what: "diagnosing why the code is wrong"
       go: coding-debug
-    - what: "the check that only evidences one run"
+    - what: "checks of the current implementation, diagnosis, or refactor, including retained guards"
       go: "the skill making that run"
-  signals: [test cases, coverage, regression tests, assert, suite, proof]
+  signals: [test cases, coverage, regression tests, assert, suite]
 
 coding-review:
   class: read-only

@@ -8,9 +8,8 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ## Owns
 
 Turning a settled shape into code that runs — new behaviour, changed behaviour,
-and the wiring between them. Cleanup that changes no behaviour, diagnosis of
-something already broken, and the tests that prove a change belong to other
-skills, though this one writes enough of a check to prove its own work.
+and the wiring between them, with checks that prove the change. Ownership of
+adjacent work is defined in `registry/capabilities.yaml`.
 
 ## Before starting
 

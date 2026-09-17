@@ -24,12 +24,11 @@ is a reading of that file, not a second copy of it.
 | `coding-review` | Finding defects in a change before it lands | No |
 | `coding-ship` | Commit granularity, history shape, PR, changelog, release | Yes (git only) |
 
-**Who may write a test.** Four skills touch tests, so one rule settles it: *any
-skill may write the check that evidences its own run* — `coding-implement`'s
-proof that the path works, `coding-debug`'s failing reproduction,
-`coding-refactor`'s characterisation net. **`coding-test` owns any test that
-outlives the run**: regression cases kept as guards, coverage of untested
-behaviour, and the repair of an existing suite.
+**Who may write a test.** `registry/capabilities.yaml` assigns checks of the
+current change to its writing skill, including retained regression cases and
+characterisation nets. Keeping a check does not create a second owner.
+`coding-test` owns standalone test work, broader coverage, and suite repair.
+Read-only skills may run checks, but their findings do not authorise edits.
 
 **Not owned by this set.** Documentation and comments belong to whichever skill
 changes the code they describe. Anything else outside these eight is said
@@ -48,16 +47,15 @@ registry cannot hold.
 | implement vs refactor | Does observable behaviour change? Changes → implement. Identical → refactor |
 | refactor vs implement (mixed) | **Split it.** A behaviour change hidden inside a rename is unreviewable. Refactor first, commit, then change behaviour |
 | debug vs test | **A red suite is debug's until the cause is known, test's after.** Diagnosing why it fails is debug; repairing tests that lie, are flaky, or assert the wrong thing is test |
-| implement vs test | The check proving this run works is implement's. A test kept as a guard afterwards is test's |
-| refactor vs test | The characterisation net is refactor's to write and run. Turning it into a maintained suite is test's |
 | review vs test | review reads for defects; test builds the check that catches them. A finding worth guarding becomes a test |
 | implement vs ship | Ship starts once the code is correct. Ship never fixes code to make a commit tidy |
 
 ## Chains
 
-The chains that recur are in `registry/routes.yaml`, with their control
-structure rather than as prose: which stages, in what order, and what has to
-hold before the next one starts.
+The chains in `registry/routes.yaml` are templates, not mandatory lifecycles.
+Use only stages needed for the agreed deliverable; a skill's own reading and
+checks are not extra stages. Stop when that scope is evidenced. Shipping is
+included only when requested, with its permission boundary unchanged.
 
 A chain of names expresses linear work only. Where a stage repeats until a
 condition holds — `review-to-zero` is the one that does — the entry must carry

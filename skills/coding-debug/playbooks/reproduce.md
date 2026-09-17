@@ -1,8 +1,8 @@
 <!-- coding:guidance -->
 # Reproduce — turning a report into a failing case
 
-Until it fails on demand, there is nothing to reason about. Every hypothesis is
-unfalsifiable, and every "fix" is indistinguishable from the bug moving.
+Inspect the input, code and environment to find a safe trigger. Until the
+failure is reproduced, keep causes as hypotheses rather than claiming a fix.
 
 ## Get to a trigger
 
@@ -56,8 +56,7 @@ The end state is a case that:
 - Does not depend on the network, the wall clock, or leftover state
 - Names the expected behaviour in its assertion, not just the current one
 
-Keep it. Whether it becomes the regression test is `coding-test`'s call, but the
-fix is not verifiable without it.
+Keep it with the fix; the fix is not verifiable without it.
 
 ## Before moving on to diagnosis
 
