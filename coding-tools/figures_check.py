@@ -28,6 +28,7 @@ SKILLS = ROOT / "skills"
 HISTORY = SKILLS / "coding-explore/reference/history.md"
 SCOPING = SKILLS / "coding-review/reference/diff-scoping.md"
 RECOVERY = SKILLS / "coding-ship/reference/recovery.md"
+ORACLES = SKILLS / "coding-test/reference/oracles.md"
 failures: list[str] = []
 
 # The user's own git configuration is not part of the claim. A global hooks
@@ -235,7 +236,11 @@ def check_scoping(tmp: pathlib.Path) -> int:
     if "fatal" not in empty.git("rev-parse", "HEAD").lower():
         fail(SCOPING, "`rev-parse HEAD` resolved in a repository with no commits; "
                       "the page says it does not")
-    n += 1
+    empty.must("add", "a.txt")
+    if empty.git("diff", "--staged", "--name-only").split() != ["a.txt"]:
+        fail(SCOPING, "`diff --staged` did not list a staged file before the first commit; "
+                      "the page says it compares against the empty tree")
+    n += 2
     return n
 
 
@@ -299,8 +304,8 @@ def check_recovery(tmp: pathlib.Path) -> int:
     r6.must("reset", "-q", "--hard", "HEAD~1")
     r6.must("gc", "-q", "--prune=now")
     if gone not in r6.git("reflog", "--format=%h"):
-        fail(RECOVERY, "`gc --prune=now` expired a reflog entry; the page says only "
-                       "`reflog expire` does")
+        fail(RECOVERY, "`gc --prune=now` expired a fresh reflog entry; the page says it "
+                       "expires only entries past 90/30 days")
     n += 1
 
     r7 = Repo(tmp / "switch")
@@ -329,6 +334,32 @@ def check_recovery(tmp: pathlib.Path) -> int:
     return n
 
 
+def check_revert(tmp: pathlib.Path) -> int:
+    """oracles.md: `revert --no-commit` then `--abort` restores the fix, keeps an
+    unstaged test edit, and discards a staged one."""
+    n = 0
+    for staged in (False, True):
+        r = Repo(tmp / f"revert-{'staged' if staged else 'unstaged'}")
+        r.write("fix.txt", "bug\n"); r.write("test.txt", "t0\n"); r.commit("c1")
+        r.write("fix.txt", "fixed\n"); r.commit("fix")
+        r.write("test.txt", "NEW-TEST\n")
+        if staged:
+            r.must("add", "test.txt")
+        r.must("revert", "--no-commit", "HEAD")
+        if (r.d / "fix.txt").read_text() != "bug\n":
+            fail(ORACLES, "`revert --no-commit` did not remove the fix")
+        r.must("revert", "--abort")
+        if (r.d / "fix.txt").read_text() != "fixed\n":
+            fail(ORACLES, "`revert --abort` did not put the fix back")
+        kept = "NEW-TEST" in (r.d / "test.txt").read_text()
+        if kept == staged:
+            fail(ORACLES, f"`revert --abort` {'kept' if kept else 'discarded'} a "
+                          f"{'staged' if staged else 'unstaged'} test edit; the page says "
+                          f"it {'discards' if staged else 'keeps'} it")
+        n += 1
+    return n
+
+
 def main() -> int:
     if not shutil.which("git"):
         print("figures skipped - git is not on PATH")
@@ -336,10 +367,11 @@ def main() -> int:
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="coding-figures-"))
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
-                  "staged", "untracked", "force", "gc", "switch", "branchd"):
+                  "staged", "untracked", "force", "gc", "switch", "branchd",
+                  "revert-staged", "revert-unstaged"):
             (tmp / d).mkdir()
         checks = (check_pickaxe(tmp) + check_dots(tmp)
-                  + check_scoping(tmp) + check_recovery(tmp))
+                  + check_scoping(tmp) + check_recovery(tmp) + check_revert(tmp))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     if failures:

@@ -140,7 +140,7 @@ builds throwaway repositories and checks every documented behaviour against the
 git actually installed — that `-S` misses an equal-count edit, that three-dot
 diff isolates a branch's own work, that `restore .` leaves no trace where
 `git add` leaves a recoverable blob, that `checkout -f` discards tracked edits
-and leaves untracked files. 26 behaviours, about two seconds, in `make check`, CI
+and leaves untracked files. 29 behaviours, about two seconds, in `make check`, CI
 and the pre-commit hook. Where a page prints an output, that output is parsed from
 the page, so editing the page to say something false fails too — proven by
 injecting both kinds of break, including deleting a block so the checker matches

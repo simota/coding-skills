@@ -34,7 +34,7 @@ a prediction** — it names no observation, so no result can contradict it.
 |---|---|
 | `pytest -k retry` -> `test_retry_backoff` fails at the assert on line 40 | "the retry test will show the bug" |
 | `make build` -> exits 0, and the bundle drops below 400 kB | "the build gets smaller" |
-| reverting the suspect commit -> the flake stops in 20 consecutive runs | "this is probably the flaky commit" |
+| reverting the suspect commit -> the flake stops in 100 consecutive runs | "this is probably the flaky commit" |
 
 A prediction that cannot be written without knowing the answer is a sign the
 run is not ready: the thing to do next is read, not edit.

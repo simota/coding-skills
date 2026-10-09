@@ -49,9 +49,10 @@ memory-exhaustion bug wearing a parsing bug's clothes.
 ## Concurrency and time
 
 - **Nothing is atomic across a boundary.** Read-modify-write against a database
-  or an API is a race unless something makes it atomic — `SELECT ... FOR UPDATE`,
-  a conditional update (compare-and-set on a version column), `SERIALIZABLE`
-  isolation, or a lock with an owner and a timeout. **A plain transaction is not
+  or an API is a race unless something makes it atomic — `SELECT ... FOR UPDATE`
+  inside the same transaction as the write, a conditional update (compare-and-set
+  on a version column), `SERIALIZABLE` isolation with the serialization failure
+  caught and retried, or a lock with an owner and a timeout. **A plain transaction is not
   one of them**: at `READ COMMITTED` — the default in PostgreSQL, Oracle, and
   SQL Server — two transactions happily read the same row and overwrite each
   other's update
