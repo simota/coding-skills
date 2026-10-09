@@ -4,10 +4,11 @@
 Purpose: The commands that answer "why is it like this", and the ones that look right and answer something else.
 Read when: the question is about the past — when a value changed, who introduced a line, where deleted code went, why a decision was made.
 Source: git — the commands below are re-run against the git actually installed, so there is no version to pin.
-Verified: 2026-08-21 — every fenced output below was produced by running the command in a fixture
-repository; the table rows name flags that were confirmed to run, not outputs that were captured.
-Re-run by `make figures` on every commit, against the git actually installed: a release that
-changed one of these behaviours fails the build instead of quietly making the page wrong.
+Verified: 2026-10-09 — every fenced output below was produced by running the command in a fixture
+repository, and the `-S`/`-G` and `..`/`...` fences are re-run by `make figures` on every commit,
+against the git actually installed: a release that changed one of those behaviours fails the build
+instead of quietly making the page wrong. The table rows were confirmed by running each command once
+in a fixture repository; no automated check re-runs them.
 
 Git holds two different kinds of answer and one command shape for both, so the
 usual failure here is not a wrong repository. It is a right-looking command that
@@ -75,9 +76,10 @@ So reviewing a branch means **`git diff main...feat` with three dots and
 `git log main..feat` with two**. Same intent, different spelling. Getting either
 one wrong changes what is reported, not whether the command succeeds.
 
-#TODO(agent): DEFERRED the dot table is stated in both this set's reference pages, because a
-skill cannot read another skill's directory once installed. Nothing checks the two copies still
-agree — re-read the other page when editing this one.
+The dot table is stated in both coding-explore's history reference and coding-review's
+diff-scoping reference, because a skill cannot read another skill's directory
+once installed. `make figures` re-runs both pages' printed counts against git, so the figures
+cannot drift apart; the prose around them is not checked — re-read the other page when editing this one.
 
 ## Blame, and the three flags that stop it lying
 
@@ -90,8 +92,9 @@ git blame -w -M -C -- <path>
 
 - `-w` ignores whitespace-only changes
 - `-M` sees lines moved within the file
-- `-C` sees lines copied from another file in the same commit (repeat as `-C -C`
-  to search the commit's other files, `-C -C -C` to search all of history)
+- `-C` sees lines moved or copied from other files modified in the same commit
+  (`-C -C` also searches unmodified files in the commit that created the file,
+  `-C -C -C` searches every commit)
 
 When blame still lands on a bulk commit, walk past it: `git log -L` on the range
 shows every revision of those lines in order, which is the question blame was
@@ -103,9 +106,9 @@ Deleted code is not gone; it is unreachable from the working tree.
 
 | Goal | Command |
 |---|---|
-| Which commit deleted this file | `git log --diff-filter=D --name-only -- '**/<name>'` |
+| Which commit deleted this file | `git log --diff-filter=D --name-only -- ':(glob)**/<name>'` — without `:(glob)`, `**/` misses a file at the top level |
 | Where did this function go | `git log --all -S'<name>' --oneline` then read the diff |
-| Grep the whole history | `git rev-list --all \| xargs git grep -n '<pattern>' --` |
+| Grep the whole history | `git rev-list --all \| xargs git grep -n '<pattern>'` — no trailing `--`: xargs appends the revisions, and after `--` they are read as paths and nothing matches |
 | See the file as it was | `git show <commit>^:<path>` — note the `^`; at the deleting commit the path no longer exists |
 | A commit you cannot reach any more | `git reflog` first, `git fsck --lost-found` second |
 

@@ -17,8 +17,9 @@ Not tests of intended behaviour. Tests of **actual** behaviour, whatever it is.
 **Assert the ugly output.** If the function returns `"None"` as a string when
 given a null, the test asserts `"None"`. The goal is a tripwire that fires when
 your refactor changes anything, not a statement about what it should do. A
-`#TODO(agent): DEFERRED — characterisation only, asserts current behaviour, may
-be wrong` next to it tells the next reader what these are.
+`#TODO(agent): DEFERRED characterisation: pins current behaviour, possibly wrong;
+resume when the intended behaviour is specified` next to it, with the matching
+entry in `open`, tells the next reader what these are.
 
 ## When there is no seam
 

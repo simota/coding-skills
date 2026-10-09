@@ -199,11 +199,17 @@ def v9_signals():
             seen[k] = name
 
 
+def _says(text: str, phrase: str) -> bool:
+    """A signal is matched as words. As a substring, `diff` matched "different"
+    and `where` matched "somewhere", and the fixtures passed on noise."""
+    return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
+
+
 def v10_fixtures():
     pairs = [(_norm(s), name) for name, c in CAP.items() for s in c.get("signals", [])]
     for entry in FIX if isinstance(FIX, list) else []:
         ask, expect = _norm(entry["ask"]), entry["expect"]
-        hits = [(len(sig), owner) for sig, owner in pairs if sig in ask]
+        hits = [(len(sig), owner) for sig, owner in pairs if _says(ask, sig)]
         if not hits:
             fail("V10", f"no signal matches {entry['ask']!r} (expected {expect})")
             continue
@@ -228,6 +234,11 @@ def v12_prefix():
 def v13_route_budget():
     if len(ROUTES) > LIM["routes_max"]:
         fail("V13", f"{len(ROUTES)} routes (max {LIM['routes_max']})")
+    # A budget declared and never read is a number that only looks enforced.
+    for name, r in ROUTES.items():
+        n = len(r.get("chain", []))
+        if n > LIM["route_stages_max"]:
+            fail("V13", f"route {name} chains {n} stages (max {LIM['route_stages_max']})")
 
 
 def v14_patterns():
@@ -308,8 +319,9 @@ def v19_paths_resolve():
     probe = SKILL_DIRS[0]
     shared = sorted((SKILLS_ROOT / SHARED).glob("*.md"))
     for d in SKILL_DIRS:
-        readable = [d / "SKILL.md"] + sorted((d / "playbooks").glob("*.md")) \
-            if (d / "playbooks").exists() else [d / "SKILL.md"]
+        # reference/ is read by the skill exactly as a playbook is, only later.
+        readable = [d / "SKILL.md"] + sorted(d.glob("playbooks/*.md")) \
+            + sorted(d.glob("reference/*.md"))
         for f in readable:
             _check_paths(f, d, f"{d.name}/{f.relative_to(d)}")
     for f in shared:                      # checked once, against one skill dir
@@ -350,8 +362,8 @@ def v20_contract_vocabulary():
     """Every declared word is defined on a shared page, not merely named there.
 
     The earlier form asked whether the word appeared anywhere in CONTRACT.md,
-    and a word used in a sentence passed as defined — the check §5.7 names,
-    that one replaced definition does not trip. A definition is a row or a
+    and a word used in a sentence passed as defined — so a definition that was
+    replaced by a mere mention did not trip it. A definition is a row or a
     heading, and every vocabulary key is held to it, not three.
     """
     pages = {p.name: read(p) for p in (SKILLS_ROOT / SHARED).glob("*.md")}
@@ -392,6 +404,10 @@ def v22_markers_classified():
 
 def v23_labels():
     import fnmatch
+    for pat, label in H["label_by_path"].items():
+        if label not in H["document_labels"]:
+            fail("V23", f"label_by_path[{pat!r}] is {label!r}, not one of "
+                        f"{H['document_labels']}")
     for f in sorted(ROOT.rglob("*.md")):
         if ".git" in f.parts:
             continue

@@ -20,9 +20,9 @@ is a reading of that file, not a second copy of it.
 | `coding-implement` | Producing working code — features, endpoints, screens, logic | Yes |
 | `coding-debug` | Why something is broken, reproduced and root-caused, then fixed | Yes |
 | `coding-refactor` | Changing structure while behaviour stays identical | Yes |
-| `coding-test` | Test cases, coverage of behaviour, flaky repair, failing suites | Yes |
+| `coding-test` | Test cases, coverage of behaviour, flaky repair, suite repair once the cause is known | Yes |
 | `coding-review` | Finding defects in a change before it lands | No |
-| `coding-ship` | Commit granularity, history shape, PR, changelog, release | Yes (git only) |
+| `coding-ship` | Commit granularity, history shape, PR, changelog, release | History and release docs only |
 
 **Who may write a test.** `registry/capabilities.yaml` assigns checks of the
 current change to its writing skill, including retained regression cases and

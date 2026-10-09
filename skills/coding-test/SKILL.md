@@ -27,8 +27,8 @@ green honestly.
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -59,14 +59,14 @@ green honestly.
 | Choosing which cases to write | [cases](playbooks/cases.md) — derive from behaviour and boundaries, not from lines |
 | A test passes sometimes | [flaky](playbooks/flaky.md). Never fix it with a retry or a longer sleep |
 | Deciding what the expected value should be | [oracles](reference/oracles.md) — ask where it came from. A value copied from the output asserts that the code equals itself |
-| Writing a regression test for a fixed bug | Write it so it fails on the pre-fix code. Verify that by reverting the fix, running it, and restoring |
+| Writing a regression test for a fixed bug | Write it so it fails on the pre-fix code. Verify by removing only the fix, recoverably ([oracles](reference/oracles.md) § The regression-test rule), running it, and restoring |
 | The code is hard to test | That is information about the code, not about testing. Usually a missing seam — hand it to `coding-refactor` rather than building elaborate mocks |
 | A test needs six mocks to run | The unit is wrong. Test a level up, where fewer things need faking |
 | The suite is slow | Find the few slow tests before optimising the many fast ones. Slow suites stop being run, and an unrun suite catches nothing |
 | A test fails after a change | Establish whether the test or the code is wrong **before** editing either |
 | Asked to raise coverage to a number | Say what the number will and will not buy, then cover the behaviour that would break silently |
-| A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
-| About to run a new test | **Predict the failure first** — which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
+| About to run a new test | **Predict the failure first** — which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing. For behaviour that already works, get the red by breaking the code under test on purpose, then restore it |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -94,7 +94,7 @@ green honestly.
 - Never: put **branching** logic in a test. A conditional means the test asserts
   different things on different runs and no longer names one case. Parameterised
   cases and property-based generators are not this — they run the same assertion
-  over many inputs, which is the opposite problem
+  over many inputs, which keeps one case per assertion
 - Never: commit a test that depends on the wall clock, the network, the
   filesystem outside a temp dir, or a specific machine
 - Never: comment a test with what its assertion already says. The name carries
@@ -106,7 +106,8 @@ A test is proved by watching it fail and then pass (evidence: `executed`).
 Both halves are required — a test that was never seen red is `inspected` at
 best, and the entry says why it could not be made to fail.
 
-- **`DONE` here**: cases written, each seen red then green, whole suite green, sweep balances
+- **`DONE` here**: cases written, each seen red then green, whole suite green (or each
+  remaining failure shown by the baseline to pre-date the change, `OUT-OF-SCOPE`), sweep balances
 - A skipped or quarantined test is `UNVERIFIED` for whatever it covered, and
   leaves a marker naming what is no longer guarded
 - **Report what is still uncovered.** A test report without its gaps reads as
@@ -118,10 +119,10 @@ best, and the entry says why it could not be made to fail.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -131,8 +132,8 @@ best, and the entry says why it could not be made to fail.
 ## Done when
 
 Each new case was observed failing for its stated reason and then passing, the
-full suite is green, no assertion was weakened to get there, and the behaviours
-still unguarded are named.
+full suite is green or each remaining failure is shown to pre-date the change,
+no assertion was weakened to get there, and the behaviours still unguarded are named.
 <!-- deliver:surface -->
 - **Say what the moment needs.** Start: what will be done and what is excluded.
   Mid-run: a line when the reader must act — a divergence from what was agreed,
@@ -143,7 +144,7 @@ still unguarded are named.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

@@ -59,7 +59,7 @@ changes an interface others call — it stopped being the agent's to make.
 | The existing pattern is genuinely bad, but harmless | §4 — follow it here, propose replacing it everywhere as separate work |
 | The existing pattern is unsafe or wrong | §4's carve-out — do not copy the flaw. Fix it in the copy and report that the original carries it |
 | A dependency saves 40 lines | §3 — weigh install, upgrade, audit, and supply chain against 40 lines. Usually the lines win |
-| Deadline pressure argues for skipping the check | §1, then the escape hatch — skip it if the human decides to, but the report says the check was skipped |
+| Deadline pressure argues for skipping the check | §1 and §6 — the human may decide to skip it, and the report says the check was skipped. Pressure is not one of the escape hatch's conditions |
 
 ## The escape hatch
 
@@ -79,5 +79,5 @@ harness, not to work around it silently.
 - Two contracts in `_coding/` give conflicting instructions for this exact case
 
 When it fires: do the work, state which rule was suspended and why, and mark
-the harness gap as `#TODO(agent): OUT-OF-SCOPE`. Suspending a rule silently is
+the harness gap as `#TODO(agent): OUT-OF-SCOPE <the rule and the gap>`. Suspending a rule silently is
 the failure this section exists to prevent.

@@ -32,8 +32,8 @@ wrong does not change that.
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -58,7 +58,7 @@ wrong does not change that.
 | It is style the codebase does not enforce, or just not how you would have written it | Drop it. Only a difference that is a defect, a risk, or a real cost is a finding. Taste presented as a defect is how reviews get ignored. **A comment that restates the line under it is not taste** — it is the code failing to say what it does, and it costs every later reader |
 | An agent wrote the diff — including this session | [machine-authored](reference/machine-authored.md). Fluent code fails at the level of fact: a symbol that does not exist, a value nobody derived |
 | The diff looks empty, or smaller than the work described | [diff-scoping](reference/diff-scoping.md). Untracked files appear in no diff, and a repo with no commits has everything untracked |
-| Something looks wrong but you are not sure | Say so, with the specific input that worries you. An honest uncertainty beats a confident guess in both directions. If it would be expensive to get wrong, [refute](refute.py) puts it to the engines that did not make it, asked to break it |
+| Something looks wrong but you are not sure | Say so, with the specific input that worries you. An honest uncertainty beats a confident guess in both directions. If it would be expensive to get wrong, [refute](refute.py) puts it to the engines that did not make it, asked to break it — with the human's go-ahead, because the finding and its code leave the machine |
 | The diff is large and structural, or mixes a refactor with a behaviour change | Say that first. Line-level findings are wasted on both sides while the shape is wrong, and a behaviour change is unreviewable inside refactor noise |
 | A finding is worth guarding permanently | Say what the test would assert. That is `coding-test`'s work, not a suggestion to write it here |
 <!-- deliver:values -->
@@ -85,7 +85,8 @@ wrong does not change that.
 - Never: report a **defect** you cannot show failing. Without a failure scenario
   it ships as a `Question` or a clarity note ([severity](playbooks/severity.md)),
   never wearing a defect's label
-- Never: transmit the diff or the findings off the machine
+- Never: transmit the diff or the findings off the machine without the human's
+  go-ahead for this run — `refute` included
 
 ## Verify with
 
@@ -93,11 +94,12 @@ Every finding is checked against the source before it is reported (evidence:
 `inspected`), and a finding claiming runtime behaviour is stronger when the case
 was actually run (evidence: `executed`).
 
-- This skill holds no `Edit`/`Write`: every residual — including a finding the
-  author should decide on that sits outside this change — goes in the handoff's
-  `open` as `OUT-OF-SCOPE` with the `file:line` a marker belongs at, never as a write
+- This skill holds no `Edit`/`Write`: every residual goes in the handoff's `open`
+  with its own class — a problem outside this change as `OUT-OF-SCOPE` — the
+  `file:line` a marker belongs at, and `written: false`, never as a write
 - A finding that survives no check is `asserted` and does not go in the report
-- **`DONE` here**: every pass ran over the whole diff
+- **`DONE` here**: every pass ran over the whole diff. Stopped early under
+  [passes](playbooks/passes.md) § Order and stopping, it is `PARTIAL`, passes not run `DEFERRED`
 - **State the coverage**: which files were read, which passes ran, and what a
   diff cannot show — production data, the deployed client, the unwritten rule
 <!-- deliver:report -->
@@ -107,10 +109,10 @@ was actually run (evidence: `executed`).
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -132,7 +134,7 @@ the review says plainly what it could not check.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

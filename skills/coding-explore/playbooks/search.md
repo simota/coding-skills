@@ -46,7 +46,8 @@ Any of these means a name search will under-report, and the report must say so:
 - Framework conventions — a file in the right directory is called by nobody visible
 
 For each of these that applies, either find the registry and enumerate it, or
-report the search as `PARTIAL` and name the hole.
+name the hole in the report's coverage boundary — and the run is `PARTIAL`
+if the answer depends on what is behind it.
 
 ## Before reporting
 

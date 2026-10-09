@@ -57,9 +57,10 @@ For `log` the inversion runs the other way: `log A...B` is the symmetric
 difference and includes the base's commits too. Fix the base explicitly with
 `git merge-base main HEAD` when the branch has been merged into repeatedly.
 
-#TODO(agent): DEFERRED the dot table is stated in both this set's reference pages, because a
-skill cannot read another skill's directory once installed. Nothing checks the two copies still
-agree — re-read the other page when editing this one.
+The dot table is stated in both coding-explore's history reference and coding-review's
+diff-scoping reference, because a skill cannot read another skill's directory
+once installed. `make figures` re-runs both pages' printed counts against git, so the figures
+cannot drift apart; the prose around them is not checked — re-read the other page when editing this one.
 
 ## Scope decisions worth making deliberately
 

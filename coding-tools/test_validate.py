@@ -93,6 +93,14 @@ def _(r): sub(r / "coding-registry/fixtures.yaml",
               '- ask: "where does the retry logic live"\n  expect: coding-ship')
 
 
+@case("V10-substring")
+def _(r):
+    """`where` inside "somewhere" is not the word where."""
+    t = (r / "coding-registry/fixtures.yaml").read_text(encoding="utf-8")
+    t += '- ask: "somewhere"\n  expect: coding-explore\n'
+    (r / "coding-registry/fixtures.yaml").write_text(t, encoding="utf-8")
+
+
 @case("V11")
 def _(r):
     for i in range(4):
@@ -111,6 +119,11 @@ def _(r):
     t += "".join(f"\nfiller{i}:\n  pattern: linear\n  when: x\n  chain: [coding-test]\n"
                  for i in range(20))
     (r / "coding-registry/routes.yaml").write_text(t, encoding="utf-8")
+
+
+@case("V13-stages")
+def _(r): sub(r / "coding-registry/routes.yaml", "coding-review, coding-ship]",
+              "coding-review, coding-ship, coding-explore]")
 
 
 @case("V14")
@@ -162,6 +175,11 @@ def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when",
 def _(r): sub(r / f"{S}_coding/VALUES.md", "<!-- coding:contract -->", "<!-- coding:guidance -->")
 
 
+@case("V23-unknown-label")
+def _(r): sub(r / "coding-registry/harness.yaml", "document_labels: [contract, guidance, deferred]",
+              "document_labels: [contract, deferred]")
+
+
 @case("V24")
 def _(r): sub(r / f"{S}_coding/ROUTING.md", "`coding-ship`", "`coding-deploy`")
 
@@ -172,6 +190,11 @@ def _(r): sub(r / f"{S}coding-test/playbooks/flaky.md", "# ", "# pinned at v2.14
 
 @case("V19-shared")
 def _(r): sub(r / f"{S}_coding/ROUTING.md", "(`_coding/SIZING.md`)", "(`SIZING.md`)")
+
+
+@case("V19-reference")
+def _(r): sub(r / f"{S}coding-test/reference/oracles.md", "# ",
+              "See `../_coding/CONTRACT.md`.\n\n# ")
 
 
 @case("V27")
@@ -230,18 +253,15 @@ def _(r):
     sub(r / "coding-registry/routes.yaml", "checker: ", "checker: nosuchengine  # ")
 
 
-
 @case("V32-single")
 def _(r):
     sub(r / "coding-registry/harness.yaml",
         "runs_on: [claude, codex, agy]", "runs_on: [claude]")
 
 
-
 @case("V33")
 def _(r):
     sub(r / "coding-registry/harness.yaml", "  lens: |", "  lens: ''\n  unused: |")
-
 
 
 @case("V34")
@@ -335,14 +355,14 @@ def _(r):
 @case("V37-unused")
 def _(r):
     """A source named in the header that the page never uses."""
-    sub(r / f"{S}coding-test/reference/oracles.md", "Source: none —", "Source: git —")
+    sub(r / f"{S}coding-review/reference/diagram-forms.md", "Source: none —", "Source: git —")
 
 
 @case("V37-silent")
 def _(r):
     """Neither a source nor the admission that there is none."""
-    sub(r / f"{S}coding-test/reference/oracles.md",
-        "Source: none — the catalogue is this set's own; nothing outside the page can move it.",
+    sub(r / f"{S}coding-review/reference/diagram-forms.md",
+        "Source: none — the shapes are this set's own; nothing outside the page can move them.",
         "Source:")
 
 

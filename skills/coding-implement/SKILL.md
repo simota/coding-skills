@@ -19,17 +19,18 @@ adjacent work is defined in `registry/capabilities.yaml`.
   an injection, a missing authorisation check, a swallowed error, a race. Copy
   the shape, fix the flaw in the copy, and report that the original carries it
   (`_coding/VALUES.md` §4)
-- **For a defect, does the cause fit in one sentence?** If not, stop: this is
-  `coding-debug`'s work, and implementing against a guessed cause produces a
-  second bug on top of the first
+- **A defect in code that already ran is `coding-debug`'s**, even when the cause
+  looks obvious (`registry/capabilities.yaml`). In code this run is writing, a
+  defect whose cause does not fit in one sentence is a stop too: implementing
+  against a guessed cause produces a second bug on top of the first
 - Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
   checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -65,7 +66,7 @@ adjacent work is defined in `registry/capabilities.yaml`.
 | Nothing runs end to end yet, or progress feels fast and unverifiable | [traps](playbooks/traps.md) |
 | The change would also tidy something nearby | Do not. Behaviour change and cleanup in one diff is unreviewable — mark it and hand it to `coding-refactor` |
 | A test fails and the quickest fix is to change the test | Establish which is wrong first. Changing the test to match the code deletes the only evidence you had |
-| A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
 | About to run it for the first time | **Predict the observable** — the status code, the value written, the line logged. Where the prediction cannot be written, the spec has a hole, and it is cheaper to find it here |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -114,10 +115,10 @@ where nothing can be run, with the reason stated.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -138,7 +139,7 @@ than reasoned about, and the sweep balances.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

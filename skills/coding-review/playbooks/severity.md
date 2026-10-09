@@ -47,7 +47,8 @@ spelling, a preference — does not go in the report.
 
 Say which of these applies, in the finding itself:
 
-- **Confirmed** — traced it, or ran it, and it fails
+- **Confirmed** — ran it and saw it fail (`executed`), or traced every hop with
+  each `file:line` opened (`inspected` — say which)
 - **Likely** — the code path reads wrong and the input that breaks it is named,
   but it was not run
 - **Question** — you do not know the intent, and the answer decides whether it is a bug

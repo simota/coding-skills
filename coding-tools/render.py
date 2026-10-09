@@ -27,11 +27,22 @@ def delivered_to(spec: dict, skill: str) -> bool:
     return True
 
 
+class Malformed(ValueError):
+    """A marker pair that cannot be rewritten without guessing where it ends."""
+
+
 def render(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
     original = text
     for key, spec in H["delivered"].items():
         open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
+        # One marker without the other, a duplicate, or the pair reversed: any
+        # rewrite would either insert a second block or swallow the text between.
+        n_open, n_close = text.count(open_m), text.count(close_m)
+        if (n_open, n_close) not in ((0, 0), (1, 1)) or (
+                n_open and text.index(open_m) > text.index(close_m)):
+            raise Malformed(f"{path.parent.name}/{path.name}: the {key} markers are "
+                            f"unpaired ({n_open} open, {n_close} close); fix by hand")
         if not delivered_to(spec, path.parent.name):
             if open_m in text and close_m in text:
                 head, rest = text.split(open_m, 1)
@@ -62,8 +73,12 @@ def render(path: Path) -> bool:
 
 
 def main() -> int:
-    changed = [d.name for d in sorted(SKILLS_ROOT.glob(f"{PREFIX}*"))
-               if (d / "SKILL.md").exists() and render(d / "SKILL.md")]
+    try:
+        changed = [d.name for d in sorted(SKILLS_ROOT.glob(f"{PREFIX}*"))
+                   if (d / "SKILL.md").exists() and render(d / "SKILL.md")]
+    except Malformed as e:
+        print(f"  {e}", file=sys.stderr)
+        return 1
     print(f"rendered: {len(changed)} changed" + (f" ({', '.join(changed)})" if changed else ""))
     return 0
 

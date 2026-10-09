@@ -49,7 +49,8 @@ comes.
    handoff and named here only if the reader would act on them today
 4. **What is next** — one line, or nothing if the answer is nothing
 
-A run with nothing unresolved reports lines 1 and 2 and stops.
+A `T1` or `T2` run with nothing unresolved reports lines 1 and 2 and stops; a
+`T0` reports line 1 alone (§ Proportion).
 
 ## Proportion
 

@@ -13,7 +13,7 @@ to default to refuted when uncertain — a claim that cannot survive a hostile
 reading is exactly what this exists to catch, and the cost of a false refutation
 is one argument while the cost of a false pass is a shipped defect.
 
-**Independence is counted by source, not by voice** (`DESIGN.md` §5.4b). Two
+**Independence is counted by source, not by voice.** Two
 verdicts from one engine are one verdict. The pool is therefore `runs_on` minus
 whichever engine is running, and the count is printed with every result: with
 three engines declared, a claim gets at most **two** independent readings.
@@ -25,6 +25,10 @@ majority to appeal to, and inventing one would turn a disagreement into a verdic
 
 What counts as a refutation in this domain is `refutation` in harness.yaml, not
 here: the tool is the same in every set, and the lens is not.
+
+Exit status is 0 only when every claim got at least one reading. A claim no
+engine could answer is `UNCHECKED`, and a run that checked nothing must not read
+as a run that passed. `REFUTED` and `CONTESTED` are results, not errors.
 """
 from __future__ import annotations
 
@@ -87,8 +91,21 @@ def ask(engine_name: str, claim: dict) -> dict:
     return engine.run(engine_name, prompt, SCHEMA)
 
 
+def load_claims(path: str) -> list[dict]:
+    """A list of objects each carrying a non-empty `claim`. Anything else stops."""
+    claims = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    if isinstance(claims, dict):
+        claims = [claims]
+    if not isinstance(claims, list) or not claims:
+        raise ValueError(f"{path}: expected a non-empty JSON list of claims")
+    for i, c in enumerate(claims):
+        if not (isinstance(c, dict) and isinstance(c.get("claim"), str) and c["claim"].strip()):
+            raise ValueError(f"{path}: entry {i} has no `claim` string")
+    return claims
+
+
 def refuters(running: str) -> list[str]:
-    known = H.get("engines", {}).get("runs_on") or []
+    known = (H.get("engines") or {}).get("runs_on") or []
     if running not in known:
         raise engine.EngineError(f"the running engine {running!r} is not one of {known}")
     return [e for e in known if e != running]
@@ -119,12 +136,10 @@ def main() -> int:
               "framing is a second opinion, not an adversary", file=sys.stderr)
         return 1
 
-    claims = json.loads(pathlib.Path(a.claims).read_text(encoding="utf-8"))
-    if isinstance(claims, dict):
-        claims = [claims]
     try:
+        claims = load_claims(a.claims)
         pool = refuters(a.running)
-    except engine.EngineError as e:
+    except (OSError, ValueError, engine.EngineError) as e:
         print(e, file=sys.stderr)
         return 1
 
@@ -141,9 +156,10 @@ def main() -> int:
                         "independent_readings": len(votes),
                         "votes": votes, "unreachable": silent})
 
+    unchecked = any(r["verdict"] == "UNCHECKED" for r in results)
     if a.json:
         print(json.dumps(results, ensure_ascii=False, indent=2))
-        return 0
+        return 1 if unchecked else 0
 
     for r in results:
         print(f"\n[{r['verdict']}] {r['id']}   "
@@ -157,7 +173,7 @@ def main() -> int:
     print(f"\n{kinds.count('REFUTED')} refuted · {kinds.count('CONTESTED')} contested · "
           f"{kinds.count('STANDS')} unrefuted · {kinds.count('UNCHECKED')} unchecked")
     print("Unrefuted means nothing was found, not that nothing is there.")
-    return 0
+    return 1 if unchecked else 0
 
 
 if __name__ == "__main__":

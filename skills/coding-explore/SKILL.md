@@ -19,16 +19,16 @@ way it is. This skill produces understanding, never a diff.
   unbounded exploration returns a tour, and a tour answers nothing
 - **Decide what would end the search.** A file path, a function name, a call
   chain, a commit — name the artifact that will constitute the answer
-- **Here `T0`** is one obvious lookup answered in a line; several areas means
-  ordering the passes
+- **Here `T0`** is one obvious lookup answered in a line; several areas is `T1`:
+  settle the brief, then order the passes
 - Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
   checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -54,7 +54,7 @@ way it is. This skill produces understanding, never a diff.
 | Three searches returned nothing | The vocabulary is wrong. Find the entry point and read outward instead of guessing more names |
 | The answer looks obvious after one file | Confirm with a second, independent signal before reporting it |
 | Framework or generated code dominates the result | Exclude it by path and search again. Vendored code answers questions about the vendor |
-| A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -74,8 +74,8 @@ way it is. This skill produces understanding, never a diff.
   not, and what a dynamic call or reflection could be hiding
 - Never: edit, format, or "fix while I'm here". This skill is read-only, and
   finding something wrong does not authorise changing it — mark it and hand it back
-- Never: transmit code or findings off the machine. Read-only is not permission
-  to publish
+- Never: transmit code or findings off the machine without the human's go-ahead
+  (`refute` included). Read-only is not permission to publish
 - Never: report a call graph derived from names alone. A name match is a
   candidate; a read confirmation is a fact
 
@@ -87,7 +87,10 @@ runtime behaviour is `executed` — the test, the script, or the program was run
 
 - This skill holds no `Edit`/`Write`, so residuals go in the handoff's `open`
   with the `file:line` a marker belongs at — never as a write
-- **`DONE` here**: the question answered, every claim anchored to a path
+- **`DONE` here**: the question answered, every claim anchored to a path,
+  confidence stated, unexamined areas named
+- Writing nothing, `evidence` is keyed by the files the answer cites — each
+  `inspected` with the reason "read-only question", or `executed` where run
 - **Say what you did not cover.** An exploration reported without its boundary
   reads as exhaustive, and the next person builds on a gap they cannot see
 <!-- deliver:report -->
@@ -97,10 +100,10 @@ runtime behaviour is `executed` — the test, the script, or the program was run
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -122,7 +125,7 @@ at are named.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

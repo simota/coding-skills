@@ -12,7 +12,7 @@ guarded. Derive cases from what the code promises and where it meets the world.
 | Each boundary in the input domain | Zero, one, many; empty, min, max, over max; first and last element |
 | Each branch in the code | What condition selects it, and what makes it not selected |
 | Each failure route you chose to handle | It is handled the way you decided |
-| Each bug ever fixed here | The regression case. This is the highest-value test in any suite |
+| Each bug ever fixed here | The regression case — high value, because it pins a failure that already happened once |
 | Each assumption about the outside | Malformed response, timeout, partial result, duplicate delivery |
 | Each type that can be null or absent | Absent, and present-but-empty. These behave differently |
 | Each invariant | Something that must always hold — a total that balances, an ID that stays unique |

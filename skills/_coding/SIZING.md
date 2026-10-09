@@ -20,7 +20,7 @@ Read top to bottom, take the first match.
 handing back when blocked — a one-line report still says what was run.
 
 **Finding mid-run that the tier was wrong means re-sizing and saying so**, not
-finishing at the tier you started from. A `T0` that has reached its fourth file
+finishing at the tier you started from. A `T0` that has reached its third file
 is a `T1` that was mis-sized.
 
 ## When a dialogue is required first

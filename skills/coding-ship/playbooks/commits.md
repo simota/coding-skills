@@ -67,18 +67,21 @@ When it is already one large working tree:
 4. **Refactor out first** — extract every behaviour-preserving move into its own
    earlier commit, then the remaining diff is the real change and it is small
 
-Mechanically, and without an interactive prompt — `git add -p` cannot be driven
-by an agent or a script:
+Mechanically, and without an interactive prompt — `git add -p` is interactive
+and fragile to drive from a script:
 
 - **Split by path** where the groups are whole files: `git add <paths>`, commit,
   repeat. This covers most cases
 - **Split within a file** by writing the diff out and editing it:
-  `git diff > /tmp/w.patch`, delete the hunks that belong to later commits, then
-  `git apply --cached /tmp/w.patch`
-- **Set the rest aside** with `git stash push --keep-index` — `--keep-index` is
-  what leaves the staged change in place. A bare `git stash` takes the index too
+  `git add -N <new files>` so they appear, `git diff --binary > /tmp/w.patch`,
+  delete the hunks that belong to later commits, then `git apply --cached /tmp/w.patch`
+- **Set the rest aside** with `git stash push --keep-index --include-untracked` —
+  `--keep-index` is what leaves the staged change in place, and without
+  `--include-untracked` a later commit's new files stay in the tree. A bare
+  `git stash` takes the index too
 
-Run the tests at each step.
+Run the tests at each step. Anything still in the worktree is something the
+commit does not contain, and a test passing on it is a test of the wrong tree.
 
 **If it cannot be split, say why.** A genuinely atomic change is rare but real —
 and a reviewer told "this is atomic because X" reviews it better than one left

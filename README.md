@@ -15,7 +15,7 @@ through. Each skill owns one phase and returns evidence rather than assurances.
 | [`coding-refactor`](skills/coding-refactor/SKILL.md) | Structure changed, behaviour identical | Yes |
 | [`coding-test`](skills/coding-test/SKILL.md) | The checks that catch defects; flaky repair | Yes |
 | [`coding-review`](skills/coding-review/SKILL.md) | Defects in a change, before it lands | No |
-| [`coding-ship`](skills/coding-ship/SKILL.md) | Commits, history shape, PR, release notes | Git only |
+| [`coding-ship`](skills/coding-ship/SKILL.md) | Commits, history shape, PR, release notes | History and release docs only |
 
 ## The idea the set is built on
 
@@ -66,7 +66,7 @@ decides them and CI fails on a violation. Nothing is exempt for being
 important, because a gate that a person can argue past is a gate the person
 who wants to grow the set will argue past.
 
-## The three ideas the set is built on
+## Three rules that follow from it
 
 **Evidence has grades.** `executed` (it was run) supports completion.
 `inspected` (it was read back) does so only where nothing could be run and the
@@ -87,17 +87,20 @@ marker stays.
 
 ## Files
 
-**Contracts — binding on every run.** Every file states its kind on its first
-line: `<!-- coding:contract -->` binds, `<!-- coding:guidance -->` is consulted.
+**Shared pages.** Every file states its kind on its first line:
+`<!-- coding:contract -->` binds on every run, `<!-- coding:guidance -->` is
+consulted, and `<!-- coding:deferred -->` (the `reference/` pages) is read only
+when a row points at it.
 
 | File | What it fixes |
 |---|---|
 | [`skills/_coding/CONTRACT.md`](skills/_coding/CONTRACT.md) | Evidence grades, status, residual classes, the completion sweep |
+| [`skills/_coding/PREDICTION.md`](skills/_coding/PREDICTION.md) | The one line registered before a run; `hit` / `miss` / `void`; the stop rule |
 | [`skills/_coding/SIZING.md`](skills/_coding/SIZING.md) | How much ceremony a request is worth; when a dialogue is mandatory; the brief |
 | [`skills/_coding/HANDOFF.md`](skills/_coding/HANDOFF.md) | What passes between skills, and the seven checks the receiver runs |
 | [`skills/_coding/VALUES.md`](skills/_coding/VALUES.md) | The order that decides when two goods conflict, and the escape hatch |
-| [`skills/_coding/ROUTING.md`](skills/_coding/ROUTING.md) | Guidance. Read when the owner is unclear or the work spans several |
-| [`skills/_coding/REPORT.md`](skills/_coding/REPORT.md) | What a person reads: the order, the ceiling per tier, and why the handoff is the record |
+| [`skills/_coding/ROUTING.md`](skills/_coding/ROUTING.md) | **Guidance, not binding.** Read when the owner is unclear or the work spans several |
+| [`skills/_coding/REPORT.md`](skills/_coding/REPORT.md) | What a person reads: the moments a run speaks, the order at the end, proportion by tier, and why the handoff is the record |
 
 **Registry — the machine-readable definitions.**
 
@@ -116,7 +119,9 @@ coding-skills/
 ├── README.md
 ├── Makefile
 ├── coding-registry/            # budgets, boundaries, routes, delivered blocks
-├── coding-tools/               # validate · test_validate · render · pre-commit
+├── coding-tools/               # validate · test_validate · test_tools · render ·
+│                               # figures_check · engine · refute · githooks/
+├── docs/                       # the generated overview page (not edited here)
 └── skills/                     # everything the CLI reads
     ├── _coding/                # contracts in force on every run
     └── coding-<phase>/         # a SKILL.md is what makes this a skill, and
@@ -125,6 +130,7 @@ coding-skills/
         │                       # Always·Never / Verify with / Done when
         ├── _coding   -> ../_coding        # short names: the parent scopes them
         ├── registry  -> ../../coding-registry
+        ├── refute.py -> ../../coding-tools/refute.py   # harness `linked_tools`
         ├── playbooks/          # loaded only when a Decide-first row points at one
         └── reference/          # no line budget, carries dated headers instead
 ```
@@ -134,8 +140,8 @@ builds throwaway repositories and checks every documented behaviour against the
 git actually installed — that `-S` misses an equal-count edit, that three-dot
 diff isolates a branch's own work, that `restore .` leaves no trace where
 `git add` leaves a recoverable blob, that `checkout -f` discards tracked edits
-and leaves untracked files. 18 behaviours, about two seconds, in `make check` and
-the pre-commit hook. Where a page prints an output, that output is parsed from
+and leaves untracked files. 26 behaviours, about two seconds, in `make check`, CI
+and the pre-commit hook. Where a page prints an output, that output is parsed from
 the page, so editing the page to say something false fails too — proven by
 injecting both kinds of break, including deleting a block so the checker matches
 nothing.
@@ -152,6 +158,7 @@ and when it was last checked against the tool.
 |---|---|
 | [`coding-explore/reference/history.md`](skills/coding-explore/reference/history.md) | `-S` vs `-G`, the `..`/`...` inversion between `log` and `diff`, blame that stops lying, finding deleted code |
 | [`coding-review/reference/diff-scoping.md`](skills/coding-review/reference/diff-scoping.md) | Getting the whole change set, and the commands that silently return a subset |
+| [`coding-review/reference/diagram-forms.md`](skills/coding-review/reference/diagram-forms.md) | The copy-paste ASCII form for each finding a reader would otherwise reassemble |
 | [`coding-review/reference/machine-authored.md`](skills/coding-review/reference/machine-authored.md) | The ten defect classes that concentrate in generated code, each with a runnable check |
 | [`coding-ship/reference/recovery.md`](skills/coding-ship/reference/recovery.md) | What git can undo, what nothing can, and the one command that makes the difference |
 | [`coding-test/reference/oracles.md`](skills/coding-test/reference/oracles.md) | Where an expected value may come from, and the shapes that assert nothing |
@@ -164,14 +171,15 @@ hypothetical: `_common` in that directory already belongs to an unrelated set,
 and a sibling set's install line is `cp -R quality-* _common <skills dir>` —
 which today writes into the other set's repository.
 
-**One declaration.** `set: coding` in `coding-registry/harness.yaml` is the only
-place the name is written. The skill prefix (`coding-`), the shared directory
-(`skills/_coding/`), and the label every document carries (`<!-- coding:contract -->`)
-all derive from it, and a rule fails if they stop agreeing.
+**One declaration.** `set: coding` in `coding-registry/harness.yaml` is the one
+declaration every other spelling of the name is checked against. The skill prefix
+(`coding-`), the shared directory (`skills/_coding/`), and the label every
+document carries (`<!-- coding:contract -->`) all derive from it, and a rule
+fails if they stop agreeing.
 
 **Every directory this set owns carries the set name** — `coding-*` or
-`_coding`, with only the platform's own directories (`.git`, `.github`,
-`.claude`) exempt. A rule enforces it.
+`_coding`, with only the directories in `platform_dirs` (`.git`, `.github`,
+`.claude`, `skills`, `docs`) exempt. A rule enforces it.
 
 The weaker rule is tempting: prefix only what gets installed, and leave
 `registry/` and `tools/` generic since they never leave the repo. It fails on
@@ -201,7 +209,8 @@ another skill's playbook — which should name the skill, not reach into it.
 ## Working on it
 
 ```sh
-make check      # what CI runs: the rules, then proof the rules still fire
+make check      # what CI runs: the rules, proof they still fire, the tool tests,
+                # the git figures, and that every delivered block is current
 make render     # after editing anything in coding-registry/delivered/
 make hooks      # run the rules on every commit
 ```
@@ -213,14 +222,14 @@ building that test found one rule that could not fail at all.
 Nearing a playbook cap is not a reason to split a skill. Merge the duplicates,
 delete what nothing reads, compress it into a `Decide first` row, move it to the
 skill it belongs to — and only then consider splitting, which is accepted only
-when the two halves have disjoint signals and neither is left with a playbook or
-two. Splitting to relieve a budget is how a set of eight becomes a set nobody
+when the two halves have disjoint signals and neither is left with only a
+playbook or two. Splitting to relieve a budget is how a set of eight becomes a set nobody
 can route through.
 
 ## Installing
 
 ```sh
-make link                       # into ~/.claude/skills
+make link                       # into every installed host: claude, codex, agy
 make link CLAUDE_DIR=.claude/skills
 ```
 

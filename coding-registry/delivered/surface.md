@@ -7,7 +7,7 @@
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

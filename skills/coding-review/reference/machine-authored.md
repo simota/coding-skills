@@ -117,6 +117,7 @@ regardless of how the report reads.
 
 ## Order
 
-Run 1, 2, and 5 first. They are cheap, they are decidable, and each of them
+Run 1 and 2 first. They are cheap, they are decidable, and each of them
 invalidates the rest of the review when it fires — code that calls a symbol that
-does not exist has no line-level findings worth writing.
+does not exist has no line-level findings worth writing. Run 5 early too: it is
+just as cheap, though it invalidates only the tests.

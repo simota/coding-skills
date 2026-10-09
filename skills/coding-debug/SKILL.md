@@ -27,8 +27,8 @@ removes it, with the failing case that proves the diagnosis.
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -64,7 +64,7 @@ removes it, with the failing case that proves the diagnosis.
 | The stack trace points at library code | The cause is almost always in the argument you passed. Read the call site before the library |
 | The fix is not obvious after the cause is proved | Hand the shape decision to `coding-plan` rather than improvising in a hot file |
 | The same failure has been chased twice with no progress | Stop and state what is known, what was ruled out, and what would settle it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
 | The fix is written and about to be run | **Predict what the reproduction does now** — which assert, what output — before running it. A fix confirmed by a run nobody predicted is a fix nobody can explain |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -102,7 +102,8 @@ The reproduction is the oracle: it failed before, it passes after, and both were
 observed in the same session (evidence: `executed`). Anything else about the
 cause is a hypothesis.
 
-- **`DONE` here**: cause proved, fix verified, sweep balances
+- **`DONE` here**: cause proved, fix verified, the same cause searched for
+  elsewhere, damage already done named, sweep balances
 - **State the blast radius of the cause**: everywhere else this pattern occurs,
   and whether data already written is affected. A bug that corrupted data is not
   fixed when the code is fixed
@@ -113,10 +114,10 @@ cause is a hypothesis.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -138,7 +139,7 @@ done is named.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
