@@ -9,7 +9,8 @@ every commit, so a word deleted from here fails the build.
 
 # Forms
 
-Four shapes cover almost everything. Pick by trigger, not by taste.
+Four shapes, one per trigger, cover almost everything, and the fan is the `hops`
+form turned outwards. Pick by trigger, not by taste.
 
 ## `hops` — the call chain
 
@@ -26,6 +27,17 @@ api/handler.ts:42 ──▶ auth/session.ts:88 ──▶ db/user.ts:210
 Where the path branches, put the branch that matters below and say what takes
 it. Two arrows out of one node with no condition on them is a diagram that has
 not decided what it is claiming.
+
+**The fan** is the same form when the finding is that a change reaches further
+than the diff: the changed thing on the left, its callers to the right, and the
+ones the diff did not touch marked.
+
+```
+auth/session.ts:88  getUser(id) ──▶ getUser(id, opts)
+    ├──▶ api/handler.ts:42     updated in this diff
+    ├──▶ jobs/cleanup.ts:17    updated in this diff
+    └──▶ admin/export.ts:63    NOT in the diff — still passes one argument
+```
 
 ## `disagreement` — two columns
 
@@ -58,9 +70,9 @@ Code is not two-dimensional, so this fires as a grid: the inputs down one axis,
 the states across, and the empty cell as the finding.
 
 ```
-                 fresh    expired   revoked
-has token         ok        ok        ok
-no token          ok        ok        ——     ← no branch; falls through to :210
+                 session fresh   session expired   session revoked
+read request          ok              ok                ok
+write request         ok              ——                ok      ← no branch; falls through to :210
 ```
 
 ## Mermaid, when it is a graph

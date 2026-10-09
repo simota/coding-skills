@@ -199,11 +199,17 @@ def v9_signals():
             seen[k] = name
 
 
+def _says(text: str, phrase: str) -> bool:
+    """A signal is matched as words. As a substring, `diff` matched "different"
+    and `where` matched "somewhere", and the fixtures passed on noise."""
+    return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
+
+
 def v10_fixtures():
     pairs = [(_norm(s), name) for name, c in CAP.items() for s in c.get("signals", [])]
     for entry in FIX if isinstance(FIX, list) else []:
         ask, expect = _norm(entry["ask"]), entry["expect"]
-        hits = [(len(sig), owner) for sig, owner in pairs if sig in ask]
+        hits = [(len(sig), owner) for sig, owner in pairs if _says(ask, sig)]
         if not hits:
             fail("V10", f"no signal matches {entry['ask']!r} (expected {expect})")
             continue
@@ -356,8 +362,8 @@ def v20_contract_vocabulary():
     """Every declared word is defined on a shared page, not merely named there.
 
     The earlier form asked whether the word appeared anywhere in CONTRACT.md,
-    and a word used in a sentence passed as defined — the check §5.7 names,
-    that one replaced definition does not trip. A definition is a row or a
+    and a word used in a sentence passed as defined — so a definition that was
+    replaced by a mere mention did not trip it. A definition is a row or a
     heading, and every vocabulary key is held to it, not three.
     """
     pages = {p.name: read(p) for p in (SKILLS_ROOT / SHARED).glob("*.md")}

@@ -3,8 +3,8 @@
 
 Purpose: The sources a test's expected value can legitimately have, what each one can falsify, and the shapes that assert nothing.
 Read when: writing any assertion, reviewing a suite that passes while behaviour is wrong, or deciding whether a test is worth keeping.
-Source: none — the catalogue is this set's own; nothing outside the page can move it.
-Verified: 2026-08-21 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule — no automated check.
+Source: git — only the regression-test rule's recipe depends on it, and it is run against whatever is installed; the catalogue itself is this set's own.
+Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. The git recipe was confirmed by running it once in a fixture repository — no automated check.
 
 To test something you must already know the right answer. Where that answer came
 from decides whether the test is evidence or decoration — and a decorative test
@@ -32,7 +32,7 @@ The value is quoted from an acceptance criterion, a ticket, an RFC, a published
 API contract, or a standard.
 
 ```
-// AC-114: "orders over 10,000 JPY ship free"
+// AC-114: "orders of 10,000 JPY or more ship free"
 expect(shippingFee({ subtotal: 10_000 })).toBe(0)     // boundary is IN, per the wording
 expect(shippingFee({ subtotal:  9_999 })).toBe(500)
 ```
@@ -100,8 +100,12 @@ re-running the tool records the bug and turns it green.
 
 ## The regression-test rule
 
-A test for a fixed bug must be **seen failing on the pre-fix code**. Revert the
+A test for a fixed bug must be **seen failing on the pre-fix code**. Remove the
 fix, run it, watch it fail for the stated reason, restore the fix, run it again.
+Remove only the fix, and only recoverably: uncommitted, `git stash push -- <fix
+paths>` and `git stash pop` (never the test file, never `restore`, which keeps
+no copy); committed, `git revert --no-commit <sha>`, then put it back with
+`git revert --abort`.
 
 Both observations are `executed` evidence and both belong in the report. A
 regression test that was never observed red is a guess with a filename — it may

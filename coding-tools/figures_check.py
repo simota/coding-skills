@@ -291,6 +291,41 @@ def check_recovery(tmp: pathlib.Path) -> int:
     if not (r5.d / "newfile.txt").exists():
         fail(RECOVERY, "`checkout -f` removed an untracked file; the page says only `clean` does")
     n += 2
+
+    r6 = Repo(tmp / "gc")
+    r6.write("f.txt", "v1\n"); r6.commit("c1")
+    r6.write("f.txt", "v2\n"); r6.commit("c2")
+    gone = r6.git("rev-parse", "--short", "HEAD")
+    r6.must("reset", "-q", "--hard", "HEAD~1")
+    r6.must("gc", "-q", "--prune=now")
+    if gone not in r6.git("reflog", "--format=%h"):
+        fail(RECOVERY, "`gc --prune=now` expired a reflog entry; the page says only "
+                       "`reflog expire` does")
+    n += 1
+
+    r7 = Repo(tmp / "switch")
+    r7.write("f.txt", "committed\n"); r7.commit("c1")
+    base = r7.git("rev-parse", "--abbrev-ref", "HEAD")
+    r7.must("checkout", "-q", "-b", "other")
+    r7.write("n.txt", "tracked-on-other\n"); r7.commit("add n")
+    r7.must("checkout", "-q", base)
+    r7.write("n.txt", "MINE-UNTRACKED\n")
+    if "would be overwritten" not in r7.git("checkout", "other"):
+        fail(RECOVERY, "plain `checkout <branch>` did not refuse to overwrite an untracked "
+                       "file; the page says it refuses")
+    r7.git("checkout", "-q", "-f", "other")
+    if "MINE-UNTRACKED" in (r7.d / "n.txt").read_text():
+        fail(RECOVERY, "`checkout -f <branch>` kept an untracked file the branch tracks; "
+                       "the page says it overwrites it")
+    n += 2
+
+    r8 = Repo(tmp / "branchd")
+    r8.write("f.txt", "v1\n"); r8.commit("c1")
+    r8.must("branch", "doomed")
+    r8.git("branch", "-D", "doomed")
+    if (r8.d / ".git" / "logs" / "refs" / "heads" / "doomed").exists():
+        fail(RECOVERY, "`branch -D` left the branch's own reflog; the page says it goes too")
+    n += 1
     return n
 
 
@@ -301,7 +336,7 @@ def main() -> int:
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="coding-figures-"))
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
-                  "staged", "untracked", "force"):
+                  "staged", "untracked", "force", "gc", "switch", "branchd"):
             (tmp / d).mkdir()
         checks = (check_pickaxe(tmp) + check_dots(tmp)
                   + check_scoping(tmp) + check_recovery(tmp))

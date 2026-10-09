@@ -93,6 +93,14 @@ def _(r): sub(r / "coding-registry/fixtures.yaml",
               '- ask: "where does the retry logic live"\n  expect: coding-ship')
 
 
+@case("V10-substring")
+def _(r):
+    """`where` inside "somewhere" is not the word where."""
+    t = (r / "coding-registry/fixtures.yaml").read_text(encoding="utf-8")
+    t += '- ask: "somewhere"\n  expect: coding-explore\n'
+    (r / "coding-registry/fixtures.yaml").write_text(t, encoding="utf-8")
+
+
 @case("V11")
 def _(r):
     for i in range(4):
@@ -347,14 +355,14 @@ def _(r):
 @case("V37-unused")
 def _(r):
     """A source named in the header that the page never uses."""
-    sub(r / f"{S}coding-test/reference/oracles.md", "Source: none —", "Source: git —")
+    sub(r / f"{S}coding-review/reference/diagram-forms.md", "Source: none —", "Source: git —")
 
 
 @case("V37-silent")
 def _(r):
     """Neither a source nor the admission that there is none."""
-    sub(r / f"{S}coding-test/reference/oracles.md",
-        "Source: none — the catalogue is this set's own; nothing outside the page can move it.",
+    sub(r / f"{S}coding-review/reference/diagram-forms.md",
+        "Source: none — the shapes are this set's own; nothing outside the page can move them.",
         "Source:")
 
 
