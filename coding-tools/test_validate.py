@@ -370,6 +370,62 @@ def _(r):
 def _(r): sub(r / "coding-registry/harness.yaml", "source_authorities:", "unused_authorities:")
 
 
+@case("V1-multiline")
+def _(r):
+    """A quoted description continued onto a second line is one long value."""
+    sub(r / f"{S}coding-test/SKILL.md", "Use for standalone test work or an unreliable suite.\"",
+        "Use for standalone test work or an unreliable suite.\n  " + "y" * 250 + "\"")
+
+
+@case("V2-case")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", 'description: "Building',
+              'description: "Instead of guessing, building')
+
+
+@case("V8-outside")
+def _(r): sub(r / "README.md", "](skills/_coding/ROUTING.md)", "](/etc/hostname)")
+
+
+@case("V16-fenced")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when\n", "```\n## Done when\n```\n")
+
+
+@case("V19-link")
+def _(r): sub(r / f"{S}coding-test/playbooks/flaky.md", "# ",
+              "See [the contract](../../_coding/CONTRACT.md).\n\n# ")
+
+
+@case("V22-backtick")
+def _(r):
+    p = r / f"{S}coding-test/playbooks/flaky.md"
+    p.write_text(p.read_text(encoding="utf-8") + "\n#" + "TODO(agent): wire the `retry` path later\n",
+                 encoding="utf-8")
+
+
+@case("V24-hyphen")
+def _(r): sub(r / "README.md", "`coding-ship`", "`coding-ship-prod`")
+
+
+@case("V27-deep")
+def _(r): (r / f"{S}coding-test/reference/ghost.txt").symlink_to("nowhere.txt")
+
+
+@case("V34-whole-dir")
+def _(r): (r / f"{S}coding-test/tools").symlink_to("../../coding-tools")
+
+
+@case("V34-renamed")
+def _(r): (r / f"{S}coding-test/render").symlink_to("../../coding-tools/render.py")
+
+
+@case("V38-comment")
+def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "status:  # DONE | PARTIAL | FAILED\n\n## ")
+
+
+@case("V38-lowercase")
+def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "severity: CRITICAL | HIGH | low\n\n## ")
+
+
 def main() -> int:
     baseline = run(ROOT)
     if "green" not in baseline:

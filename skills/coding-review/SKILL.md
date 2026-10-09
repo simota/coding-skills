@@ -26,10 +26,10 @@ wrong does not change that.
   what matters in a diff is invisible inside the diff — the caller it breaks, the
   copy of this pattern elsewhere, the convention it departs from
 - **Here `T0`** is a three-line diff answered in a line, not a report with headings
-- Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
-  checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+  checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before anything else**, first match wins. `T0` — one skill owns it,
+- **Size it before the first write**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
@@ -40,9 +40,9 @@ wrong does not change that.
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
 - **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the
-  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
-  then on (`_coding/SIZING.md` § Terms)
+  a silent choice** — one question with its default, the answer into the brief's
+  `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
+  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 
 ## Decide first
@@ -54,7 +54,7 @@ wrong does not change that.
 |---|---|
 | Starting a review of any size | [passes](playbooks/passes.md) — one concern per pass, correctness first |
 | Deciding whether a finding is worth reporting | [severity](playbooks/severity.md) |
-| A finding spans places, an order, a disagreement, or a region | [visualise](playbooks/visualise.md) — a reader who has to reassemble it will skim it. ASCII by default, and the drawing carries the finding's rung, never a better one |
+| A finding spans places, an order, a disagreement, or a region | [visualise](playbooks/visualise.md) — a reader who has to reassemble it will skim it. ASCII by default, and the drawing carries the finding's certainty label (Confirmed / Likely / Question), never a better one |
 | It is style the codebase does not enforce, or just not how you would have written it | Drop it. Only a difference that is a defect, a risk, or a real cost is a finding. Taste presented as a defect is how reviews get ignored. **A comment that restates the line under it is not taste** — it is the code failing to say what it does, and it costs every later reader |
 | An agent wrote the diff — including this session | [machine-authored](reference/machine-authored.md). Fluent code fails at the level of fact: a symbol that does not exist, a value nobody derived |
 | The diff looks empty, or smaller than the work described | [diff-scoping](reference/diff-scoping.md). Untracked files appear in no diff, and a repo with no commits has everything untracked |
@@ -136,7 +136,7 @@ the review says plainly what it could not check.
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

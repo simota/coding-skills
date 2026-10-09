@@ -12,12 +12,15 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]   # the oldest supported, and the newest in use
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - run: pip install pyyaml
+          python-version: ${{ matrix.python-version }}
+      - run: pip install pyyaml==6.0.2
       - name: Static rules
         run: python3 coding-tools/validate.py
       - name: Every rule still fires

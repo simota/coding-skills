@@ -16,8 +16,9 @@ Use when it worked before. Cheapest first move whenever a good commit exists.
    bad and points at the wrong commit. Exit 125 for "cannot test this commit"
 4. **Keep the script outside the working tree.** Each step checks out an older
    commit, and a script committed into the repo disappears at every commit that
-   predates it. Git reports `bogus exit code 127` and abandons the bisect — it
-   reads as a broken repository and is a path problem. Pass an absolute path
+   predates it. Git reports `bogus exit code 127` and stops the run, leaving the
+   bisect open and `HEAD` detached at the midpoint — it reads as a broken
+   repository and is a path problem. Pass an absolute path
    from a temporary directory instead
 5. When it lands on a commit, **read the diff and explain the mechanism**. The
    bisect names the change; it does not explain it. A merge commit or a

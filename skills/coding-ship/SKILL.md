@@ -1,6 +1,6 @@
 ---
 name: coding-ship
-description: "Getting finished code out: commit granularity and messages, history shape, branch and merge order, splitting an oversized pull request, changelog, and release notes."
+description: "Getting finished code out: commit granularity and messages, history shape, merge order, rebase and squash, splitting an oversized pull request, PR text, changelog, release notes. Use when done."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->
@@ -14,17 +14,18 @@ branches; it does not fix code to make a commit tidy.
 
 ## Before starting
 
-- **Confirm the work is actually done.** Tests green, sweep balanced, no
-  `UNVERIFIED` residual. Shipping is not the place to discover an unrun file
+- **Confirm the work is actually done** — from the incoming handoff; with none,
+  run the suite and scan the diff for markers yourself. Tests green, sweep
+  balanced, no `UNVERIFIED` residual. Shipping is not the place to discover an unrun file
 - **Read the repository's existing convention** — `git log --oneline -30`, the
   most recent merged PRs, `CONTRIBUTING`, and any commit template. Follow it,
   including where you would have chosen differently
 - **Read the whole diff yourself**, hunk by hunk, before writing anything about
   it. Almost every stray debug line and unintended file is caught here
-- Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
-  checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+  checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before anything else**, first match wins. `T0` — one skill owns it,
+- **Size it before the first write**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
@@ -35,9 +36,9 @@ branches; it does not fix code to make a commit tidy.
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
 - **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the
-  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
-  then on (`_coding/SIZING.md` § Terms)
+  a silent choice** — one question with its default, the answer into the brief's
+  `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
+  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 
 ## Decide first
@@ -56,7 +57,7 @@ branches; it does not fix code to make a commit tidy.
 | A generated file is in the diff | Separate commit, and say why it changed |
 | A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
 | The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means nothing was checked. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -93,7 +94,8 @@ passes (evidence: `executed`), and the diff was read hunk by hunk (evidence:
 
 - **`DONE` here**: history shaped, each commit green, description written, nothing pushed without permission
 - Any `#TODO(agent):` introduced by this change and not mentioned in the PR is a
-  residual that just went invisible — the sweep catches it, the PR body names it
+  residual that just went invisible — the sweep catches it, the PR body names it.
+  Ship adds no markers to the diff it ships: its own residuals go in `open` and the PR body
 - **State what a reviewer needs to know that the diff does not show** — the
   migration ordering, the flag that must be set, the deploy that must go first
 <!-- deliver:report -->
@@ -130,7 +132,7 @@ without permission, and the residuals are visible to whoever picks this up next.
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

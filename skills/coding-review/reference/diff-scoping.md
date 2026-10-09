@@ -32,9 +32,11 @@ A  s.txt
 So `git diff HEAD` plus `git status --porcelain` is the minimum for a working
 tree, and the untracked entries have to be read with `Read`, not with `diff`.
 
-**A repository with no commits has everything untracked.** `git diff HEAD` fails
-outright (`HEAD` does not resolve), and a review that reports "no changes" there
-has reviewed nothing. Check `git rev-parse HEAD` before trusting an empty diff.
+**A repository with no commits has no `HEAD` to diff against.** `git diff HEAD`
+fails outright, and a review that reports "no changes" there has reviewed
+nothing. Read staged files with `git diff --staged` (it compares against the
+empty tree) and untracked ones from `git status --porcelain`. Check
+`git rev-parse HEAD` before trusting an empty diff.
 
 ## Branch review: the dot count changes per command
 

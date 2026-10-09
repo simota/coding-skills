@@ -75,6 +75,9 @@ and fragile to drive from a script:
 - **Split within a file** by writing the diff out and editing it:
   `git add -N <new files>` so they appear, `git diff --binary > /tmp/w.patch`,
   delete the hunks that belong to later commits, then `git apply --cached /tmp/w.patch`
+  and `git reset -q -- <new files left for later>`. An intent-to-add entry the
+  patch did not stage makes `git stash` refuse ("not uptodate. Cannot merge");
+  unstaged, it is untracked and `--include-untracked` sets it aside
 - **Set the rest aside** with `git stash push --keep-index --include-untracked` —
   `--keep-index` is what leaves the staged change in place, and without
   `--include-untracked` a later commit's new files stay in the tree. A bare

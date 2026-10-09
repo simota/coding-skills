@@ -50,21 +50,76 @@ class EngineError(RuntimeError):
     """The engine did not answer. Never a verdict."""
 
 
+def _types(schema: dict) -> list:
+    t = schema.get("type")
+    return t if isinstance(t, list) else [t]
+
+
 def strict(schema: dict) -> dict:
-    """Every object closed, which is what codex requires and agy tolerates."""
+    """Every object closed, which is what codex requires and agy tolerates.
+
+    Recurses through nested schemas, lists of them (`anyOf`, `prefixItems`) and
+    nullable objects. A map — `additionalProperties` given as a schema — cannot
+    be closed without changing what it accepts, so it stops rather than being
+    silently narrowed to `{}`.
+    """
+    if isinstance(schema, list):
+        return [strict(s) for s in schema]
     if not isinstance(schema, dict):
         return schema
-    out = {k: strict(v) if isinstance(v, dict) else v for k, v in schema.items()}
-    if out.get("type") == "object":
+    out = {k: strict(v) if isinstance(v, (dict, list)) else v for k, v in schema.items()}
+    if "object" in _types(out):
+        extra = schema.get("additionalProperties")
+        if isinstance(extra, dict):
+            raise EngineError("a schema with additionalProperties as a schema (a map) "
+                              "cannot be closed; codex rejects it open")
         out["additionalProperties"] = False
         out["properties"] = {k: strict(v) for k, v in (out.get("properties") or {}).items()}
-    if isinstance(out.get("items"), dict):
-        out["items"] = strict(out["items"])
     return out
+
+
+_JSON_TYPES = {"string": str, "boolean": bool, "object": dict, "array": list,
+               "null": type(None)}
+
+
+def conforms(obj, schema: dict, where: str = "answer") -> None:
+    """Required keys and primitive types, checked here rather than trusted.
+
+    An engine's validation is the engine's claim, and the claim is what this
+    runner exists not to take on faith: `"refuted": "false"` is a string, and
+    read as truthy it reverses the verdict.
+    """
+    types = [t for t in _types(schema) if t]
+    if types:
+        ok = False
+        for t in types:
+            if t in ("number", "integer"):
+                ok |= isinstance(obj, (int, float)) and not isinstance(obj, bool) and (
+                    t == "number" or float(obj).is_integer())
+            elif t in _JSON_TYPES:
+                ok |= isinstance(obj, _JSON_TYPES[t])
+        if not ok:
+            raise EngineError(f"{where} is {type(obj).__name__}, the schema wants {types}")
+    if isinstance(obj, dict):
+        for key in schema.get("required") or []:
+            if key not in obj:
+                raise EngineError(f"{where} has no {key!r}, which the schema requires")
+        for key, sub in (schema.get("properties") or {}).items():
+            if key in obj and isinstance(sub, dict):
+                conforms(obj[key], sub, f"{where}.{key}")
+    if isinstance(obj, list) and isinstance(schema.get("items"), dict):
+        for i, item in enumerate(obj):
+            conforms(item, schema["items"], f"{where}[{i}]")
 
 
 def run(engine: str, prompt: str, schema: dict) -> dict:
     """Ask `engine` for one object matching `schema`. Raises rather than guessing."""
+    got = _ask(engine, prompt, schema)
+    conforms(got, schema, f"{engine}'s answer")
+    return got
+
+
+def _ask(engine: str, prompt: str, schema: dict) -> dict:
     known = ENGINES.get("runs_on") or []
     if engine not in known:
         raise EngineError(f"{engine} is not one of {known}")

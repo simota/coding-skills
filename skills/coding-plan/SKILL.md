@@ -24,12 +24,13 @@ reasoning, and at most a written plan. It does not implement.
 - **Name the constraints that are actually fixed** — existing data, a deployed
   client, a deadline, a dependency that cannot change. A plan that ignores one
   of these is fiction
-- **A plan is `T1` at minimum**, because by definition the shape was not obvious
+- **A plan is never `T0`**: a request that sizes `T0` has an obvious shape and goes
+  to `coding-implement`, not through a plan
 - **The dialogue is mandatory here**, whatever the size of the change
-- Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
-  checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+  checks), and every run returns one. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before anything else**, first match wins. `T0` — one skill owns it,
+- **Size it before the first write**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
@@ -40,9 +41,9 @@ reasoning, and at most a written plan. It does not implement.
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
 - **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the
-  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
-  then on (`_coding/SIZING.md` § Terms)
+  a silent choice** — one question with its default, the answer into the brief's
+  `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
+  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 
 ## Decide first
@@ -60,7 +61,7 @@ reasoning, and at most a written plan. It does not implement.
 | A requirement is ambiguous | Ask. One question now is cheaper than a plan built on a guess |
 | You are tempted to design for a future caller | There is one caller. Design for it; add the seam when the second arrives |
 | The plan is growing past a page | It is two pieces of work. Split it and say where the seam is |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means nothing was checked. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -95,6 +96,8 @@ claim about existing behaviour is anchored to `file:line` (evidence:
 - This skill holds `Write` but not `Edit`, so a residual inside an existing file
   goes in the handoff's `open` and in the plan document — never as an in-place edit
 - **`DONE` here**: decision made, grounds stated, exclusions named
+- **The report's last line is the first buildable step**, at any tier. The plan
+  goes where the repo keeps design docs; with none, ask (default `docs/plans/<slug>.md`)
 - **The plan names its own falsification.** "This is wrong if X" is what makes
   a plan checkable rather than persuasive
 <!-- deliver:report -->
@@ -131,7 +134,7 @@ the first buildable step is small enough to start immediately.
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

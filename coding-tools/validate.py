@@ -55,7 +55,11 @@ LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 # the form that breaks: it resolves against the skill directory, not against
 # the directory the file writing it lives in.
 TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
-MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
+# A marker in a code span (`#TODO(agent):`) is a mention of the convention, not
+# a marker. Excluding only those — rather than any line with a backtick on it —
+# is what leaves V22 something to check: every marker in the corpus shares its
+# line with some other code span.
+MARKER_RE = re.compile(r"(?<!`)#" + r"TODO\(agent\):")
 
 
 def read(p: Path) -> str:
@@ -63,21 +67,26 @@ def read(p: Path) -> str:
 
 
 def frontmatter(text: str) -> dict:
+    """Parsed as YAML, which is how a CLI reads it. A line-by-line reading saw
+    only the first line of a continued description, so length and wording rules
+    checked a fragment of what the listing actually carries."""
     if not text.startswith("---\n"):
         return {}
-    body = text.split("---\n", 2)[1]
-    out = {}
-    for line in body.splitlines():
-        if ":" in line:
-            k, _, v = line.partition(":")
-            out[k.strip()] = v.strip().strip('"')
-    return out
+    try:
+        got = yaml.safe_load(text.split("---\n", 2)[1])
+    except yaml.YAMLError as e:
+        fail("V1", f"frontmatter is not valid YAML: {e}".splitlines()[0])
+        return {}
+    return {k: (v if isinstance(v, str) else str(v)) for k, v in (got or {}).items()}
 
 
 def sections(text: str) -> dict[str, str]:
-    out, cur, buf = {}, None, []
+    """`## ` headings as rendered — one inside a code fence is text, not a section."""
+    out, cur, buf, fenced = {}, None, [], False
     for line in text.splitlines():
-        if line.startswith("## "):
+        if line.startswith("```"):
+            fenced = not fenced
+        if line.startswith("## ") and not fenced:
             if cur:
                 out[cur] = "\n".join(buf)
             cur, buf = line[3:].strip(), []
@@ -111,7 +120,7 @@ def v2_description_terms():
     for d in SKILL_DIRS:
         desc = frontmatter(read(d / "SKILL.md")).get("description", "")
         for term in H["forbidden_description_terms"]:
-            if term in desc:
+            if term.lower() in desc.lower():
                 fail("V2", f"{d.name} description contains {term!r}; "
                            "boundaries belong in capabilities.yaml `not:`")
         for name in others - {d.name}:
@@ -175,10 +184,14 @@ def v8_links():
     for f in ROOT.rglob("*.md"):
         if ".git" in f.parts:
             continue
-        for target in LINK_RE.findall(read(f)):
+        for raw in LINK_RE.findall(read(f)):
+            target = raw.split()[0] if raw.strip() else raw   # drop a "title"
             if target.startswith(("http", "#", "mailto:")):
                 continue
-            if not (f.parent / target.split("#")[0]).exists():
+            path = (f.parent / target.split("#")[0])
+            if target.startswith("/") or not path.resolve().is_relative_to(ROOT.resolve()):
+                fail("V8", f"{f.relative_to(ROOT)} links to {target}, outside the repo")
+            elif not path.exists():
                 fail("V8", f"{f.relative_to(ROOT)} links to missing {target}")
 
 
@@ -323,9 +336,9 @@ def v19_paths_resolve():
         readable = [d / "SKILL.md"] + sorted(d.glob("playbooks/*.md")) \
             + sorted(d.glob("reference/*.md"))
         for f in readable:
-            _check_paths(f, d, f"{d.name}/{f.relative_to(d)}")
+            _check_paths(f, d, f"{d.name}/{f.relative_to(d)}", f.relative_to(d).parent)
     for f in shared:                      # checked once, against one skill dir
-        _check_paths(f, probe, f"{SHARED}/{f.name}")
+        _check_paths(f, probe, f"{SHARED}/{f.name}", Path(SHARED))
 
 
 # A backticked path is a reference to this set only if it names a file or sits
@@ -339,7 +352,23 @@ def _is_own_reference(p: str) -> bool:
     return p.startswith((f"{SHARED}/", "registry/", "playbooks/", "reference/"))
 
 
-def _check_paths(f: Path, base: Path, label: str) -> None:
+def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
+    """Backticked paths are read from the skill directory; markdown links from
+    the file that holds them (`where`, relative to the skill directory). Either
+    way the path is normalised lexically, so a link whose `..` climbs out of
+    the skill directory points at nothing once installed."""
+    import os.path
+    for raw in LINK_RE.findall(read(f)):
+        target = raw.split()[0].split("#")[0] if raw.strip() else ""
+        if not target or target.startswith(("http", "mailto:", "/")):
+            continue
+        norm = os.path.normpath(str(where / target))
+        if norm == ".." or norm.startswith("../"):
+            fail("V19", f"{label} links to {target!r}, which climbs out of the skill "
+                        "directory; paths are normalised lexically")
+        elif not (base / norm).exists():
+            fail("V19", f"{label} links to {target!r}, which does not resolve from a "
+                        "skill directory")
     for p in TICK_PATH_RE.findall(read(f)):
         if p.startswith(("http", "~", "/")) or " " in p or not _is_own_reference(p):
             continue
@@ -397,7 +426,7 @@ def v22_markers_classified():
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
         for i, line in enumerate(read(f).splitlines(), 1):
-            if MARKER_RE.search(line) and "`" not in line:
+            if MARKER_RE.search(line):
                 if not any(c in line for c in VOCAB["residual_classes"]):
                     fail("V22", f"{f.relative_to(ROOT)}:{i} marker carries no residual class")
 
@@ -437,7 +466,7 @@ def v24_rendered_tables():
         if name not in readme:
             fail("V24", f"README.md does not list {name}")
     for doc, text in ((SKILLS_ROOT / ROUTING_FILE, routing), (ROOT / "README.md", readme)):
-        for found in set(re.findall(rf"`({PREFIX}[a-z]+)`", text)):
+        for found in set(re.findall(rf"`({PREFIX}[a-z][a-z-]*)`", text)):
             if found not in SKILLS:
                 fail("V24", f"{doc.relative_to(ROOT)} names {found}, which does not exist")
 
@@ -463,15 +492,24 @@ def v26_boundaries_real():
 
 def v27_symlinks_stay_inside():
     """What a skill reaches must live in this repo, and must actually be there."""
-    for d in SKILL_DIRS:
+    # Every link at any depth, in each skill and in the shared directory. The
+    # walk does not descend through a link, so `_coding` and `registry` are
+    # checked as links rather than re-walked as directories.
+    def walk(d: Path):
         for entry in sorted(d.iterdir()):
+            yield entry
+            if entry.is_dir() and not entry.is_symlink():
+                yield from walk(entry)
+    for d in SKILL_DIRS + [SKILLS_ROOT / SHARED]:
+        for entry in walk(d):
             if not entry.is_symlink():
                 continue
+            label = entry.relative_to(SKILLS_ROOT)
             target = (entry.parent / entry.readlink()).resolve()
             if not target.exists():
-                fail("V27", f"{d.name}/{entry.name} is a broken symlink")
+                fail("V27", f"{label} is a broken symlink")
             elif ROOT.resolve() not in target.parents and target != ROOT.resolve():
-                fail("V27", f"{d.name}/{entry.name} points outside the repo ({target})")
+                fail("V27", f"{label} points outside the repo ({target})")
 
 
 def v28_namespace_agrees():
@@ -650,9 +688,20 @@ def v34_tools_reachable():
             if link.is_symlink() and link.resolve() != source.resolve():
                 fail("V34", f"{d.name}/{tool} points at {link.resolve()}, not "
                             "the set's own")
+    tools_dir = (ROOT / f"{SET}-tools").resolve()
     for d in SKILL_DIRS:
         for entry in sorted(d.iterdir()):
-            if entry.suffix == ".py" and entry.name not in declared_tools:
+            # Judged by where it points, not by its name: `tools -> coding-tools`
+            # or `render -> render.py` reaches the harness as surely as a `.py`.
+            target = entry.resolve() if entry.is_symlink() else None
+            if target == tools_dir:
+                fail("V34", f"{d.name}/{entry.name} links the whole {SET}-tools/; "
+                            "tools are linked one by one")
+            elif target is not None and tools_dir in target.parents:
+                if entry.name not in declared_tools or target.name != entry.name:
+                    fail("V34", f"{d.name}/{entry.name} links {SET}-tools/{target.name}, "
+                                "which linked_tools does not declare under that name")
+            elif entry.suffix == ".py" and entry.name not in declared_tools:
                 fail("V34", f"{d.name}/{entry.name} is a tool link nothing "
                             "declares; add it to linked_tools or remove it")
 
@@ -824,8 +873,12 @@ def v37_source_pins_the_rot():
 # `KEY: A | B | C` in a schema, or a bare `A | B | C` on a line of its own —
 # upper-case words joined by pipes. Underscored and parenthesised forms are not
 # matched, so this is a floor.
-ENUM_RE = re.compile(r"(?:^|:\s*)((?:[A-Z][A-Z-]*(?: [A-Z][A-Z-]*)*)"
-                     r"(?:\s*\|\s*(?:[A-Z][A-Z-]*(?: [A-Z][A-Z-]*)*))+)\s*(?:#.*)?$")
+# A value may follow a colon, a `#` (a schema comment) or a backtick, and may
+# carry digits (`T0`). Lower-case values are matched too, then reported as
+# undeclared: one lower-case value used to hide the whole line from the rule.
+_ENUM_T = r"[A-Za-z][A-Za-z0-9-]*(?: [A-Z][A-Z0-9-]*)*"
+ENUM_RE = re.compile(rf"(?:^|[:#`]\s*)((?:[A-Z][A-Z0-9-]*(?: [A-Z][A-Z0-9-]*)*)"
+                     rf"(?:\s*\|\s*{_ENUM_T})+)(?=\s*(?:[#`(]|$))")
 
 
 def v38_enumerations_declared():
@@ -872,7 +925,10 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
 def main() -> int:
     for rule in RULES:
         rule()
-    hooks = (ROOT / ".git" / "hooks" / "pre-commit").exists()
+    import subprocess
+    got = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"], cwd=ROOT,
+                         capture_output=True, text=True)
+    hooks = got.returncode == 0 and (ROOT / got.stdout.strip()).exists()
     print(f"{len(RULES)} rules · {len(SKILLS)} skills · "
           f"hooks {'on' if hooks else 'off — run: make hooks'}")
     if FAILURES:

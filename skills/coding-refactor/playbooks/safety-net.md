@@ -47,7 +47,7 @@ the diff itself, and it only counts if the transformation is uniform:
 - Read every hunk, not a sample
 - State in the handoff that evidence is `inspected` and **why nothing could be run**
 - Keep the change smaller than you otherwise would — this is the weakest evidence
-  there is, and its cost scales with the size of the diff
+  that can still support `DONE`, and its cost scales with the size of the diff
 
 ## Deciding whether the net is enough
 

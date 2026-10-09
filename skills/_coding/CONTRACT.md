@@ -40,7 +40,7 @@ document exists to prevent. Falling short is reported as falling short.
 
 Anything left behind is classified, and every residual is recorded in the
 handoff's `open` list with its class and the `file:line` a marker belongs at —
-one entry per residual, never one per file.
+one entry per residual, never one per file (a `T0`, with no handoff, names them in its line).
 
 **Who writes the marker into the tree depends on the tool grant.** A skill
 holding `Edit` or `Write` places the `#TODO(agent): <CLASS> <action>` marker itself,

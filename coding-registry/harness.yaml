@@ -199,7 +199,7 @@ verified_markers:
 
 
 # Paths that belong to the host project, not to this set.
-external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json"]
+external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json", "docs/plans/"]
 
 # Content that goes stale belongs outside the budget, not in a playbook.
 # The validator flags these patterns in playbooks.
