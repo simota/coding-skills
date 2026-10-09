@@ -1,6 +1,6 @@
 ---
 name: coding-explore
-description: "Reading a codebase without changing it: where something lives, how a path works, what a change touches, blast radius, structure, and what the history says. Use before touching unfamiliar code."
+description: "Reading a codebase without changing it: where something lives, who calls it, how a path works, what a change touches, blast radius, structure, and history. Use before touching unfamiliar code."
 allowed-tools: Read, Grep, Glob, Bash
 ---
 <!-- coding:contract -->
@@ -21,10 +21,10 @@ way it is. This skill produces understanding, never a diff.
   chain, a commit — name the artifact that will constitute the answer
 - **Here `T0`** is one obvious lookup answered in a line; several areas is `T1`:
   settle the brief, then order the passes
-- Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
-  checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+  checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before anything else**, first match wins. `T0` — one skill owns it,
+- **Size it before the first write**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
@@ -35,9 +35,9 @@ way it is. This skill produces understanding, never a diff.
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
 - **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the
-  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
-  then on (`_coding/SIZING.md` § Terms)
+  a silent choice** — one question with its default, the answer into the brief's
+  `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
+  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 
 ## Decide first
@@ -54,7 +54,7 @@ way it is. This skill produces understanding, never a diff.
 | Three searches returned nothing | The vocabulary is wrong. Find the entry point and read outward instead of guessing more names |
 | The answer looks obvious after one file | Confirm with a second, independent signal before reporting it |
 | Framework or generated code dominates the result | Exclude it by path and search again. Vendored code answers questions about the vendor |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means nothing was checked. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -127,7 +127,7 @@ at are named.
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

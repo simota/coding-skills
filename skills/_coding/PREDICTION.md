@@ -1,10 +1,10 @@
 <!-- coding:contract -->
 # PREDICTION — what was expected, written before it was known
 
-Binding on every `coding-*` skill that causes an observable change. The
-completion contract grades a claim *after* the fact; this one fixes what the
-claim was *before* it. Both are needed, because an ungraded claim is a wish and
-an unregistered expectation is unfalsifiable.
+Binding on the skills `registry/harness.yaml` names in `signature.required_of`,
+the ones that change what code does. The completion contract grades a claim
+*after* the fact; this one fixes it *before*. Both are needed: an ungraded claim
+is a wish, and an unregistered expectation is unfalsifiable.
 
 ## The failure this prevents
 

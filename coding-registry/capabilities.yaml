@@ -16,7 +16,7 @@ coding-explore:
       go: coding-debug
     - what: "deciding a design once the code is understood"
       go: coding-plan
-  signals: [where, how a path works, blast radius, structure, history, unfamiliar]
+  signals: [where, how a path works, who calls, blast radius, structure, history, unfamiliar]
 
 coding-plan:
   class: doc-write
@@ -26,7 +26,7 @@ coding-plan:
       go: coding-explore
     - what: "writing the code once the shape is settled"
       go: coding-implement
-  signals: [interfaces, signatures, data model, error, state, build order, options, trade-off]
+  signals: [interfaces, signatures, data model, error and state design, state design, build order, between options, trade-off]
 
 coding-implement:
   class: full
@@ -35,6 +35,8 @@ coding-implement:
     - what: "cleanup that preserves behaviour"
       go: coding-refactor
     - what: "a defect in code that already ran"
+      go: coding-debug
+    - what: "a slowdown in code that used to be fast"
       go: coding-debug
   signals: [feature, endpoint, screen, business logic, CLI, integration, dependency upgrade, performance]
 
@@ -46,7 +48,7 @@ coding-debug:
       go: coding-explore
     - what: "standalone regression-test work beyond the current fix"
       go: coding-test
-  signals: [broken, bug, reproduce, root cause, failing, why]
+  signals: [broken, bug, reproduce, root cause, failing, why is this broken, regression, error]
 
 coding-refactor:
   class: full
@@ -56,7 +58,9 @@ coding-refactor:
       go: coding-implement
     - what: "reading a diff for defects"
       go: coding-review
-  signals: [extraction, renaming, duplication, dead code, module boundaries, migration, hard to work with]
+    - what: "a schema or data migration, or a dependency upgrade and the call-site changes it forces"
+      go: coding-implement
+  signals: [refactor, extract, rename, extraction, duplication, dead code, module boundaries, mechanical migration, hard to work with]
 
 coding-test:
   class: full
@@ -66,7 +70,7 @@ coding-test:
       go: coding-debug
     - what: "checks of the current implementation, diagnosis, or refactor, including retained guards"
       go: "the skill making that run"
-  signals: [test cases, coverage, regression tests, assert, suite]
+  signals: [test cases, coverage, regression test, regression tests, assert, flaky, unreliable suite]
 
 coding-review:
   class: read-only
@@ -86,4 +90,4 @@ coding-ship:
       go: coding-implement
     - what: "judging whether the change is correct"
       go: coding-review
-  signals: [commit, history shape, branch, merge, splitting, pull request, changelog, release notes]
+  signals: [commit, history shape, merge order, splitting, oversized pull request, pr, changelog, release notes, squash, rebase]

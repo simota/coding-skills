@@ -9,7 +9,7 @@
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

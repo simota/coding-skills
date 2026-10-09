@@ -1,6 +1,6 @@
 ---
 name: coding-refactor
-description: "Changing structure while behaviour stays identical: extraction, renaming, duplication, dead code, module boundaries, and mechanical migration. Use when correct code is hard to work with."
+description: "Refactoring: structure changes while behaviour stays identical — extraction, rename, duplication, dead code, module boundaries, mechanical migration. Use when correct code is hard to work with."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->
@@ -25,10 +25,10 @@ messages, ordering, and timing that anything depends on.
   hides where it lives. A defect found first goes to `coding-debug`
 - **Here `T0`** is a local rename; a module split is not, and a ten-file change
   needs permission unless it is one substitution applied identically everywhere
-- Every `T1`/`T2` run returns a handoff (`_coding/HANDOFF.md` — seven receiver
-  checks); a `T0` returns one line and none. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+  checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before anything else**, first match wins. `T0` — one skill owns it,
+- **Size it before the first write**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
@@ -39,14 +39,14 @@ messages, ordering, and timing that anything depends on.
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
 - **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the
-  brief's `terms` and `.agents/glossary.md`, and the glossary's names only from
-  then on (`_coding/SIZING.md` § Terms)
+  a silent choice** — one question with its default, the answer into the brief's
+  `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
+  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
 <!-- /deliver:sizing -->
 <!-- deliver:predict -->
-- **Register the prediction before the run.** Before the edit: what will be
-  run, and what observable result changes — a named test, an exit code, a value
-  at a path. After it, report `hit`, `miss`, or `void` (it turned out
+- **Register the prediction before the run** — ideally before the edit: what
+  will be run, and what observable result changes — a named test, an exit code, a
+  value at a path. After it, report `hit`, `miss`, or `void` (it turned out
   unobservable). **A `miss` costs nothing; an unrecorded `miss` costs the run.**
   Two consecutive misses in one area mean the model of it is wrong: stop editing
   and read. `executed` with nothing registered supports "it ran", never "it
@@ -68,7 +68,7 @@ messages, ordering, and timing that anything depends on.
 | Code appears unused | Prove it: grep, dynamic dispatch check, then history. Then delete it — do not comment it out |
 | The tests break during the refactor | Distinguish changed behaviour from broken imports or names. Revert behaviour changes; update only mechanical test references for the latter |
 | Someone else is working in these files | Coordinate or defer. A large refactor across an active branch is a merge conflict with a delay on it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means nothing was checked. `STANDS` is n engines finding nothing, never proof |
 | About to run the safety net | **Predict that it stays green and that nothing else moves.** A refactor whose honest prediction includes a changed output is not a refactor |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -143,7 +143,7 @@ no behaviour change, and every commit in the sequence is independently green.
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
   the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
+  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the

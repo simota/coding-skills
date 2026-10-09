@@ -39,3 +39,29 @@
   expect: coding-ship
 - ask: "the pull request is too big, what merge order do you suggest"
   expect: coding-ship
+
+# Added after simulating selection over ordinary requests; each misrouted before.
+- ask: "TypeError in checkout.ts:42 when the cart is empty, fix the error"
+  expect: coding-debug
+- ask: "add --verbose and --quiet options to the CLI"
+  expect: coding-implement
+- ask: "this test is flaky, it fails on CI about one run in ten"
+  expect: coding-test
+- ask: "the orders endpoint is 3x slower since the last release, a regression, find out why"
+  expect: coding-debug
+- ask: "squash my WIP commits and rebase onto main before I open the PR"
+  expect: coding-ship
+- ask: "review the error and state design before any code exists"
+  expect: coding-plan
+- ask: "is it safe to delete the legacy export endpoint, who calls it"
+  expect: coding-explore
+- ask: "rename usr to user across the codebase"
+  expect: coding-refactor
+- ask: "refactor this module"
+  expect: coding-refactor
+- ask: "add a regression test for last week's checkout fix"
+  expect: coding-test
+- ask: "review this pull request for defects"
+  expect: coding-review
+- ask: "write the PR description"
+  expect: coding-ship
