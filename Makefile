@@ -16,28 +16,37 @@ AGY_DIR    ?= $(HOME)/.gemini/antigravity-cli/skills
 HOST_DIRS  := $(CLAUDE_DIR) $(CODEX_DIR) $(AGY_DIR)
 
 .DEFAULT_GOAL := help
-.PHONY: help check validate test figures engines refute render hooks link unlink status
+.PHONY: help check validate test figures drift engines refute render hooks link unlink status
 
 help:
-	@echo "make check     validate + test + figures (what CI runs)"
+	@echo "make check     validate + test + figures + render drift (what CI runs)"
 	@echo "make validate  static rules over the corpus"
-	@echo "make test      prove every rule still fires"
+	@echo "make test      prove every rule still fires, and test the tools"
 	@echo "make figures   re-run the git behaviour the reference layer states"
-	@echo "make refute CLAIMS=f.json RUNNING=claude   put each claim to the engines that did not make it"
-	@echo "make engines  ask each checker engine for one object; reports what is unreachable"
+	@echo "make refute CLAIMS=claims.json RUNNING=claude   put each claim to the engines that did not make it"
+	@echo "make engines   ask each checker engine for one object; reports what is unreachable"
 	@echo "make render    write the delivered blocks back into every SKILL.md"
 	@echo "make hooks     install the pre-commit hook"
 	@echo "make link      symlink the skills into claude / codex / agy"
 	@echo "make unlink    remove those symlinks"
 	@echo "make status    show what is linked"
 
-check: validate test figures
+check: validate test figures drift
 
 validate:
 	@python3 coding-tools/validate.py
 
 test:
 	@python3 coding-tools/test_validate.py
+	@python3 coding-tools/test_tools.py
+
+# The delivered blocks in every SKILL.md match their source — the same render
+# and diff CI runs. A stale block is re-rendered in place, so the fix is the diff.
+drift:
+	@python3 coding-tools/render.py >/dev/null
+	@git diff --quiet -- 'skills/*/SKILL.md' || { \
+		echo "SKILL.md delivery blocks were stale and have been re-rendered; review and commit"; exit 1; }
+	@echo "delivered blocks current"
 
 figures:
 	@python3 coding-tools/figures_check.py

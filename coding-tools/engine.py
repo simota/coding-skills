@@ -19,7 +19,7 @@ here raises. Nothing returns a default verdict, nothing degrades to "assume
 fine": an engine missing from PATH, an engine that starts and produces no
 parseable object, a response that does not match the schema — each is an error
 with the engine's own words attached, because the alternative is a green run
-that verified nothing (DESIGN §5.4b).
+that verified nothing.
 
 Engine quirks, re-checked by `make engines` rather than dated:
 
@@ -177,19 +177,28 @@ def main() -> int:
     ap.add_argument("--schema")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
-    if a.selftest or not (a.engine or a.running):
+    if a.selftest or not (a.engine or a.running or a.prompt_file or a.schema):
         return selftest()
+    if not a.running:
+        # Naming the checker is not enough: without the running engine there is
+        # nothing to compare it with, and the maker could be marking its own work.
+        print("need --running: the engine running this is stated, never guessed",
+              file=sys.stderr)
+        return 2
     if not (a.prompt_file and a.schema):
         print("need --prompt-file and --schema", file=sys.stderr)
         return 2
     try:
         engine = a.engine or other_than(a.running)
-        if a.running and engine == a.running:
+        if engine == a.running:
             raise EngineError(f"{engine} is the engine running this; "
                               "a verdict from it is not a check")
         got = run(engine,
                   pathlib.Path(a.prompt_file).read_text(encoding="utf-8"),
                   json.loads(pathlib.Path(a.schema).read_text(encoding="utf-8")))
+    except (OSError, ValueError) as e:
+        print(f"could not read the prompt or schema: {e}", file=sys.stderr)
+        return 2
     except EngineError as e:
         print(f"{a.engine or 'checker'}: {e}", file=sys.stderr)
         return 1

@@ -113,6 +113,11 @@ def _(r):
     (r / "coding-registry/routes.yaml").write_text(t, encoding="utf-8")
 
 
+@case("V13-stages")
+def _(r): sub(r / "coding-registry/routes.yaml", "coding-review, coding-ship]",
+              "coding-review, coding-ship, coding-explore]")
+
+
 @case("V14")
 def _(r): sub(r / "coding-registry/routes.yaml", "  pattern: loop", "  pattern: spiral")
 
@@ -162,6 +167,11 @@ def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when",
 def _(r): sub(r / f"{S}_coding/VALUES.md", "<!-- coding:contract -->", "<!-- coding:guidance -->")
 
 
+@case("V23-unknown-label")
+def _(r): sub(r / "coding-registry/harness.yaml", "document_labels: [contract, guidance, deferred]",
+              "document_labels: [contract, deferred]")
+
+
 @case("V24")
 def _(r): sub(r / f"{S}_coding/ROUTING.md", "`coding-ship`", "`coding-deploy`")
 
@@ -172,6 +182,11 @@ def _(r): sub(r / f"{S}coding-test/playbooks/flaky.md", "# ", "# pinned at v2.14
 
 @case("V19-shared")
 def _(r): sub(r / f"{S}_coding/ROUTING.md", "(`_coding/SIZING.md`)", "(`SIZING.md`)")
+
+
+@case("V19-reference")
+def _(r): sub(r / f"{S}coding-test/reference/oracles.md", "# ",
+              "See `../_coding/CONTRACT.md`.\n\n# ")
 
 
 @case("V27")
@@ -230,18 +245,15 @@ def _(r):
     sub(r / "coding-registry/routes.yaml", "checker: ", "checker: nosuchengine  # ")
 
 
-
 @case("V32-single")
 def _(r):
     sub(r / "coding-registry/harness.yaml",
         "runs_on: [claude, codex, agy]", "runs_on: [claude]")
 
 
-
 @case("V33")
 def _(r):
     sub(r / "coding-registry/harness.yaml", "  lens: |", "  lens: ''\n  unused: |")
-
 
 
 @case("V34")
