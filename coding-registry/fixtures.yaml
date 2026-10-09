@@ -29,7 +29,7 @@
   expect: coding-refactor
 - ask: "the suite is flaky, and coverage of the boundary cases is thin"
   expect: coding-test
-- ask: "write regression tests for the fix"
+- ask: "add regression tests for last quarter's billing bugs"
   expect: coding-test
 - ask: "read this diff for defects before it lands"
   expect: coding-review

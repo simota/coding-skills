@@ -25,9 +25,9 @@ who calls it.
 |---|---|---|
 | Parameters or an options object | Parameters up to ~3 | More than three, or several are optional, or booleans read ambiguously at the call site |
 | Boolean flag or two functions | Two functions | The flag is genuinely data flowing through, not a mode switch |
-| Return `null` or raise | Raise for "should not happen"; return an absence type for "normal, expected" | Absence is a routine outcome the caller must handle every time |
-| Sync or async | Match the surrounding code | It does I/O and the codebase is async — mixing colours is a permanent tax |
-| Accept a concrete type or an interface | Concrete | A second implementation exists today, or tests genuinely cannot construct the real one |
+| Return `null` or raise | Raise | Absence is a normal, expected outcome the caller must handle every time — return an absence type |
+| Sync or async | Match the surrounding code | Never within one call chain. Blocking I/O in an async codebase goes behind its existing offload (executor, thread pool) — mixing colours is a permanent tax |
+| Accept a concrete type or an interface | Concrete | A second implementation exists today. A test that cannot construct the real one is fixed at construction, not by adding an interface |
 | Mutate or return new | Return new | The object is large and hot, and the profile says so |
 
 ## Naming as part of the contract
@@ -47,7 +47,8 @@ who calls it.
 - **Adding is safe. Removing and renaming are not.** Widening a parameter type
   is safe — it accepts everything it did before. **Widening a return type is
   not**: a caller written against `Dog` breaks when you start returning
-  `Animal`. Narrowing the return is the safe direction
+  `Animal`. Narrowing the return is the safe direction — for callers. For
+  implementers and overriders of the interface, both directions reverse
 - **Adding a required field to a request** breaks old callers; adding an optional
   one with a default does not
 - **Removing a field from a response** breaks readers you cannot see. Deprecate,

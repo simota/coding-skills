@@ -48,6 +48,8 @@ review-to-zero:
   pattern: loop
   when: "land it with no outstanding findings"
   chain: [coding-review, coding-implement]
-  oracle: "no unresolved finding at severity major or above, and one full pass adds none"
+  # Ranks are coding-review's severity ordering: 1 silent wrong results, 2 security
+  # and data loss, 3 crash on a reachable path, 4 wrong edge-case behaviour.
+  oracle: "no unresolved finding of rank 1-4, and one full pass adds none"
   checker: other-engine          # resolved at run time to one that is not running this
   max_cycles: 4              # hand back rather than loop again

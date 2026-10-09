@@ -64,7 +64,8 @@ layer entry, a queue, the point where a value is transformed.
   were false?" and go look for that
 - **Write down what was ruled out**, with how. An investigation without this
   list revisits the same dead end an hour later
-- **After three failed hypotheses, question the premise.** Is the reproduction
+- **After two failed hypotheses in one area, question the premise** (the
+  `_coding/PREDICTION.md` stop rule). Is the reproduction
   actually testing what you think? Is the code you are reading the code that runs?
   Is it the right process, the right build, the right environment?
 

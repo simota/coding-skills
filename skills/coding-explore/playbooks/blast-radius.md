@@ -31,7 +31,8 @@ divergence nobody documents. Search for the shape, not the name.
 
 ## The layers grep cannot reach
 
-Name each one that applies; each is a `PARTIAL`, not a footnote.
+Name each one that applies in the report's coverage boundary, not a footnote.
+The run is `PARTIAL` when the question cannot be answered without one of them.
 
 - **Persisted data** already written in the old shape. Code changes forwards;
   rows do not

@@ -6,7 +6,9 @@ distinguishes working code from broken code. Worse, it trains everyone to rerun
 red builds, which is how a real failure ships.
 
 **Never make a flake pass by retrying it, sleeping longer, or skipping it.**
-Each of those converts a known unreliable signal into an unknown one.
+Each of those converts a known unreliable signal into an unknown one. Quarantine
+is not passing: it is allowed only as an `UNVERIFIED` residual that holds the run
+at `PARTIAL` (§ Repairing a red suite).
 
 ## Find the difference between runs
 
@@ -15,17 +17,17 @@ Something differs between the pass and the fail. Work the list:
 | Suspect | Symptom | How to confirm |
 |---|---|---|
 | Test order | Passes alone, fails in the suite (or vice versa) | Run the file alone; run the suite with a fixed seed and then a different one |
-| Shared state | The second run in a fresh process passes | Look for module-level state, class attributes, caches, singletons, an unclean DB |
+| Shared state | Fails only after certain other tests ran in the same process; passes alone in a fresh one | Look for module-level state, class attributes, caches, singletons, an unclean DB |
 | Time | Fails near midnight, month end, or at a specific hour | Freeze the clock and re-run at the boundary |
-| Timezone or locale | Fails in CI, passes locally | Re-run under a half-hour, DST-observing zone and a non-ASCII locale — `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`. Note `TZ=` with no value means UTC, which is what CI already runs |
+| Timezone or locale | Fails in CI, passes locally | Re-run under a 45-minute, DST-observing zone and a non-ASCII locale — `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`, after `locale -a` confirms the locale is installed: a missing one silently falls back to C. Note `TZ=` with no value means UTC, which is what CI already runs |
 | Concurrency | Fails under load or on a machine with more cores | Run repeatedly with parallelism forced |
 | Real I/O | Fails when the network is slow or absent | Cut the network and see |
 | Unordered collections | Fails on some runs with the same data | Look for a set, a Go map, a JSON object round-trip, or a query without `ORDER BY`. Python dicts have kept insertion order since 3.7 — they are not the culprit |
 | Randomness | Fails roughly one run in N | Seed it and find the failing seed |
 | Resource limits | Fails only in CI | Ports, file handles, memory, disk, or a leftover container |
 
-Reproduce it before fixing: `--count=100`, a loop, `--random-order`, or CI
-re-runs. **A flake fixed without being reproduced is a flake with a delay on it.**
+Reproduce it before fixing: a repeat flag (pytest-repeat's `--count=100`), a
+loop, a shuffled order (pytest-random-order's `--random-order`), or CI re-runs. **A flake fixed without being reproduced is a flake with a delay on it.**
 
 ## Fixing by cause
 

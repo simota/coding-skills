@@ -27,8 +27,8 @@ branches; it does not fix code to make a commit tidy.
 - **Size it before anything else**, first match wins. `T0` — one skill owns it,
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it: route it. `T0` drops
-  the paperwork, never the evidence. Mis-sized mid-run means re-sizing and saying so
+  brief first. `T2` — two or more skills own parts of it, or it spans phases:
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -48,15 +48,15 @@ branches; it does not fix code to make a commit tidy.
 | Situation | How to proceed |
 |---|---|
 | Deciding how to divide the work | [commits](playbooks/commits.md) — one reason to change per commit |
-| The change is large or mixed | [commits](playbooks/commits.md) § splitting. A refactor and a behaviour change never share a commit |
+| The change is large or mixed | [commits](playbooks/commits.md) § Splitting an oversized change. A refactor and a behaviour change never share a commit |
 | Writing the PR or the release notes | [pr](playbooks/pr.md) |
 | A commit does not build or test green on its own | It is not a commit. Reorder or squash until each one stands alone |
 | The diff contains something you did not intend | Remove it before anything else. Do not explain it in the description |
-| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and `git add -A` before it. Committed work is almost always recoverable; uncommitted work is not |
+| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u`. Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
 | A generated file is in the diff | Separate commit, and say why it changed |
 | A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
 | The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
-| A claim here would be expensive to get wrong | [refute](refute.py) — put it to the engines that did not make it, asked to break it rather than to agree. Unrefuted is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run `python3 refute.py --running <this engine> claims.json`; they are asked to break it, not agree. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -103,10 +103,10 @@ passes (evidence: `executed`), and the diff was read hunk by hunk (evidence:
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED`) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run holding `Edit` or `Write` also
-  leaves a `#TODO(agent):` marker carrying that class. The report closes and is
+  and appears in the handoff's `open`; a run whose grant can write that file
+  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
   gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
@@ -128,7 +128,7 @@ without permission, and the residuals are visible to whoever picks this up next.
   one line per residual a human must decide, then what is next. A reader who stops after
   the first line has the result
 - **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the working log travel in the handoff and are shown when asked
+  the `open` list travel in the handoff and are shown when asked
 - **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
   line, `T1` adds evidence and residuals, `T2` adds what is next. Trimming cuts
   what the reader already has — request, file list, path taken (`_coding/REPORT.md`)

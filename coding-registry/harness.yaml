@@ -25,38 +25,34 @@ skills_dir: skills
 platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform, not by this set
 
 limits:
-  skill_md_lines: 156         # derived, not chosen: 90 for the skill's own words plus
-                              # the 58 lines of delivered contract every file in this
-                              # set now carries (the last four: a term with two meanings
-                              # is a question, never a silent choice — the same move as
-                              # the sixth axis, for the same reason). Each raise has been the same move for
-                              # a block that grew (120 -> 130 -> 135), and this one is
-                              # the sixth axis arriving: 17 delivered lines that bound
-                              # what the run says at the end. Measured own-content max
-                              # in this set: 84 lines, in coding-test
+  # Derived, not chosen: a skill that owes the prediction mechanism carries 58
+  # delivered lines plus 10 marker lines (68); the others carry 51 + 8 (59). That
+  # leaves 88 lines of the skill's own words under the cap; the measured own-content
+  # max is 87, in coding-test. Each raise has been the same move for a delivered
+  # block that grew (120 -> 130 -> 135 -> 156), the last for the sixth axis: the
+  # 17 lines that bound what the run says at the end.
+  skill_md_lines: 156
   description_chars: 200        # the listing truncates past this
-  playbook_lines: 300           # measured max: 106
+  playbook_lines: 300           # measured max: 109
   playbooks_per_skill: 8        # measured max: 3
-  shared_file_lines: 115   # raised for the sixth axis. REPORT.md is the densest of the
-                              # six — four moments, the order at the end, the ceiling and the
-                              # proportion rule — and 100 was the figure from when there were
-                              # five. Two compression passes over the file came back with the
-                              # same content in fewer words and no fewer lines
-  shared_lines_total: 620   # raised by the sixth axis: REPORT.md arrived and
-                              # every set landed at 97-99% of the old figure at once,
-                              # which is a budget that has stopped leaving room to think
-                              # rather than seven sets each being careless. The room
-                              # above the family figure is this set’s own — it
-                                # carries a pre-registration contract the sibling sets do
-                                # not, and it is the one thing here that cannot be
-                                # reconstructed after the fact
+  # Raised for the sixth axis. CONTRACT.md is the file nearest the cap; REPORT.md
+  # arrived with the sixth axis and is the densest — the moments, the order at
+  # the end and the proportion rule. Two compression passes over it came back
+  # with the same content in fewer words and no fewer lines.
+  shared_file_lines: 115
+  # Raised by the sixth axis: REPORT.md arrived and every sibling set landed at
+  # 97-99% of the old figure at once, which is a budget that has stopped leaving
+  # room to think rather than each set being careless. The room above the family
+  # figure is this set's own — it carries a pre-registration contract the sibling
+  # sets do not, and it is the one thing here that cannot be reconstructed after
+  # the fact.
+  shared_lines_total: 620
   skills_max: 10                # 8 in use, 2 spare for demand found in use
   routes_max: 12
-  route_stages_max: 6
-  repo_md_lines_total: 4600  # raised with the two above; this set was at 90-97%
-                                # Raised from 3200 because reference/ carries no line
-                                # budget of its own but is counted here; the ceiling
-                                # is the family's planning-set figure, not a blank cheque.
+  route_stages_max: 6           # the longest chain, `feature`, has 6
+  # Raised from 3200 because reference/ carries no line budget of its own but is
+  # counted here; the ceiling is the family's planning-set figure, not a blank cheque.
+  repo_md_lines_total: 4600
 
 # A listing under this many skills does not need packs. Crossing it is the
 # trigger to split the set into named subsets, not a reason to delete skills.
@@ -159,8 +155,6 @@ label_by_path:
   "skills/*/playbooks/*.md": guidance
   "skills/*/reference/*.md": deferred
 
-# Content that goes stale belongs outside the budget, not in a playbook.
-# The validator flags these patterns in playbooks.
 # reference/ carries no line budget; it carries these headers instead. The layer
 # holds what the model approximates rather than recalls — exact command
 # semantics, recoverability, oracle provenance — so every page states when it was
@@ -207,13 +201,12 @@ verified_markers:
 # Paths that belong to the host project, not to this set.
 external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json"]
 
+# Content that goes stale belongs outside the budget, not in a playbook.
+# The validator flags these patterns in playbooks.
 rot_patterns:
   - '\b(19|20)\d{2}-\d{2}\b'
   - '\bv\d+\.\d+(\.\d+)?\b'
 
-# Blocks copied verbatim into every SKILL.md. Naming a shared file is not the
-# same as reaching it: a contract kept only in _coding/ goes unread on most
-# launches. render.py writes these back; the validator checks they match.
 # The one mechanism this set has that its siblings do not. The rule that checks
 # it is identical in all six sets; this block is the whole difference, which is
 # what keeps six copies of the validator from becoming six dialects.
@@ -230,6 +223,9 @@ signature:
   required_of: [coding-debug, coding-implement, coding-refactor, coding-test]
   own_word: redict
 
+# Blocks copied verbatim into every SKILL.md. Naming a shared file is not the
+# same as reaching it: a contract kept only in _coding/ goes unread on most
+# launches. render.py writes these back; the validator checks they match.
 delivered:
   sizing:  { section: "Before starting" }
   # Delivered only to `signature.required_of`: a skill that causes no observable

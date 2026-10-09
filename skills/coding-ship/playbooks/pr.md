@@ -50,7 +50,7 @@ one — it teaches the reader the headings are decorative.
 ```
 - `pytest tests/billing` — 214 passed, includes 3 new cases for the proration boundary
 - Ran the migration against a copy of staging: 1.2M rows, 40s, no lock contention
-- Not covered: the legacy import path (no fixtures exist) — #TODO(agent): UNVERIFIED
+- Not covered: the legacy import path (no fixtures exist) — #TODO(agent): DEFERRED resume when legacy fixtures exist
 ```
 
 **The uncovered line is the important one.** A PR that lists only successes

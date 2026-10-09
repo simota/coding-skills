@@ -6,8 +6,8 @@ satisfying this has reported a wish.
 
 ## Evidence grades
 
-Every claim about a change carries one of three grades. Only the first
-supports completion.
+Every claim about a change carries one of three grades. `executed` supports
+completion; `inspected` does only where nothing can be run; `asserted` never does.
 
 | Grade | Means | Supports `DONE`? |
 |---|---|---|
@@ -29,8 +29,8 @@ unverified change leaves.**
 
 | Status | Condition |
 |---|---|
-| `DONE` | Every acceptance criterion met, every file evidenced, zero `UNVERIFIED` |
-| `PARTIAL` | Everything else that produced work — a single `UNVERIFIED` lands here |
+| `DONE` | Every acceptance criterion met, every file evidenced, zero `UNVERIFIED` or `BLOCKED` residuals |
+| `PARTIAL` | Everything else that produced work — a single `UNVERIFIED` or `BLOCKED` residual lands here |
 | `BLOCKED` | Could not proceed. Say what was tried and what stopped it |
 
 Reporting `DONE` on a run with an unevidenced file is the failure this
@@ -43,7 +43,7 @@ handoff's `open` list with its class and the `file:line` a marker belongs at —
 one entry per residual, never one per file.
 
 **Who writes the marker into the tree depends on the tool grant.** A skill
-holding `Edit` or `Write` places the `#TODO(agent): <action>` marker itself,
+holding `Edit` or `Write` places the `#TODO(agent): <CLASS> <action>` marker itself,
 where a reader would next look, and names it in `open`. A report-only skill
 (`coding-explore`, `coding-review`, and any run whose grant lacks the tool for
 the file in question) records the entry in `open` alone and leaves the writing
