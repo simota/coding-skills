@@ -1,6 +1,15 @@
 #!/bin/sh
 # Budgets enforced by a mechanism rather than by remembering.
 # Install with: make hooks
+#
+# The rules run over what is being committed — the index, checked out into a
+# temporary tree — not over the working tree, where an unstaged fix would hide
+# a staged violation. Git exports GIT_DIR and GIT_INDEX_FILE to hooks; they are
+# dropped before anything runs, so no tool below can act on this repository.
 set -e
-python3 "$(git rev-parse --show-toplevel)/coding-tools/validate.py"
-python3 "$(git rev-parse --show-toplevel)/coding-tools/figures_check.py"
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+git checkout-index -a --prefix="$tmp/"
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR
+python3 "$tmp/coding-tools/validate.py"
+python3 "$tmp/coding-tools/figures_check.py"

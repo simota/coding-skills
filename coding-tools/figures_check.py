@@ -34,8 +34,14 @@ failures: list[str] = []
 # The user's own git configuration is not part of the claim. A global hooks
 # path, a commit template or a signing requirement would change what these
 # commands do — or make a setup commit fail quietly — on one machine only.
-GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1",
-           "GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"}
+#
+# Every inherited GIT_* variable goes, not only the config ones. Run from a
+# pre-commit hook, git exports GIT_DIR and GIT_INDEX_FILE, and a throwaway
+# repository that inherits them is the real one: `reset --hard`, `branch -D`
+# and `gc --prune=now` below would run against the repository being committed.
+GIT_ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+GIT_ENV.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+               GIT_TERMINAL_PROMPT="0", LC_ALL="C")
 
 
 def fail(page: pathlib.Path, msg: str) -> None:
@@ -378,7 +384,8 @@ def main() -> int:
         print(f"{len(failures)} claim(s) the current git does not support:")
         print("\n".join(failures))
         return 1
-    ver = subprocess.run(["git", "--version"], capture_output=True, text=True).stdout.strip()
+    ver = subprocess.run(["git", "--version"], capture_output=True, text=True,
+                         env=GIT_ENV).stdout.strip()
     print(f"figures green - {checks} documented git behaviours re-run against {ver}")
     return 0
 

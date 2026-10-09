@@ -31,6 +31,19 @@ class Malformed(ValueError):
     """A marker pair that cannot be rewritten without guessing where it ends."""
 
 
+def in_fence(lines: list[str], i: int) -> bool:
+    """Whether line i sits inside a ``` fence, where a heading is only text."""
+    return sum(1 for l in lines[:i] if l.startswith("```")) % 2 == 1
+
+
+def heading_line(lines: list[str], section: str) -> int | None:
+    """The index of `## <section>` as a whole line outside any fence."""
+    for i, line in enumerate(lines):
+        if line == f"## {section}" and not in_fence(lines, i):
+            return i
+    return None
+
+
 def render(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
     original = text
@@ -57,15 +70,18 @@ def render(path: Path) -> bool:
             _, tail = rest.split(close_m, 1)
             text = head + payload + tail
         else:
-            heading = f"## {spec['section']}\n"
-            if heading not in text:
+            lines = text.split("\n")
+            start = heading_line(lines, spec["section"])
+            if start is None:
                 print(f"  {path.name}: no section {spec['section']!r}", file=sys.stderr)
                 continue
-            head, rest = text.split(heading, 1)
             # append at the end of that section, before the next heading
-            nxt = rest.find("\n## ")
-            body, tail = (rest[:nxt], rest[nxt:]) if nxt != -1 else (rest, "")
-            text = head + heading + body.rstrip("\n") + "\n" + payload + "\n" + tail
+            end = next((i for i in range(start + 1, len(lines))
+                        if lines[i].startswith("## ") and not in_fence(lines, i)), len(lines))
+            while end > start + 1 and not lines[end - 1].strip():
+                end -= 1
+            lines[end:end] = payload.split("\n")
+            text = "\n".join(lines)
     if text != original:
         path.write_text(text, encoding="utf-8")
         return True

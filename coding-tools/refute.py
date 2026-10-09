@@ -115,7 +115,9 @@ def verdict(votes: dict[str, dict]) -> str:
     """Stated, not inferred. A split stays a split."""
     if not votes:
         return "UNCHECKED"
-    said = [v["refuted"] for v in votes.values()]
+    said = [v.get("refuted") for v in votes.values()]
+    if not all(isinstance(s, bool) for s in said):
+        raise ValueError("a vote without a boolean `refuted` is not a vote")
     if all(said):
         return "REFUTED"
     if not any(said):

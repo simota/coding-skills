@@ -13,6 +13,8 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
+import subprocess
 import pathlib
 import sys
 import tempfile
@@ -47,6 +49,25 @@ class Engine(unittest.TestCase):
         with self.assertRaises(engine.EngineError):
             engine.run("nosuchengine", "p", {"type": "object"})
 
+    def test_strict_reaches_nullable_objects_and_schema_lists(self):
+        got = engine.strict({"anyOf": [{"type": "object", "properties": {}}],
+                             "properties": {"n": {"type": ["object", "null"]}},
+                             "type": "object"})
+        self.assertIs(got["anyOf"][0]["additionalProperties"], False)
+        self.assertIs(got["properties"]["n"]["additionalProperties"], False)
+
+    def test_strict_refuses_to_narrow_a_map(self):
+        with self.assertRaises(engine.EngineError):
+            engine.strict({"type": "object", "additionalProperties": {"type": "string"}})
+
+    def test_an_answer_that_misses_the_schema_is_not_an_answer(self):
+        for bad in ({"verdict": "looks fine"}, {"refuted": "false", "reason": "",
+                                               "what_would_settle_it": ""}):
+            with self.assertRaises(engine.EngineError, msg=bad):
+                engine.conforms(bad, refute.SCHEMA)
+        engine.conforms({"refuted": False, "reason": "r", "what_would_settle_it": "w"},
+                        refute.SCHEMA)
+
     def test_parse_takes_the_last_object_line(self):
         self.assertEqual(engine._parse("x", 'log line\n{"ok": true}\n'), {"ok": True})
 
@@ -73,6 +94,10 @@ class Refute(unittest.TestCase):
         self.assertEqual(refute.verdict({"a": yes, "b": yes}), "REFUTED")
         self.assertEqual(refute.verdict({"a": no, "b": no}), "STANDS")
         self.assertEqual(refute.verdict({"a": yes, "b": no}), "CONTESTED")
+
+    def test_a_non_boolean_vote_is_refused(self):
+        with self.assertRaises(ValueError):
+            refute.verdict({"a": {"refuted": "false"}})
 
     def test_pool_excludes_the_running_engine(self):
         for running in engine.ENGINES["runs_on"]:
@@ -115,6 +140,15 @@ class Render(unittest.TestCase):
             for key in render.H["delivered"]:
                 self.assertEqual(once.count(f"<!-- deliver:{key} -->"), 1)
 
+    def test_a_fenced_heading_is_not_the_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            body = "```\n## Verify with\n```\n\n" + self.SECTIONS
+            p = self.skill(tmp, body)
+            render.render(p)
+            text = p.read_text(encoding="utf-8")
+            fence_end = text.index("```\n", 4)
+            self.assertNotIn("<!-- deliver:", text[:fence_end])
+
     def test_an_unpaired_marker_stops_the_render(self):
         key = next(iter(render.H["delivered"]))
         for broken in (f"<!-- deliver:{key} -->\n",
@@ -140,6 +174,25 @@ class Figures(unittest.TestCase):
         self.assertEqual(figures_check.printed_subjects(self.BLOCK, "-Sb"), ["c3", "c1"])
         self.assertEqual(figures_check.printed_subjects(self.BLOCK, "-Gb"),
                          ["c3", "c2", "c1"])
+
+    def test_an_inherited_git_dir_is_never_touched(self):
+        """Run from a hook, git exports GIT_DIR; the fixtures must not use it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+            def git(*a):
+                return subprocess.run(("git", *a), cwd=tmp, env=env, check=True,
+                                      capture_output=True, text=True).stdout.strip()
+            git("init", "-q")
+            git("-c", "user.email=s@s", "-c", "user.name=s", "commit", "-q",
+                "--allow-empty", "-m", "sentinel")
+            head = git("rev-parse", "HEAD")
+            leak = {**os.environ, "GIT_DIR": os.path.join(tmp, ".git"),
+                    "GIT_INDEX_FILE": os.path.join(tmp, ".git", "index")}
+            subprocess.run([sys.executable, str(pathlib.Path(figures_check.__file__))],
+                           env=leak, capture_output=True, text=True)
+            self.assertEqual(git("rev-parse", "HEAD"), head)
+            self.assertEqual(git("status", "--porcelain"), "")
 
     def test_stat_counts(self):
         sc = figures_check.stat_counts

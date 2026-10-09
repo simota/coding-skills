@@ -13,7 +13,9 @@ AGY_DIR    ?= $(HOME)/.gemini/antigravity-cli/skills
 # written to when it is installed here, and its own home — the parent of the
 # skills directory — is what says so: judging by the skills directory itself
 # would skip a host that has one but has never been given a skill.
-HOST_DIRS  := $(CLAUDE_DIR) $(CODEX_DIR) $(AGY_DIR)
+# Each one is quoted on its own, so a home directory with a space in it is one
+# path rather than two.
+HOST_DIRS  := "$(CLAUDE_DIR)" "$(CODEX_DIR)" "$(AGY_DIR)"
 
 .DEFAULT_GOAL := help
 .PHONY: help check validate test figures drift engines refute render hooks link unlink status
@@ -62,28 +64,33 @@ refute:
 render:
 	@python3 coding-tools/render.py
 
+# `--git-path` resolves the hooks directory in a worktree and under
+# core.hooksPath, where `.git` is a file or the hooks live elsewhere.
 hooks:
-	@mkdir -p .git/hooks
-	@cp coding-tools/githooks/pre-commit .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "pre-commit installed"
+	@hooks=$$(git rev-parse --git-path hooks) && mkdir -p "$$hooks" && \
+	cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
+	chmod +x "$$hooks/pre-commit" && echo "pre-commit installed in $$hooks"
 
 # A skill is a directory holding a SKILL.md, under skills/ where the plugin
 # format expects it. The prefix alone is not the test: coding-registry/ and
 # coding-tools/ share it and must never be installed.
 SKILL_DIRS := $(patsubst %/SKILL.md,%,$(wildcard skills/coding-*/SKILL.md))
 
+# A link is this repo's only when it points at this repo's skill. Another
+# checkout's link with the same name is left alone by every target here.
 link:
 	@for dir in $(HOST_DIRS); do \
 		if [ ! -d "$$(dirname "$$dir")" ]; then echo "skip $$dir (host not installed here)"; continue; fi; \
 		mkdir -p "$$dir"; \
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
-			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -e "$$target" ] && [ ! -L "$$target" ]; then \
+			name=$$(basename "$$path"); target="$$dir/$$name"; want="$(REPO)/$$path"; \
+			if [ -L "$$target" ] && [ "$$(readlink "$$target")" != "$$want" ]; then \
+				echo "  skip $$name (links to $$(readlink "$$target"), not this repo)"; \
+			elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 				echo "  skip $$name (a real path is already there)"; \
 			else \
-				ln -sfn "$(REPO)/$$path" "$$target"; echo "  link $$name"; \
+				ln -sfn "$$want" "$$target"; echo "  link $$name"; \
 			fi; \
 		done; \
 	done
@@ -94,7 +101,9 @@ unlink:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ]; then rm "$$target"; echo "  unlink $$name"; fi; \
+			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+				rm "$$target"; echo "  unlink $$name"; \
+			elif [ -L "$$target" ]; then echo "  keep $$name (links elsewhere)"; fi; \
 		done; \
 	done
 
@@ -103,7 +112,10 @@ status:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ]; then echo "  linked   $$name"; \
+			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+				if [ -e "$$target" ]; then echo "  linked   $$name"; else echo "  dangling $$name"; fi; \
+			elif [ -L "$$target" ]; then echo "  foreign  $$name -> $$(readlink "$$target")"; \
+			elif [ -e "$$target" ]; then echo "  occupied $$name (a real path)"; \
 			else echo "  unlinked $$name"; fi; \
 		done; \
 	done
