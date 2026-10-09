@@ -40,11 +40,12 @@ test:
 	@python3 coding-tools/test_validate.py
 	@python3 coding-tools/test_tools.py
 
-# The delivered blocks in every SKILL.md match their source — the same render
-# and diff CI runs. A stale block is re-rendered in place, so the fix is the diff.
+# The delivered blocks in every SKILL.md match their source. A stale block is
+# re-rendered in place and the target fails, so the fix is the resulting diff.
 drift:
-	@python3 coding-tools/render.py >/dev/null
-	@git diff --quiet -- 'skills/*/SKILL.md' || { \
+	@before=$$(cat skills/*/SKILL.md | cksum); \
+	python3 coding-tools/render.py >/dev/null || exit 1; \
+	[ "$$before" = "$$(cat skills/*/SKILL.md | cksum)" ] || { \
 		echo "SKILL.md delivery blocks were stale and have been re-rendered; review and commit"; exit 1; }
 	@echo "delivered blocks current"
 
