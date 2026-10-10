@@ -23,6 +23,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
 import engine                                       # noqa: E402
+import fences                                       # noqa: E402
 import figures_check                                # noqa: E402
 import refute                                       # noqa: E402
 import render                                       # noqa: E402
@@ -158,6 +159,28 @@ class Render(unittest.TestCase):
                 p = self.skill(tmp, self.SECTIONS.replace("own words", broken, 1))
                 with self.assertRaises(render.Malformed):
                     render.render(p)
+
+
+class Fences(unittest.TestCase):
+    def test_a_fence_lookalike_inside_a_fence_does_not_close_it(self):
+        """The case that used to toggle three times and swallow the page."""
+        lines = ["```text", "```example", "```", "## Done when", "x"]
+        self.assertEqual(fences.kinds(lines), ["open", "body", "close", "text", "text"])
+
+    def test_tildes_and_longer_fences(self):
+        lines = ["~~~~", "```", "~~~", "~~~~", "## After"]
+        self.assertEqual(fences.kinds(lines), ["open", "body", "body", "close", "text"])
+
+    def test_an_info_string_with_a_backtick_is_not_a_fence(self):
+        self.assertEqual(fences.kinds(["``` a`b", "## H"]), ["text", "text"])
+
+    def test_blocks_and_an_unclosed_fence(self):
+        self.assertEqual(fences.blocks(["a", "```", "x", "```", "```py", "y"]), [["x"], ["y"]])
+
+    def test_sections_after_a_nested_lookalike_are_found(self):
+        import validate
+        text = "## Owns\n```text\n```example\n```\n## Done when\nyes\n"
+        self.assertEqual(validate.sections(text).get("Done when"), "yes")
 
 
 class Figures(unittest.TestCase):

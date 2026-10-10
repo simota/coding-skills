@@ -14,6 +14,10 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
+from fences import fence_mask                      # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 H = yaml.safe_load((ROOT / "coding-registry" / "harness.yaml").read_text(encoding="utf-8"))
 PREFIX = H["prefix"]
@@ -31,15 +35,10 @@ class Malformed(ValueError):
     """A marker pair that cannot be rewritten without guessing where it ends."""
 
 
-def in_fence(lines: list[str], i: int) -> bool:
-    """Whether line i sits inside a ``` fence, where a heading is only text."""
-    return sum(1 for l in lines[:i] if l.startswith("```")) % 2 == 1
-
-
 def heading_line(lines: list[str], section: str) -> int | None:
     """The index of `## <section>` as a whole line outside any fence."""
-    for i, line in enumerate(lines):
-        if line == f"## {section}" and not in_fence(lines, i):
+    for i, (line, fenced) in enumerate(zip(lines, fence_mask(lines))):
+        if line == f"## {section}" and not fenced:
             return i
     return None
 
@@ -76,8 +75,9 @@ def render(path: Path) -> bool:
                 print(f"  {path.name}: no section {spec['section']!r}", file=sys.stderr)
                 continue
             # append at the end of that section, before the next heading
+            mask = fence_mask(lines)
             end = next((i for i in range(start + 1, len(lines))
-                        if lines[i].startswith("## ") and not in_fence(lines, i)), len(lines))
+                        if lines[i].startswith("## ") and not mask[i]), len(lines))
             while end > start + 1 and not lines[end - 1].strip():
                 end -= 1
             lines[end:end] = payload.split("\n")

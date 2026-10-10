@@ -16,6 +16,10 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
+from fences import fence_mask                      # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
 
@@ -82,10 +86,9 @@ def frontmatter(text: str) -> dict:
 
 def sections(text: str) -> dict[str, str]:
     """`## ` headings as rendered — one inside a code fence is text, not a section."""
-    out, cur, buf, fenced = {}, None, [], False
-    for line in text.splitlines():
-        if line.startswith("```"):
-            fenced = not fenced
+    out, cur, buf = {}, None, []
+    lines = text.splitlines()
+    for line, fenced in zip(lines, fence_mask(lines)):
         if line.startswith("## ") and not fenced:
             if cur:
                 out[cur] = "\n".join(buf)
