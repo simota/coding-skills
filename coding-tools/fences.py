@@ -53,3 +53,10 @@ def blocks(lines: list[str]) -> list[list[str]]:
         elif kind == "body":
             out[-1].append(line)
     return out
+
+
+def marker_lines(lines: list[str], marker: str) -> list[int]:
+    """Indices of lines that are exactly `marker`, outside any fence. A marker
+    quoted in prose or shown in an example is text, not a delimiter."""
+    return [i for i, (line, fenced) in enumerate(zip(lines, fence_mask(lines)))
+            if line.strip() == marker and not fenced]

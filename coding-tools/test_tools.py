@@ -69,6 +69,15 @@ class Engine(unittest.TestCase):
         engine.conforms({"refuted": False, "reason": "r", "what_would_settle_it": "w"},
                         refute.SCHEMA)
 
+    def test_conforms_checks_enum_const_and_alternatives(self):
+        engine.conforms(10 ** 400, {"type": "integer"})          # no OverflowError
+        with self.assertRaises(engine.EngineError):
+            engine.conforms("maybe", {"type": "string", "enum": ["yes", "no"]})
+        with self.assertRaises(engine.EngineError):
+            engine.conforms({"a": {}}, {"anyOf": [
+                {"type": "object", "required": ["b"]}, {"type": "null"}]})
+        engine.conforms(None, {"anyOf": [{"type": "object"}, {"type": "null"}]})
+
     def test_parse_takes_the_last_object_line(self):
         self.assertEqual(engine._parse("x", 'log line\n{"ok": true}\n'), {"ok": True})
 
@@ -150,6 +159,15 @@ class Render(unittest.TestCase):
             fence_end = text.index("```\n", 4)
             self.assertNotIn("<!-- deliver:", text[:fence_end])
 
+    def test_a_marker_quoted_in_prose_is_not_a_delimiter(self):
+        key = next(iter(render.H["delivered"]))
+        quoted = f"The block between `<!-- deliver:{key} -->` and its close is generated."
+        with tempfile.TemporaryDirectory() as tmp:
+            p = self.skill(tmp, self.SECTIONS.replace("own words", quoted, 1))
+            render.render(p)
+            self.assertFalse(render.render(p))
+            self.assertIn(quoted, p.read_text(encoding="utf-8"))
+
     def test_an_unpaired_marker_stops_the_render(self):
         key = next(iter(render.H["delivered"]))
         for broken in (f"<!-- deliver:{key} -->\n",
@@ -181,6 +199,24 @@ class Fences(unittest.TestCase):
         import validate
         text = "## Owns\n```text\n```example\n```\n## Done when\nyes\n"
         self.assertEqual(validate.sections(text).get("Done when"), "yes")
+
+
+class Validator(unittest.TestCase):
+    """False positives: content these rules must leave alone."""
+
+    def test_a_marker_inside_a_code_span_is_a_mention(self):
+        import validate
+        line = "A Python marker reads `x = f()  #TODO(agent): ...` in the source."
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(line)))
+        open_span = "**quarantined with a `#TODO(agent):"
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
+
+    def test_a_pipe_in_a_shell_example_is_not_an_enumeration(self):
+        import validate
+        line = "List the environment with `ENV | sort` first."
+        m = validate.ENUM_RE.search(line)
+        self.assertTrue(m is None or not validate._is_enumeration(
+            [w.strip() for w in m.group(1).split("|")]))
 
 
 class Figures(unittest.TestCase):

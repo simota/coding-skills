@@ -426,6 +426,31 @@ def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "status:  # DONE 
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "severity: CRITICAL | HIGH | low\n\n## ")
 
 
+@case("V1-scalar")
+def _(r):
+    """Frontmatter that parses to a scalar is reported, not a traceback."""
+    p = r / f"{S}coding-test/SKILL.md"
+    t = p.read_text(encoding="utf-8")
+    head, body = t.split("---\n", 2)[1:]
+    p.write_text("---\njust text\n---\n" + body, encoding="utf-8")
+
+
+@case("V27-loop")
+def _(r): (r / f"{S}coding-test/playbooks/loop.md").symlink_to("loop.md")
+
+
+@case("V34-deep")
+def _(r): (r / f"{S}coding-test/playbooks/tools").symlink_to("../../../coding-tools")
+
+
+@case("V34-root")
+def _(r): (r / f"{S}coding-test/repo").symlink_to("../..")
+
+
+@case("V38-lower-first")
+def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "status: done | PARTIAL | BLOCKED\n\n## ")
+
+
 def main() -> int:
     baseline = run(ROOT)
     if "green" not in baseline:

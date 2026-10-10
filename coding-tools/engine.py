@@ -89,13 +89,30 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
     runner exists not to take on faith: `"refuted": "false"` is a string, and
     read as truthy it reverses the verdict.
     """
+    for key in ("anyOf", "oneOf"):
+        options = schema.get(key)
+        if isinstance(options, list) and options:
+            fits = 0
+            for option in options:
+                try:
+                    conforms(obj, option, where)
+                    fits += 1
+                except EngineError:
+                    pass
+            if fits == 0 or (key == "oneOf" and fits > 1):
+                raise EngineError(f"{where} matches {fits} of the schema's {key} options")
+    if "const" in schema and obj != schema["const"]:
+        raise EngineError(f"{where} is {obj!r}, the schema fixes it at {schema['const']!r}")
+    if isinstance(schema.get("enum"), list) and obj not in schema["enum"]:
+        raise EngineError(f"{where} is {obj!r}, not one of {schema['enum']}")
     types = [t for t in _types(schema) if t]
     if types:
         ok = False
         for t in types:
-            if t in ("number", "integer"):
-                ok |= isinstance(obj, (int, float)) and not isinstance(obj, bool) and (
-                    t == "number" or float(obj).is_integer())
+            if t in ("number", "integer") and not isinstance(obj, bool):
+                # An int is checked as an int: float() of a 400-digit one overflows.
+                ok |= isinstance(obj, int) or (isinstance(obj, float) and (
+                    t == "number" or obj.is_integer()))
             elif t in _JSON_TYPES:
                 ok |= isinstance(obj, _JSON_TYPES[t])
         if not ok:

@@ -78,7 +78,8 @@ hooks:
 SKILL_DIRS := $(patsubst %/SKILL.md,%,$(wildcard skills/coding-*/SKILL.md))
 
 # A link is this repo's only when it points at this repo's skill. Another
-# checkout's link with the same name is left alone by every target here.
+# checkout's live link with the same name is left alone by every target here; a
+# dangling one — a checkout that moved — is replaced by link and removed by unlink.
 link:
 	@for dir in $(HOST_DIRS); do \
 		if [ ! -d "$$(dirname "$$dir")" ]; then echo "skip $$dir (host not installed here)"; continue; fi; \
@@ -86,7 +87,9 @@ link:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; want="$(REPO)/$$path"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" != "$$want" ]; then \
+			if [ -L "$$target" ] && [ ! -e "$$target" ]; then \
+				old=$$(readlink "$$target"); ln -sfn "$$want" "$$target"; echo "  relink $$name (was dangling: $$old)"; \
+			elif [ -L "$$target" ] && [ "$$(readlink "$$target")" != "$$want" ]; then \
 				echo "  skip $$name (links to $$(readlink "$$target"), not this repo)"; \
 			elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 				echo "  skip $$name (a real path is already there)"; \
@@ -102,7 +105,7 @@ unlink:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+			if [ -L "$$target" ] && { [ "$$(readlink "$$target")" = "$(REPO)/$$path" ] || [ ! -e "$$target" ]; }; then \
 				rm "$$target"; echo "  unlink $$name"; \
 			elif [ -L "$$target" ]; then echo "  keep $$name (links elsewhere)"; fi; \
 		done; \
@@ -113,8 +116,10 @@ status:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
-				if [ -e "$$target" ]; then echo "  linked   $$name"; else echo "  dangling $$name"; fi; \
+			if [ -L "$$target" ] && [ ! -e "$$target" ]; then \
+				echo "  dangling $$name -> $$(readlink "$$target")"; \
+			elif [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+				echo "  linked   $$name"; \
 			elif [ -L "$$target" ]; then echo "  foreign  $$name -> $$(readlink "$$target")"; \
 			elif [ -e "$$target" ]; then echo "  occupied $$name (a real path)"; \
 			else echo "  unlinked $$name"; fi; \

@@ -18,7 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import fence_mask                      # noqa: E402
+from fences import fence_mask, marker_lines        # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -63,25 +63,60 @@ TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
 # a marker. Excluding only those — rather than any line with a backtick on it —
 # is what leaves V22 something to check: every marker in the corpus shares its
 # line with some other code span.
-MARKER_RE = re.compile(r"(?<!`)#" + r"TODO\(agent\):")
+MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
+
+
+def outside_code_spans(line: str) -> str:
+    """The line with its code spans removed; a span left open runs on to the
+    next line, so everything after an unmatched backtick goes too."""
+    return re.sub(r"`[^`]*`", "", line).split("`", 1)[0]
 
 
 def read(p: Path) -> str:
-    return p.read_text(encoding="utf-8")
+    """A page that cannot be read — a looping or dangling link — is a failure
+    to report, not a traceback that hides every other rule's result."""
+    try:
+        return p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        fail("V27", f"{p.relative_to(ROOT)} cannot be read: {e.strerror or e}")
+        return ""
 
 
-def frontmatter(text: str) -> dict:
+_FRONTMATTER: dict[str, dict] = {}
+
+
+def frontmatter(text: str, label: str) -> dict:
     """Parsed as YAML, which is how a CLI reads it. A line-by-line reading saw
     only the first line of a continued description, so length and wording rules
-    checked a fragment of what the listing actually carries."""
-    if not text.startswith("---\n"):
-        return {}
-    try:
-        got = yaml.safe_load(text.split("---\n", 2)[1])
-    except yaml.YAMLError as e:
-        fail("V1", f"frontmatter is not valid YAML: {e}".splitlines()[0])
-        return {}
-    return {k: (v if isinstance(v, str) else str(v)) for k, v in (got or {}).items()}
+    checked a fragment of what the listing actually carries.
+
+    Parsed once per page, so a broken header is reported once and by name
+    rather than by every rule that reads it."""
+    if label in _FRONTMATTER:
+        return _FRONTMATTER[label]
+    out: dict = {}
+    if text.startswith("---\n"):
+        try:
+            got = yaml.safe_load(text.split("---\n", 2)[1])
+        except yaml.YAMLError as e:
+            fail("V1", f"{label} frontmatter is not valid YAML: " + str(e).splitlines()[0])
+            got = {}
+        if not isinstance(got, dict):
+            fail("V1", f"{label} frontmatter is not a mapping of keys to values")
+            got = {}
+        out = {str(k): "" if v is None else v if isinstance(v, str) else str(v)
+               for k, v in got.items()}
+    _FRONTMATTER[label] = out
+    return out
+
+
+def walk(d: Path):
+    """Every entry under d, not descending through a link — `_coding` and
+    `registry` are judged as links, not re-walked as directories."""
+    for entry in sorted(d.iterdir()):
+        yield entry
+        if entry.is_dir() and not entry.is_symlink():
+            yield from walk(entry)
 
 
 def sections(text: str) -> dict[str, str]:
@@ -112,7 +147,7 @@ def v1_sizes():
         n = len(t.splitlines())
         if n > LIM["skill_md_lines"]:
             fail("V1", f"{d.name}/SKILL.md is {n} lines (max {LIM['skill_md_lines']})")
-        desc = frontmatter(t).get("description", "")
+        desc = frontmatter(t, d.name).get("description", "")
         if len(desc) > LIM["description_chars"]:
             fail("V1", f"{d.name} description is {len(desc)} chars "
                        f"(max {LIM['description_chars']}; the listing truncates)")
@@ -121,7 +156,7 @@ def v1_sizes():
 def v2_description_terms():
     others = set(SKILLS)
     for d in SKILL_DIRS:
-        desc = frontmatter(read(d / "SKILL.md")).get("description", "")
+        desc = frontmatter(read(d / "SKILL.md"), d.name).get("description", "")
         for term in H["forbidden_description_terms"]:
             if term.lower() in desc.lower():
                 fail("V2", f"{d.name} description contains {term!r}; "
@@ -279,7 +314,7 @@ def v15_permission_class():
             fail("V15", f"{d.name} declares unknown class {declared!r}")
             continue
         want = classes[declared]["tools"]
-        got = frontmatter(read(d / "SKILL.md")).get("allowed-tools", "")
+        got = frontmatter(read(d / "SKILL.md"), d.name).get("allowed-tools", "")
         if got != want:
             fail("V15", f"{d.name} allowed-tools is {got!r}, class {declared} requires {want!r}")
 
@@ -299,15 +334,19 @@ def v17_delivery():
         owners = set(SIGNATURE["required_of"]) if spec.get("only") == "signature" else set(SKILLS)
         for d in SKILL_DIRS:
             text = read(d / "SKILL.md")
+            lines = text.splitlines()
+            present = marker_lines(lines, open_m) or marker_lines(lines, close_m)
             if d.name not in owners:
-                if open_m in text:
+                if present:
                     fail("V17", f"{d.name}/SKILL.md carries the {key} block, which is "
                                 f"delivered only to {sorted(owners)} (run: make render)")
                 continue
-            if open_m not in text or close_m not in text:
-                fail("V17", f"{d.name}/SKILL.md is missing the {key} delivery block")
+            span = delivered_block(text, key)
+            if span is None:
+                fail("V17", f"{d.name}/SKILL.md is missing the {key} delivery block, "
+                            "or its markers are unpaired")
                 continue
-            got = text.split(open_m, 1)[1].split(close_m, 1)[0].strip("\n")
+            got = "\n".join(lines[span[0] + 1:span[1]]).strip("\n")
             if got != want:
                 fail("V17", f"{d.name}/SKILL.md {key} block differs from "
                             f"coding-registry/delivered/{key}.md (run: make render)")
@@ -318,7 +357,7 @@ def v17_delivery():
 
 def v18_signals_in_description():
     for d in SKILL_DIRS:
-        desc = _norm(frontmatter(read(d / "SKILL.md")).get("description", ""))
+        desc = _norm(frontmatter(read(d / "SKILL.md"), d.name).get("description", ""))
         for s in CAP.get(d.name, {}).get("signals", []):
             # Whole words, as V10 routes: `refactor` inside "Refactoring" is
             # not the word a request carries.
@@ -412,10 +451,23 @@ def v20_contract_vocabulary():
                             "a table row or a heading, not a mention")
 
 
+def delivered_block(text: str, key: str) -> tuple[int, int] | None:
+    """Line indices of a delivered block's two markers — whole lines outside any
+    fence, exactly one of each, in order — or None."""
+    lines = text.splitlines()
+    opens = marker_lines(lines, f"<!-- deliver:{key} -->")
+    closes = marker_lines(lines, f"<!-- /deliver:{key} -->")
+    if len(opens) == len(closes) == 1 and opens[0] < closes[0]:
+        return opens[0], closes[0]
+    return None
+
+
 def strip_delivered(text: str) -> str:
     for key in H["delivered"]:
-        text = re.sub(rf"<!-- deliver:{key} -->.*?<!-- /deliver:{key} -->",
-                      "", text, flags=re.S)
+        span = delivered_block(text, key)
+        if span:
+            lines = text.splitlines()
+            text = "\n".join(lines[:span[0]] + lines[span[1] + 1:])
     return text
 
 
@@ -432,7 +484,7 @@ def v22_markers_classified():
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
         for i, line in enumerate(read(f).splitlines(), 1):
-            if MARKER_RE.search(line):
+            if MARKER_RE.search(outside_code_spans(line)):
                 if not any(c in line for c in VOCAB["residual_classes"]):
                     fail("V22", f"{f.relative_to(ROOT)}:{i} marker carries no residual class")
 
@@ -498,20 +550,17 @@ def v26_boundaries_real():
 
 def v27_symlinks_stay_inside():
     """What a skill reaches must live in this repo, and must actually be there."""
-    # Every link at any depth, in each skill and in the shared directory. The
-    # walk does not descend through a link, so `_coding` and `registry` are
-    # checked as links rather than re-walked as directories.
-    def walk(d: Path):
-        for entry in sorted(d.iterdir()):
-            yield entry
-            if entry.is_dir() and not entry.is_symlink():
-                yield from walk(entry)
+    # Every link at any depth, in each skill and in the shared directory.
     for d in SKILL_DIRS + [SKILLS_ROOT / SHARED]:
         for entry in walk(d):
             if not entry.is_symlink():
                 continue
             label = entry.relative_to(SKILLS_ROOT)
-            target = (entry.parent / entry.readlink()).resolve()
+            try:
+                target = (entry.parent / entry.readlink()).resolve()
+            except (OSError, RuntimeError):
+                fail("V27", f"{label} is a symlink loop")
+                continue
             if not target.exists():
                 fail("V27", f"{label} is a broken symlink")
             elif ROOT.resolve() not in target.parents and target != ROOT.resolve():
@@ -696,19 +745,25 @@ def v34_tools_reachable():
                             "the set's own")
     tools_dir = (ROOT / f"{SET}-tools").resolve()
     for d in SKILL_DIRS:
-        for entry in sorted(d.iterdir()):
-            # Judged by where it points, not by its name: `tools -> coding-tools`
-            # or `render -> render.py` reaches the harness as surely as a `.py`.
-            target = entry.resolve() if entry.is_symlink() else None
-            if target == tools_dir:
-                fail("V34", f"{d.name}/{entry.name} links the whole {SET}-tools/; "
+        for entry in walk(d):
+            label = entry.relative_to(SKILLS_ROOT)
+            # Judged by where it points, not by its name, and at any depth:
+            # `tools -> coding-tools`, `render -> render.py`, or a link to the
+            # repo root reaches the harness as surely as a `.py` does.
+            try:
+                target = entry.resolve(strict=True) if entry.is_symlink() else None
+            except (OSError, RuntimeError):
+                continue                      # V27 reports a broken or looping link
+            if target is not None and (target == tools_dir or target in tools_dir.parents):
+                fail("V34", f"{label} reaches the whole {SET}-tools/; "
                             "tools are linked one by one")
             elif target is not None and tools_dir in target.parents:
-                if entry.name not in declared_tools or target.name != entry.name:
-                    fail("V34", f"{d.name}/{entry.name} links {SET}-tools/{target.name}, "
-                                "which linked_tools does not declare under that name")
-            elif entry.suffix == ".py" and entry.name not in declared_tools:
-                fail("V34", f"{d.name}/{entry.name} is a tool link nothing "
+                declared_here = entry.parent == d and entry.name in declared_tools
+                if not declared_here or target.name != entry.name:
+                    fail("V34", f"{label} links {SET}-tools/{target.name}, which "
+                                "linked_tools does not declare there under that name")
+            elif entry.parent == d and entry.suffix == ".py" and entry.name not in declared_tools:
+                fail("V34", f"{label} is a tool link nothing "
                             "declares; add it to linked_tools or remove it")
 
 
@@ -882,9 +937,13 @@ def v37_source_pins_the_rot():
 # A value may follow a colon, a `#` (a schema comment) or a backtick, and may
 # carry digits (`T0`). Lower-case values are matched too, then reported as
 # undeclared: one lower-case value used to hide the whole line from the rule.
-_ENUM_T = r"[A-Za-z][A-Za-z0-9-]*(?: [A-Z][A-Z0-9-]*)*"
-ENUM_RE = re.compile(rf"(?:^|[:#`]\s*)((?:[A-Z][A-Z0-9-]*(?: [A-Z][A-Z0-9-]*)*)"
-                     rf"(?:\s*\|\s*{_ENUM_T})+)(?=\s*(?:[#`(]|$))")
+_ENUM_T = r"[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*"
+ENUM_RE = re.compile(rf"(?:^|[:#]\s*)({_ENUM_T}(?:\s*\|\s*{_ENUM_T})+)(?=\s*(?:[#`(]|$))")
+
+
+def _is_enumeration(words: list[str]) -> bool:
+    """At least one all-caps value; otherwise `a | b` in prose would count."""
+    return any(re.fullmatch(r"[A-Z][A-Z0-9-]*(?: [A-Z][A-Z0-9-]*)*", w) for w in words)
 
 
 def v38_enumerations_declared():
@@ -904,6 +963,8 @@ def v38_enumerations_declared():
             if not m:
                 continue
             words = [w.strip() for w in m.group(1).split("|")]
+            if not _is_enumeration(words):
+                continue
             missing = [w for w in words if w not in declared]
             if missing:
                 fail("V38", f"{f.relative_to(ROOT)}:{i} switches on {', '.join(missing)}, "
@@ -932,11 +993,17 @@ def main() -> int:
     for rule in RULES:
         rule()
     import subprocess
-    got = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"], cwd=ROOT,
-                         capture_output=True, text=True)
-    hooks = got.returncode == 0 and (ROOT / got.stdout.strip()).exists()
-    print(f"{len(RULES)} rules · {len(SKILLS)} skills · "
-          f"hooks {'on' if hooks else 'off — run: make hooks'}")
+    try:
+        got = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"],
+                             cwd=ROOT, capture_output=True, text=True)
+    except OSError:                       # no git: the rules need none
+        got = None
+    if got is None or got.returncode != 0:
+        hooks = ""                        # not a repository: the hook's own checkout
+    else:
+        on = (ROOT / got.stdout.strip()).exists()
+        hooks = f" · hooks {'on' if on else 'off — run: make hooks'}"
+    print(f"{len(RULES)} rules · {len(SKILLS)} skills{hooks}")
     if FAILURES:
         for f in sorted(FAILURES):
             print(f"  {f}")
