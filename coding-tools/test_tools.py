@@ -80,6 +80,11 @@ class Engine(unittest.TestCase):
         engine.conforms(None, {"anyOf": [False, {"type": "null"}]})   # boolean subschemas
         with self.assertRaises(engine.EngineError):
             engine.conforms(1, {"anyOf": [False]})
+        for value, schema in (({"x": 1}, {"type": "object", "properties": {"x": False}}),
+                              ([1], {"type": "array", "items": False})):
+            with self.assertRaises(engine.EngineError, msg=schema):
+                engine.conforms(value, schema)
+        engine.conforms([], {"type": "array", "items": False})      # nothing to reject
 
     def test_a_boolean_is_not_a_number_in_const_or_enum(self):
         for value, schema in ((True, {"const": 1}), (True, {"enum": [1]}),
@@ -201,6 +206,11 @@ class Fences(unittest.TestCase):
 
     def test_an_info_string_with_a_backtick_is_not_a_fence(self):
         self.assertEqual(fences.kinds(["``` a`b", "## H"]), ["text", "text"])
+
+    def test_a_whitespace_only_line_ends_a_code_span_search(self):
+        # Paired across the blank line, the lone backtick would hide the marker.
+        text = "a ` lone\n   \nnext #TODO(agent): y and `x`"
+        self.assertIn("#TODO(agent): y", fences.mask_code_spans(text))
 
     def test_blocks_and_an_unclosed_fence(self):
         self.assertEqual(fences.blocks(["a", "```", "x", "```", "```py", "y"]), [["x"], ["y"]])

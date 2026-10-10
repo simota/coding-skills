@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 
 _OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+_BLANK_LINE = re.compile(r"\n[ \t]*\n")
 
 
 def kinds(lines: list[str]) -> list[str]:
@@ -84,8 +85,9 @@ def mask_code_spans(text: str) -> str:
             i = start + 1
             continue
         run = m.group()
-        paragraph_end = text.find("\n\n", m.end())
-        limit = len(text) if paragraph_end == -1 else paragraph_end
+        # A blank line ends the paragraph, spaces and tabs on it included.
+        blank = _BLANK_LINE.search(text, m.end())
+        limit = len(text) if blank is None else blank.start()
         close = re.compile(rf"(?<!`){run}(?!`)").search(text, m.end(), limit)
         if close is None:
             i = m.end()
