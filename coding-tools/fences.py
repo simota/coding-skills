@@ -93,28 +93,48 @@ class _Visible(HTMLParser):
     """The text an HTML block shows, by line offset. A `<` that opens no tag is
     text, as a browser shows it; comments and attributes are not.
 
-    Character references are decoded where they are written: `&#10;` shows a
-    line break but occupies no source line, so it must not move what follows
-    it onto the next one."""
+    A text run is read back from its source span and decoded one source line
+    at a time, so a reference lands on the line it is written on (`&#10;`
+    shows a break but occupies no line), and it is decoded by the browser's
+    rules (`&amp` and `&#40` work without `;`, `&colon` does not), whatever
+    this Python's parser makes of it."""
 
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=False)
+    def __init__(self, source: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.src = source
+        self.starts = [0]
+        for line in source.split("\n"):
+            self.starts.append(self.starts[-1] + len(line) + 1)
+        self.text_from: int | None = None
         self.out: dict[int, str] = {}
 
-    def _add(self, line: int, piece: str) -> None:
-        self.out[line] = self.out.get(line, "") + piece
+    def _offset(self) -> int:
+        line, col = self.getpos()
+        return self.starts[line - 1] + col
+
+    def _flush(self, end: int) -> None:
+        if self.text_from is None:
+            return
+        first = self.src.count("\n", 0, self.text_from)
+        for i, raw in enumerate(self.src[self.text_from:end].split("\n")):
+            shown = html.unescape(raw).replace("\n", " ").replace("\r", " ")
+            if shown:  # a lone space between two tags still separates words
+                self.out[first + i] = self.out.get(first + i, "") + shown
+        self.text_from = None
 
     def handle_data(self, data: str) -> None:
-        line = self.getpos()[0] - 1
-        for offset, piece in enumerate(data.split("\n")):
-            if piece:  # a lone space between two tags still separates words
-                self._add(line + offset, piece)
+        if self.text_from is None:
+            self.text_from = self._offset()
 
-    def handle_charref(self, name: str) -> None:
-        self._add(self.getpos()[0] - 1, html.unescape(f"&#{name};").replace("\n", " "))
+    def _boundary(self, *_args) -> None:
+        self._flush(self._offset())
 
-    def handle_entityref(self, name: str) -> None:
-        self._add(self.getpos()[0] - 1, html.unescape(f"&{name};").replace("\n", " "))
+    handle_starttag = handle_endtag = handle_startendtag = _boundary
+    handle_comment = handle_decl = handle_pi = unknown_decl = _boundary
+
+    def close(self) -> None:
+        super().close()
+        self._flush(len(self.src))
 
 
 def live_text(text: str) -> dict[int, str]:
@@ -128,7 +148,7 @@ def live_text(text: str) -> dict[int, str]:
             out[line] = out.get(line, "") + child.content
     for tok in _tokens(text):
         if tok.type == "html_block" and tok.map:
-            parser = _Visible()
+            parser = _Visible(tok.content)
             parser.feed(tok.content)
             parser.close()
             for offset, shown in parser.out.items():

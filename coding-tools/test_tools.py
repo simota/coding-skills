@@ -221,6 +221,7 @@ class Markdown(unittest.TestCase):
             "inside an HTML block": "<div>\n" + self.M + "\n</div>",
             "between bare angle brackets in an HTML block": "<div>\nx < " + self.M + " > y\n</div>",
             "spelled with a character reference": "<div>#TODO&#40;agent): fix</div>",
+            "spelled with references, some without semicolons": "<div>x\n&amp#TODO&#40agent)&colon; fix</div>",
         }
         for name, text in cases.items():
             self.assertTrue(self.live(text), msg=name)
@@ -241,6 +242,7 @@ class Markdown(unittest.TestCase):
             "in an HTML comment": "<!--\n" + self.M + "\n-->",
             "in an HTML attribute": "<div title=\"" + self.M + "\">\nx\n</div>",
             "split by a space between tags": "<div>#TO<span></span> <b></b>DO(agent): fix</div>",
+            "a reference that needs its semicolon": "<div>x\n#TODO(agent)&colon fix</div>",
         }
         for name, text in cases.items():
             self.assertFalse(self.live(text), msg=name)
