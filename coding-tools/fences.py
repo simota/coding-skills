@@ -17,6 +17,7 @@ line number.
 from __future__ import annotations
 
 import functools
+import re
 
 from markdown_it import MarkdownIt
 
@@ -85,14 +86,28 @@ def _inline(text: str):
                 line += 1
 
 
+_COMMENT = re.compile(r"<!--.*?-->", re.S)
+_TAG = re.compile(r"<[^>]*>")
+
+
 def live_text(text: str) -> dict[int, str]:
     """{line index: the text that renders there outside code}. Code spans,
-    code blocks and HTML are absent; a span crossing lines is absent on every
-    line it covers."""
+    code blocks, HTML tags and comments are absent; a span crossing lines is
+    absent on every line it covers. Text inside an HTML block renders too, so
+    it is kept, line by line, with the tags and comments taken out."""
     out: dict[int, str] = {}
     for line, child in _inline(text):
         if child.type == "text":
             out[line] = out.get(line, "") + child.content
+    for tok in _tokens(text):
+        if tok.type == "html_block" and tok.map:
+            # Blank each comment in place so the lines after it keep their numbers.
+            visible = _COMMENT.sub(lambda m: "\n" * m.group().count("\n"), tok.content)
+            for offset, raw in enumerate(visible.split("\n")):
+                shown = _TAG.sub("", raw)
+                if shown.strip():
+                    i = tok.map[0] + offset
+                    out[i] = out.get(i, "") + shown
     return out
 
 

@@ -78,6 +78,8 @@ hooks:
 	@hooks=$$(git rev-parse --path-format=absolute --git-path hooks) && \
 	common=$$(git rev-parse --path-format=absolute --git-common-dir) && \
 	top=$$(git rev-parse --show-toplevel) || exit 1; \
+	if [ "$$hooks/pre-commit" -ef coding-tools/githooks/pre-commit ]; then \
+		echo "pre-commit already in place: core.hooksPath is coding-tools/githooks itself"; exit 0; fi; \
 	case "$$hooks/" in "$$common"/*|"$$top"/*) ;; *) \
 		if [ "$(FORCE)" != 1 ]; then echo "refusing: $$hooks is outside this repository (a shared core.hooksPath); FORCE=1 installs there anyway"; exit 1; fi;; esac; \
 	if { [ -e "$$hooks/pre-commit" ] || [ -L "$$hooks/pre-commit" ]; } && \

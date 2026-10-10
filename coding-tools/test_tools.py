@@ -218,6 +218,7 @@ class Markdown(unittest.TestCase):
             "after a thematic break": "a `\n\n***\n" + self.M + " `",
             "in a list item after a span opener": "a ` lone\n- item " + self.M + " `x`",
             "in a nested quote": "> `example\n> > " + self.M + "`",
+            "inside an HTML block": "<div>\n" + self.M + "\n</div>",
         }
         for name, text in cases.items():
             self.assertTrue(self.live(text), msg=name)
@@ -235,6 +236,8 @@ class Markdown(unittest.TestCase):
             "tilde fence": "~~~\n" + self.M + "\n~~~",
             "fence holding a fence-like line": "```text\n```example\n" + self.M + "\n```",
             "indented code": "para\n\n    " + self.M,
+            "in an HTML comment": "<!--\n" + self.M + "\n-->",
+            "in an HTML attribute": "<div title=\"" + self.M + "\">\nx\n</div>",
         }
         for name, text in cases.items():
             self.assertFalse(self.live(text), msg=name)
@@ -338,6 +341,22 @@ class Round4(unittest.TestCase):
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertTrue((pathlib.Path(tmp) / ".githooks" / "pre-commit").exists())
+
+    def test_make_hooks_never_deletes_its_own_source(self):
+        root = pathlib.Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+            subprocess.run(["git", "init", "-q", tmp], check=True, env=env)
+            subprocess.run(["git", "-C", tmp, "config", "core.hooksPath",
+                            "coding-tools/githooks"], check=True, env=env)
+            (pathlib.Path(tmp) / "coding-tools" / "githooks").mkdir(parents=True)
+            for f in ("Makefile", "coding-tools/githooks/pre-commit"):
+                (pathlib.Path(tmp) / f).write_bytes((root / f).read_bytes())
+            r = subprocess.run(["make", "-s", "hooks"], cwd=tmp, env=env,
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertTrue((pathlib.Path(tmp) / "coding-tools/githooks/pre-commit").exists())
 
     def test_make_hooks_recreates_a_missing_hooks_directory(self):
         root = pathlib.Path(__file__).resolve().parent.parent
