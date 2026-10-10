@@ -456,8 +456,12 @@ def _(r): (r / f"{S}coding-test/playbooks/flaky.md").write_bytes(b"<!-- coding:g
 
 
 def main() -> int:
-    baseline = run(ROOT)
-    if "green" not in baseline:
+    # The exit code, not the word "green": a failing tree once printed both, and
+    # every case then "fired" on a failure that was already there.
+    first = subprocess.run([sys.executable, str(ROOT / "coding-tools" / "validate.py")],
+                           capture_output=True, text=True)
+    baseline = first.stdout + first.stderr
+    if first.returncode != 0:
         print("the working tree is already failing; fix that first:\n" + baseline)
         return 1
 

@@ -16,7 +16,6 @@ from __future__ import annotations
 import re
 
 _OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
-_BLANK_LINE = re.compile(r"\n[ \t]*\n")
 
 
 def kinds(lines: list[str]) -> list[str]:
@@ -63,37 +62,75 @@ def marker_lines(lines: list[str], marker: str) -> list[int]:
             if line.strip() == marker and not fenced]
 
 
-def mask_code_spans(text: str) -> str:
-    """The text with every inline code span blanked out, newlines kept, so a
-    line number still points at the same line.
+# A line that starts a new block ends the paragraph a span would have to sit in:
+# a blank line, an ATX heading, a list item, a block quote, a fence, an HTML block.
+_BLOCK_START = re.compile(r"[ \t]*$|[ ]{0,3}(?:#{1,6}(?:[ \t]|$)|[-+*][ \t]|\d{1,9}[.)][ \t]|>|`{3,}|~{3,}|<)")
 
-    As CommonMark reads spans: a run of n backticks opens one only if it is not
-    escaped, and only a run of exactly n closes it — possibly on a later line
-    of the same paragraph, never past a blank line. A run with no such close is
+
+def mask_code_spans(text: str) -> str:
+    """The text with every inline code span — and every fenced block — blanked
+    out, newlines kept, so a line number still points at the same line.
+
+    As CommonMark reads spans: a run of n backticks opens one, and only a run of
+    exactly n closes it, possibly on a later line of the same paragraph but never
+    past the start of another block. A backslash escapes one backtick, not the
+    run: the rest of the run can still open a span. A run with no close is
     literal text, and what follows it is not hidden.
     """
-    out = list(text)
-    i = 0
-    for m in re.finditer(r"`+", text):
-        start = m.start()
-        if start < i:
-            continue
+    lines = text.split("\n")
+    mask = fence_mask(lines)
+    out = [" " * len(l) if fenced else l for l, fenced in zip(lines, mask)]
+    # Paragraphs: maximal runs of unfenced lines, cut before any block start.
+    paragraphs, cur = [], []
+    for i, line in enumerate(lines):
+        if mask[i] or (cur and _BLOCK_START.match(line)):
+            if cur:
+                paragraphs.append(cur)
+            cur = []
+        if not mask[i] and line.strip():
+            cur.append(i)
+    if cur:
+        paragraphs.append(cur)
+    for para in paragraphs:
+        for start, end in _spans("\n".join(lines[i] for i in para)):
+            pos = 0
+            for i in para:                    # map the span back onto its lines
+                a, b = max(start - pos, 0), min(end - pos, len(lines[i]))
+                if a < b:
+                    out[i] = out[i][:a] + " " * (b - a) + out[i][b:]
+                pos += len(lines[i]) + 1
+    return "\n".join(out)
+
+
+def _spans(text: str) -> list[tuple[int, int]]:
+    """(start, end) of each code span in one paragraph."""
+    found, i = [], 0
+    while True:
+        m = re.compile(r"`+").search(text, i)
+        if m is None:
+            return found
+        start, run = m.start(), m.group()
         backslashes = 0
         while start - backslashes > 0 and text[start - backslashes - 1] == "\\":
             backslashes += 1
-        if backslashes % 2:                   # an escaped backtick is literal
-            i = start + 1
-            continue
-        run = m.group()
-        # A blank line ends the paragraph, spaces and tabs on it included.
-        blank = _BLANK_LINE.search(text, m.end())
-        limit = len(text) if blank is None else blank.start()
-        close = re.compile(rf"(?<!`){run}(?!`)").search(text, m.end(), limit)
+        if backslashes % 2:                   # the first backtick is escaped
+            start, run = start + 1, run[1:]
+            if not run:
+                i = m.end()
+                continue
+        close = re.compile(rf"(?<!`){run}(?!`)").search(text, m.end())
         if close is None:
             i = m.end()
             continue
-        for k in range(start, close.end()):
-            if out[k] != "\n":
-                out[k] = " "
+        found.append((start, close.end()))
         i = close.end()
-    return "".join(out)
+
+
+_H2 = re.compile(r"^ {0,3}##[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$")
+
+
+def h2_title(line: str) -> str | None:
+    """The title of a `## ` heading as CommonMark reads it — up to three spaces
+    of indent, closing hashes and trailing spaces dropped — or None."""
+    m = _H2.match(line)
+    return m.group(1) if m else None

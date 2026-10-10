@@ -250,6 +250,91 @@ class Validator(unittest.TestCase):
             [w.strip() for w in m.group(1).split("|")]))
 
 
+class Round4(unittest.TestCase):
+    """Each of these passed silently, or crashed, before the fix it names."""
+
+    def test_spans_respect_block_structure(self):
+        m = "#TODO(agent): fix"
+        visible = {
+            "tilde fence with a lone backtick": "~~~\necho `date\n~~~\nprose " + m + " `x`",
+            "heading between": "a ` lone\n## Next\nthen " + m + " `x`",
+            "list item between": "a ` lone\n- item " + m + " `x`",
+        }
+        for name, text in visible.items():
+            self.assertIn(m, fences.mask_code_spans(text), msg=name)
+        hidden = {
+            "escaped first backtick": "\\``" + m + "`",
+            "inside a fence": "```\n" + m + "\n```",
+        }
+        for name, text in hidden.items():
+            self.assertNotIn(m, fences.mask_code_spans(text), msg=name)
+            self.assertEqual(fences.mask_code_spans(text).count("\n"), text.count("\n"))
+
+    def test_heading_forms(self):
+        self.assertEqual(fences.h2_title("## Done when ##"), "Done when")
+        self.assertEqual(fences.h2_title("   ## Verify with  "), "Verify with")
+        self.assertIsNone(fences.h2_title("    ## code"))
+        self.assertIsNone(fences.h2_title("### Three"))
+
+    def test_frontmatter_ignores_an_indented_rule_and_a_bom(self):
+        import validate
+        text = '---\ndescription: >-\n  one\n  ---\n  two\n---\nbody\n'
+        self.assertEqual(validate.frontmatter(text, "t-indented")["description"], "one --- two")
+
+    def test_schema_keywords_are_checked_or_refused(self):
+        for value, schema in (({}, {"allOf": [{"required": ["x"]}]}),
+                              ("a", {"not": {"type": "string"}}),
+                              ({"x": 1, "y": 2}, {"type": "object", "properties": {"x": {}},
+                                                  "additionalProperties": False}),
+                              (-1, {"minimum": 0}),
+                              ({"a": 1}, {"properties": {"a": {"$ref": "#/x"}}})):
+            with self.assertRaises(engine.EngineError, msg=schema):
+                engine.conforms(value, schema)
+        engine.conforms({"x": 1}, {"title": "t", "properties": {"x": {"description": "d"}}})
+
+    def test_strict_leaves_literals_and_refuses_open_maps(self):
+        got = engine.strict({"type": "object",
+                             "properties": {"k": {"const": {"type": "object"}}}})
+        self.assertEqual(got["properties"]["k"]["const"], {"type": "object"})
+        with self.assertRaises(engine.EngineError):
+            engine.strict({"type": "object", "additionalProperties": True})
+
+    def test_spawn_failures_are_engine_errors(self):
+        with self.assertRaises(engine.EngineError):
+            engine._spawn("x", [sys.executable, "-c", "pass", "x" * 200_000])
+        r = engine._spawn("x", [sys.executable, "-c",
+                                "import sys; sys.stdout.buffer.write(b'\\xff{}')"])
+        self.assertIn("{}", r.stdout)
+        self.assertEqual(engine._as_argument("--- task"), "\n--- task")
+
+    def test_a_page_that_lost_its_claims_fails(self):
+        before = len(figures_check.failures)
+        figures_check.states(pathlib.Path("/nonexistent/recovery.md"), "reset --hard")
+        self.assertGreater(len(figures_check.failures), before)
+        del figures_check.failures[before:]
+
+    def test_render_finds_heading_forms_and_refuses_bad_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp) / "coding-test"
+            d.mkdir()
+            p = d / "SKILL.md"
+            body = "".join(f"## {s} ##\n\nx\n\n" for s in
+                           ("Owns", "Before starting", "Decide first", "Always / Never",
+                            "Verify with", "Done when"))
+            p.write_text(body, encoding="utf-8")
+            render.render(p)
+            self.assertIn("<!-- deliver:", p.read_text(encoding="utf-8"))
+            p.write_bytes(b"## Owns\n\xff\n")
+            with self.assertRaises(render.Malformed):
+                render.render(p)
+
+    def test_make_refute_requires_the_running_engine(self):
+        r = subprocess.run(["make", "-s", "-C", str(pathlib.Path(__file__).resolve().parent.parent),
+                            "refute", "CLAIMS=x.json"], capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("RUNNING", r.stdout + r.stderr)
+
+
 class Figures(unittest.TestCase):
     BLOCK = ["$ git log --oneline -Sb   # note",
              "aaaaaaa c3                # added",

@@ -29,7 +29,7 @@ help:
 	@echo "make engines   ask each checker engine for one object; reports what is unreachable"
 	@echo "make drift     re-render the delivered blocks; fail if any were stale"
 	@echo "make render    write the delivered blocks back into every SKILL.md"
-	@echo "make hooks     install the pre-commit hook"
+	@echo "make hooks     install the pre-commit hook (FORCE=1 over a shared or foreign one)"
 	@echo "make link      symlink the skills into claude / codex / agy"
 	@echo "make unlink    remove those symlinks (FORCE=1: dangling ones too)"
 	@echo "make status    show what is linked"
@@ -58,18 +58,29 @@ figures:
 engines:
 	@python3 coding-tools/engine.py --selftest
 
+# The running engine is stated, never defaulted: a codex session that let this
+# guess `claude` would put codex in the pool checking its own claim.
 refute:
-	@test -n "$(CLAIMS)" || { echo "usage: make refute CLAIMS=claims.json RUNNING=claude"; exit 2; }
-	@python3 coding-tools/refute.py --running "$(or $(RUNNING),claude)" "$(CLAIMS)"
+	@test -n "$(CLAIMS)" && test -n "$(RUNNING)" || { \
+		echo "usage: make refute CLAIMS=claims.json RUNNING=claude|codex|agy"; exit 2; }
+	@python3 coding-tools/refute.py --running "$(RUNNING)" "$(CLAIMS)"
 
 render:
 	@python3 coding-tools/render.py
 
 # `--git-path` resolves the hooks directory in a worktree and under
-# core.hooksPath, where `.git` is a file or the hooks live elsewhere.
+# core.hooksPath, where `.git` is a file or the hooks live elsewhere. A
+# core.hooksPath outside this repository is shared with every other repository
+# on the machine, and a different pre-commit already there is someone's: both
+# are left alone unless FORCE=1.
 hooks:
-	@hooks=$$(git rev-parse --git-path hooks) && mkdir -p "$$hooks" && \
-	cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
+	@hooks=$$(cd "$$(git rev-parse --git-path hooks)" 2>/dev/null && pwd -P || git rev-parse --git-path hooks); \
+	common=$$(cd "$$(git rev-parse --git-common-dir)" && pwd -P); \
+	case "$$hooks/" in "$$common"/*) ;; *) \
+		if [ "$(FORCE)" != 1 ]; then echo "refusing: $$hooks is outside this repository (a shared core.hooksPath); FORCE=1 installs there anyway"; exit 1; fi;; esac; \
+	if [ -e "$$hooks/pre-commit" ] && ! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" && [ "$(FORCE)" != 1 ]; then \
+		echo "refusing: $$hooks/pre-commit exists and is not this repo's; FORCE=1 replaces it"; exit 1; fi; \
+	mkdir -p "$$hooks" && cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
 	chmod +x "$$hooks/pre-commit" && echo "pre-commit installed in $$hooks"
 
 # A skill is a directory holding a SKILL.md, under skills/ where the plugin
