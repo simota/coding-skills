@@ -220,6 +220,7 @@ class Markdown(unittest.TestCase):
             "in a nested quote": "> `example\n> > " + self.M + "`",
             "inside an HTML block": "<div>\n" + self.M + "\n</div>",
             "between bare angle brackets in an HTML block": "<div>\nx < " + self.M + " > y\n</div>",
+            "spelled with a character reference": "<div>#TODO&#40;agent): fix</div>",
         }
         for name, text in cases.items():
             self.assertTrue(self.live(text), msg=name)
@@ -239,6 +240,7 @@ class Markdown(unittest.TestCase):
             "indented code": "para\n\n    " + self.M,
             "in an HTML comment": "<!--\n" + self.M + "\n-->",
             "in an HTML attribute": "<div title=\"" + self.M + "\">\nx\n</div>",
+            "split by a space between tags": "<div>#TO<span></span> <b></b>DO(agent): fix</div>",
         }
         for name, text in cases.items():
             self.assertFalse(self.live(text), msg=name)

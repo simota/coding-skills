@@ -107,14 +107,14 @@ class _Visible(HTMLParser):
     def handle_data(self, data: str) -> None:
         line = self.getpos()[0] - 1
         for offset, piece in enumerate(data.split("\n")):
-            if piece.strip():
+            if piece:  # a lone space between two tags still separates words
                 self._add(line + offset, piece)
 
     def handle_charref(self, name: str) -> None:
-        self._add(self.getpos()[0] - 1, " " + html.unescape(f"&#{name};").replace("\n", " "))
+        self._add(self.getpos()[0] - 1, html.unescape(f"&#{name};").replace("\n", " "))
 
     def handle_entityref(self, name: str) -> None:
-        self._add(self.getpos()[0] - 1, " " + html.unescape(f"&{name};").replace("\n", " "))
+        self._add(self.getpos()[0] - 1, html.unescape(f"&{name};").replace("\n", " "))
 
 
 def live_text(text: str) -> dict[int, str]:
