@@ -1,6 +1,6 @@
 ---
 name: coding-refactor
-description: "Refactoring: structure changes while behaviour stays identical — extraction, rename, duplication, dead code, module boundaries, mechanical migration. Use when correct code is hard to work with."
+description: "Refactor: structure changes, behaviour stays identical — extract and extraction, rename, duplication, dead code, module boundaries, mechanical migration. Use when correct code is hard to work with."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->
@@ -32,7 +32,7 @@ messages, ordering, and timing that anything depends on.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -41,7 +41,7 @@ messages, ordering, and timing that anything depends on.
 - **A term with two meanings, or a concept with two names, is a question, never
   a silent choice** — one question with its default, the answer into the brief's
   `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
-  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
+  write it, else `open`), and only those names from then on (`_coding/SIZING.md`)
 <!-- /deliver:sizing -->
 <!-- deliver:predict -->
 - **Register the prediction before the run** — ideally before the edit: what
@@ -68,7 +68,7 @@ messages, ordering, and timing that anything depends on.
 | Code appears unused | Prove it: grep, dynamic dispatch check, then history. Then delete it — do not comment it out |
 | The tests break during the refactor | Distinguish changed behaviour from broken imports or names. Revert behaviour changes; update only mechanical test references for the latter |
 | Someone else is working in these files | Coordinate or defer. A large refactor across an active branch is a merge conflict with a delay on it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means nothing was checked. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run the safety net | **Predict that it stays green and that nothing else moves.** A refactor whose honest prediction includes a changed output is not a refactor |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -119,9 +119,9 @@ the entry says why nothing could be run.
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
   `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run whose grant can write that file
-  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
-  gone; the marker stays
+  and appears in the handoff's `open` (a `T0`: in its line); a run that may write
+  that file also leaves a `#TODO(agent):` marker carrying that class. The report
+  closes and is gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
   While either pair disagrees the status is not `DONE` (`_coding/CONTRACT.md`)
@@ -137,14 +137,14 @@ no behaviour change, and every commit in the sequence is independently green.
   a path found blocked, work that would grow the scope — or when the run changes
   course; tool calls are already visible and are not replayed. A question names
   the decision it unblocks and the default taken if nobody answers
-- **End with the answer in one line** — status and what changed; then the sweep line, then
-  one line per residual a human must decide, then what is next. A reader who stops after
-  the first line has the result
-- **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the `open` list travel in the handoff and are shown when asked
-- **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
-  what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
+- **End with the answer in one line** — status and what changed; then the sweep
+  line, then one line per residual a human must decide, then what is next. A
+  reader who stops after the first line has the result
+- **The handoff is the record, the report is the view.** The brief, the per-file
+  grades and the `open` list travel in the handoff and are shown when asked
+- **Sized to the tier**, the deliverable linked, never pasted: `T0` is one line
+  with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next.
+  Trimming cuts what the reader already has — request, files, path (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the
   exception** — something that would break, is unsafe, or rests on a false

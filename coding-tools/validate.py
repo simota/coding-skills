@@ -216,9 +216,10 @@ def v9_signals():
 
 
 def _says(text: str, phrase: str) -> bool:
-    """A signal is matched as words. As a substring, `diff` matched "different"
-    and `where` matched "somewhere", and the fixtures passed on noise."""
-    return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
+    """A signal is matched as words, a plural included. As a substring, `diff`
+    matched "different" and `where` matched "somewhere", and the fixtures
+    passed on noise; as an exact word, `regression test` missed "tests"."""
+    return re.search(rf"(?<!\w){re.escape(phrase)}s?(?!\w)", text) is not None
 
 
 def v10_fixtures():
@@ -319,7 +320,9 @@ def v18_signals_in_description():
     for d in SKILL_DIRS:
         desc = _norm(frontmatter(read(d / "SKILL.md")).get("description", ""))
         for s in CAP.get(d.name, {}).get("signals", []):
-            if _norm(s) not in desc:
+            # Whole words, as V10 routes: `refactor` inside "Refactoring" is
+            # not the word a request carries.
+            if not _says(desc, _norm(s)):
                 fail("V18", f"{d.name} signal {s!r} is not literal in its description; "
                             "the listing carries nothing else")
 

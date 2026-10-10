@@ -8,7 +8,7 @@ red builds, which is how a real failure ships.
 **Never make a flake pass by retrying it, sleeping longer, or skipping it.**
 Each of those converts a known unreliable signal into an unknown one. Quarantine
 is not passing: it is allowed only as an `UNVERIFIED` residual that holds the run
-at `PARTIAL` (§ Repairing a red suite).
+at `PARTIAL` (§ Repairing a red suite honestly).
 
 ## Find the difference between runs
 
@@ -29,7 +29,8 @@ Something differs between the pass and the fail. Work the list:
 | Resource limits | Fails only in CI | Ports, file handles, memory, disk, or a leftover container |
 
 Reproduce it before fixing: a repeat flag (pytest-repeat's `--count=100`), a
-loop, a shuffled order (pytest-random-order's `--random-order`), or CI re-runs. **A flake fixed without being reproduced is a flake with a delay on it.**
+loop, a shuffled order (pytest-random-order's `--random-order`), or CI re-runs.
+**A flake fixed without being reproduced is a flake with a delay on it.**
 
 ## Fixing by cause
 

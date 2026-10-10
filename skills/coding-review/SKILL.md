@@ -33,7 +33,7 @@ wrong does not change that.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized mid-run: re-size, say so
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -42,7 +42,7 @@ wrong does not change that.
 - **A term with two meanings, or a concept with two names, is a question, never
   a silent choice** — one question with its default, the answer into the brief's
   `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
-  write it; else via `open`), and those names only from then on (`_coding/SIZING.md` § Terms)
+  write it, else `open`), and only those names from then on (`_coding/SIZING.md`)
 <!-- /deliver:sizing -->
 
 ## Decide first
@@ -97,7 +97,8 @@ was actually run (evidence: `executed`).
 - This skill holds no `Edit`/`Write`: every residual goes in the handoff's `open`
   with its own class — a problem outside this change as `OUT-OF-SCOPE` — the
   `file:line` a marker belongs at, and `written: false`, never as a write
-- A finding that survives no check is `asserted` and does not go in the report
+- A finding that survives no check is `asserted`: it goes in only as a `Question`
+  with the input that worries you, or is dropped ([severity](playbooks/severity.md))
 - **`DONE` here**: every pass ran over the whole diff. Stopped early under
   [passes](playbooks/passes.md) § Order and stopping, it is `PARTIAL`, passes not run `DEFERRED`
 - **State the coverage**: which files were read, which passes ran, and what a
@@ -111,9 +112,9 @@ was actually run (evidence: `executed`).
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
   `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
-  and appears in the handoff's `open`; a run whose grant can write that file
-  also leaves a `#TODO(agent):` marker carrying that class. The report closes and is
-  gone; the marker stays
+  and appears in the handoff's `open` (a `T0`: in its line); a run that may write
+  that file also leaves a `#TODO(agent):` marker carrying that class. The report
+  closes and is gone; the marker stays
 - **Never omit the sweep** — markers in this run's diff against `open`, files
   written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
   While either pair disagrees the status is not `DONE` (`_coding/CONTRACT.md`)
@@ -130,14 +131,14 @@ the review says plainly what it could not check.
   a path found blocked, work that would grow the scope — or when the run changes
   course; tool calls are already visible and are not replayed. A question names
   the decision it unblocks and the default taken if nobody answers
-- **End with the answer in one line** — status and what changed; then the sweep line, then
-  one line per residual a human must decide, then what is next. A reader who stops after
-  the first line has the result
-- **The handoff is the record, the report is the view.** The brief, the per-file grades and
-  the `open` list travel in the handoff and are shown when asked
-- **Sized to the tier**, the deliverable linked, never pasted: `T0` is the answer
-  line with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next. Trimming cuts
-  what the reader already has — request, file list, path taken (`_coding/REPORT.md`)
+- **End with the answer in one line** — status and what changed; then the sweep
+  line, then one line per residual a human must decide, then what is next. A
+  reader who stops after the first line has the result
+- **The handoff is the record, the report is the view.** The brief, the per-file
+  grades and the `open` list travel in the handoff and are shown when asked
+- **Sized to the tier**, the deliverable linked, never pasted: `T0` is one line
+  with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next.
+  Trimming cuts what the reader already has — request, files, path (`_coding/REPORT.md`)
 - **Not bigger than it is.** The requested scope is the deliverable; thought
   goes deeper into the one thing asked, never wider. **A real problem is the
   exception** — something that would break, is unsafe, or rests on a false

@@ -27,6 +27,7 @@ help:
 	@echo "make figures   re-run the git behaviour the reference layer states"
 	@echo "make refute CLAIMS=claims.json RUNNING=claude   put each claim to the engines that did not make it"
 	@echo "make engines   ask each checker engine for one object; reports what is unreachable"
+	@echo "make drift     re-render the delivered blocks; fail if any were stale"
 	@echo "make render    write the delivered blocks back into every SKILL.md"
 	@echo "make hooks     install the pre-commit hook"
 	@echo "make link      symlink the skills into claude / codex / agy"

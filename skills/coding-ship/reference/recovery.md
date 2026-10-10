@@ -73,7 +73,8 @@ PRECIOUS-STAGED-WORK                 # recovered
 
 So the rule before any destructive operation is one of:
 
-1. `git add -A` — content survives in the object store, findable via `fsck`
+1. `git add -A` — only when nothing in the index is curated; content survives in
+   the object store, findable via `fsck`
 2. `git stash -u` — **`-u` is required**; plain `git stash` leaves untracked
    files in the worktree, where the next `clean -fd` takes them
 3. `git commit` on a scratch branch — the strongest, and the reflog indexes it

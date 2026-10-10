@@ -50,12 +50,12 @@ comes.
 4. **What is next** — one line, or nothing if the answer is nothing
 
 A `T1` run with nothing unresolved reports lines 1 and 2; a `T2` adds line 4. A
-`T0` folds it all into line 1: status, what ran and showed, the sweep, any marker.
+`T0` folds it all into line 1: status, before/after, `hit`/`miss`, sweep, residuals.
 
 ## Proportion
 
-The report is sized by the tier (`_coding/SIZING.md`): a `T0` is the answer
-line alone; a `T1` adds the evidence line and what is unresolved; a `T2` adds
+The report is sized by the tier (`_coding/SIZING.md`): a `T0` is that one
+folded line; a `T1` adds the evidence line and what is unresolved; a `T2` adds
 what is next and where the deliverable is. **Trimming cuts content the reader
 already has, never the answer** — and structure (a table, a list, a heading)
 is used when it lets the reader find a thing faster, not to make the same

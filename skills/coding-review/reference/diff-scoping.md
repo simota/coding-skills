@@ -85,4 +85,5 @@ cannot drift apart; the prose around them is not checked — re-read the other p
 
 Both belong in the report. A finding is `inspected` evidence; a finding
 demonstrated by running the case is `executed` and worth far more. When neither
-is possible, the finding is `asserted` and does not carry a defect's label.
+is possible, the finding is `asserted` and goes in only as a `Question`, never
+with a defect's label.

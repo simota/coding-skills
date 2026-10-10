@@ -103,12 +103,15 @@ re-running the tool records the bug and turns it green.
 
 A test for a fixed bug must be **seen failing on the pre-fix code**. Remove the
 fix, run it, watch it fail for the stated reason, restore the fix, run it again.
-Remove only the fix, and only recoverably: uncommitted, `git stash push -u -- <fix
-paths>` and `git stash pop` — `-u` because a newly created fix file is otherwise
-refused, and the test then runs with the fix still in place (never the test file,
-never `restore`, which keeps no copy); committed, `git revert --no-commit <sha>` with the test edits committed
-or left unstaged, then put it back with `git revert --abort` — `--abort` resets
-the index, so a staged test edit is discarded with it.
+Remove only the fix, and only recoverably:
+
+- **Uncommitted**: `git stash push -u -- <fix paths>`, run, `git stash pop`.
+  Never the test file, and never `restore`, which keeps no copy. `-u` because
+  without it a newly created fix file is refused and the test runs with the fix
+  still in place
+- **Committed**: `git revert --no-commit <sha>`, run, `git revert --abort`, with
+  the test edits committed or left unstaged — `--abort` resets the index, so a
+  staged test edit is discarded with it
 
 Both observations are `executed` evidence and both belong in the report. A
 regression test that was never observed red is a guess with a filename — it may

@@ -48,7 +48,7 @@ The run is `PARTIAL` when the question cannot be answered without one of them.
 1. Confirm the change's exact surface: which symbols, files, and formats
 2. Vertical sweep — enumerate callers, read each to confirm it is real
 3. Horizontal sweep — find the copies of the pattern
-4. Walk the invisible-layers list above and mark each present or absent
+4. Walk the list under § The layers grep cannot reach; mark each present or absent
 5. Classify: `contained` (this module only) / `wide` (several modules, one repo)
    / `crosses a boundary` (data, protocol, or another deployable)
 
@@ -61,5 +61,5 @@ decide, rather than estimating it as a number of files.
 - Both sweeps ran — vertical and horizontal — and the horizontal one is stated
   even when it found nothing
 - The count distinguishes confirmed call sites from name matches
-- Every invisible layer was considered, and the present ones are listed
+- Every layer grep cannot reach was considered, and the present ones are listed
 - The classification comes with the one thing that would most likely be missed

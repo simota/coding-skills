@@ -15,8 +15,8 @@ is a reading of that file, not a second copy of it.
 
 | Skill | Owns | Writes code? |
 |---|---|---|
-| `coding-explore` | Where things are, how they work, what a change would touch | No |
-| `coding-plan` | The shape before code exists: interfaces, data model, sequencing | No |
+| `coding-explore` | Where things are, how a path works, what a change would touch | No |
+| `coding-plan` | The shape before code exists: interfaces, data model, build order | No |
 | `coding-implement` | Producing working code — features, endpoints, screens, logic | Yes |
 | `coding-debug` | Why something is broken, reproduced and root-caused, then fixed | Yes |
 | `coding-refactor` | Changing structure while behaviour stays identical | Yes |
