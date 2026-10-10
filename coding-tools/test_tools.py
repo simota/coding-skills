@@ -194,25 +194,70 @@ class Render(unittest.TestCase):
                     render.render(p)
 
 
-class Fences(unittest.TestCase):
-    def test_a_fence_lookalike_inside_a_fence_does_not_close_it(self):
-        """The case that used to toggle three times and swallow the page."""
-        lines = ["```text", "```example", "```", "## Done when", "x"]
-        self.assertEqual(fences.kinds(lines), ["open", "body", "close", "text", "text"])
+class Markdown(unittest.TestCase):
+    """Every construct a review found misread, now read by the parser.
 
-    def test_tildes_and_longer_fences(self):
-        lines = ["~~~~", "```", "~~~", "~~~~", "## After"]
-        self.assertEqual(fences.kinds(lines), ["open", "body", "body", "close", "text"])
+    A marker is `#TODO(agent):`; "live" means it renders outside code, which is
+    what V22 checks. A link is live the same way, for V8 and V19."""
 
-    def test_an_info_string_with_a_backtick_is_not_a_fence(self):
-        self.assertEqual(fences.kinds(["``` a`b", "## H"]), ["text", "text"])
+    M = "#TODO(agent): fix"
 
-    def test_a_whitespace_only_line_ends_a_code_span_search(self):
-        # Paired across the blank line, the lone backtick would hide the marker.
-        text = "a ` lone\n   \nnext #TODO(agent): y and `x`"
-        self.assertIn("#TODO(agent): y", fences.mask_code_spans(text))
+    def live(self, text: str) -> bool:
+        return any(self.M in s for s in fences.live_text(text).values())
 
-    def test_blocks_and_an_unclosed_fence(self):
+    def test_markers_that_render_as_text_are_live(self):
+        cases = {
+            "plain": "prose " + self.M,
+            "after a span": "a `x` " + self.M,
+            "after an escaped backtick": "literal \\` then " + self.M,
+            "after a lone backtick": "a lone ` then " + self.M,
+            "across a whitespace-only blank line": "a ` lone\n   \nnext " + self.M + " `x`",
+            "after a tilde fence": "~~~\necho `date\n~~~\nprose " + self.M + " `x`",
+            "after an ATX heading": "## head `\n" + self.M + " `",
+            "after a setext heading": "head `\n---\n" + self.M + " `",
+            "after a thematic break": "a `\n\n***\n" + self.M + " `",
+            "in a list item after a span opener": "a ` lone\n- item " + self.M + " `x`",
+            "in a nested quote": "> `example\n> > " + self.M + "`",
+        }
+        for name, text in cases.items():
+            self.assertTrue(self.live(text), msg=name)
+
+    def test_markers_inside_code_are_mentions(self):
+        cases = {
+            "single span": "`" + self.M + "`",
+            "double span": "``" + self.M + "``",
+            "span across lines": "a `" + self.M + "\nUNVERIFIED` b",
+            "span across quoted lines": "> `example\n> " + self.M + "`",
+            "span across a lazy quote continuation": "> `example\n" + self.M + "`",
+            "span across an inline HTML tag": "a `start\n<span>" + self.M + "</span>`",
+            "escaped first backtick": "\\``" + self.M + "`",
+            "backtick fence": "```\n" + self.M + "\n```",
+            "tilde fence": "~~~\n" + self.M + "\n~~~",
+            "fence holding a fence-like line": "```text\n```example\n" + self.M + "\n```",
+            "indented code": "para\n\n    " + self.M,
+        }
+        for name, text in cases.items():
+            self.assertFalse(self.live(text), msg=name)
+
+    def test_line_numbers_survive_breaks_and_spans(self):
+        text = "one\ntwo `x\ny` three\n" + self.M
+        self.assertIn(self.M, fences.live_text(text)[3])
+
+    def test_links_are_read_as_rendered(self):
+        self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])
+        self.assertEqual(fences.links("`[a](x.md)`\n\n```\n[b](y.md)\n```"), [])
+        self.assertEqual(fences.links("[t](x.md \"Title\")"), ["x.md"])
+        self.assertEqual(fences.links("head `\n---\n[bad](missing) `"), ["missing"])
+
+    def test_headings(self):
+        lines = ["## Done when ##", "   ## Verify with  ", "    ## code", "### Three",
+                 "Setext", "------", "```", "## fenced", "```"]
+        self.assertEqual(fences.h2_lines(lines), {0: "Done when", 1: "Verify with", 4: "Setext"})
+
+    def test_fences(self):
+        lines = ["~~~~", "```", "~~~", "~~~~", "## After", "``` a`b", "x"]
+        self.assertEqual(fences.fence_mask(lines),
+                         [True, True, True, True, False, False, False])
         self.assertEqual(fences.blocks(["a", "```", "x", "```", "```py", "y"]), [["x"], ["y"]])
 
     def test_sections_after_a_nested_lookalike_are_found(self):
@@ -224,24 +269,6 @@ class Fences(unittest.TestCase):
 class Validator(unittest.TestCase):
     """False positives: content these rules must leave alone."""
 
-    def test_a_marker_inside_a_code_span_is_a_mention(self):
-        import validate
-        line = "A Python marker reads `x = f()  #TODO(agent): ...` in the source."
-        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(line)))
-        double = "Documented as ``#TODO(agent): example`` here."
-        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(double)))
-        real = "a `x` #TODO(agent): DEFERRED real"
-        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(real)))
-        literal = "literal \\` then #TODO(agent): fix"
-        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(literal)))
-        unmatched = "a lone ` then #TODO(agent): fix"
-        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(unmatched)))
-        across = "quarantined with a `#TODO(agent):\nUNVERIFIED` marker"
-        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(across)))
-        self.assertEqual(validate.outside_code_spans(across).count("\n"), 1)
-        open_span = "**quarantined with a `#TODO(agent):"
-        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
-
     def test_a_pipe_in_a_shell_example_is_not_an_enumeration(self):
         import validate
         line = "List the environment with `ENV | sort` first."
@@ -252,29 +279,6 @@ class Validator(unittest.TestCase):
 
 class Round4(unittest.TestCase):
     """Each of these passed silently, or crashed, before the fix it names."""
-
-    def test_spans_respect_block_structure(self):
-        m = "#TODO(agent): fix"
-        visible = {
-            "tilde fence with a lone backtick": "~~~\necho `date\n~~~\nprose " + m + " `x`",
-            "heading between": "a ` lone\n## Next\nthen " + m + " `x`",
-            "list item between": "a ` lone\n- item " + m + " `x`",
-        }
-        for name, text in visible.items():
-            self.assertIn(m, fences.mask_code_spans(text), msg=name)
-        hidden = {
-            "escaped first backtick": "\\``" + m + "`",
-            "inside a fence": "```\n" + m + "\n```",
-        }
-        for name, text in hidden.items():
-            self.assertNotIn(m, fences.mask_code_spans(text), msg=name)
-            self.assertEqual(fences.mask_code_spans(text).count("\n"), text.count("\n"))
-
-    def test_heading_forms(self):
-        self.assertEqual(fences.h2_title("## Done when ##"), "Done when")
-        self.assertEqual(fences.h2_title("   ## Verify with  "), "Verify with")
-        self.assertIsNone(fences.h2_title("    ## code"))
-        self.assertIsNone(fences.h2_title("### Three"))
 
     def test_frontmatter_ignores_an_indented_rule_and_a_bom(self):
         import validate
@@ -299,15 +303,6 @@ class Round4(unittest.TestCase):
             with self.assertRaises(engine.Unchecked, msg=schema):
                 engine.conforms(1, schema)
 
-    def test_a_span_continues_across_quoted_lines(self):
-        text = "> `example\n> #TODO(agent): example`"
-        self.assertNotIn("#TODO", fences.mask_code_spans(text))
-        self.assertTrue(fences.mask_code_spans(text).startswith(">"))
-
-    def test_a_nested_quote_is_another_container(self):
-        text = "> `example\n> > #TODO(agent): example`"
-        self.assertIn("#TODO(agent)", fences.mask_code_spans(text))
-
     def test_make_hooks_replaces_a_dangling_hook_link_only_when_forced(self):
         root = pathlib.Path(__file__).resolve().parent.parent
         with tempfile.TemporaryDirectory() as tmp:
@@ -328,6 +323,22 @@ class Round4(unittest.TestCase):
             self.assertEqual(forced.returncode, 0, forced.stdout + forced.stderr)
             self.assertFalse(hook.is_symlink())
 
+    def test_make_hooks_accepts_a_hooks_directory_inside_the_worktree(self):
+        root = pathlib.Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+            subprocess.run(["git", "init", "-q", tmp], check=True, env=env)
+            subprocess.run(["git", "-C", tmp, "config", "core.hooksPath", ".githooks"],
+                           check=True, env=env)
+            (pathlib.Path(tmp) / "coding-tools" / "githooks").mkdir(parents=True)
+            for f in ("Makefile", "coding-tools/githooks/pre-commit"):
+                (pathlib.Path(tmp) / f).write_bytes((root / f).read_bytes())
+            r = subprocess.run(["make", "-s", "hooks"], cwd=tmp, env=env,
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertTrue((pathlib.Path(tmp) / ".githooks" / "pre-commit").exists())
+
     def test_make_hooks_recreates_a_missing_hooks_directory(self):
         root = pathlib.Path(__file__).resolve().parent.parent
         with tempfile.TemporaryDirectory() as tmp:
@@ -342,10 +353,6 @@ class Round4(unittest.TestCase):
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertTrue((pathlib.Path(tmp) / ".git" / "hooks" / "pre-commit").exists())
-
-    def test_a_heading_is_a_block_of_its_own(self):
-        text = "## head `\n[bad](missing) `"
-        self.assertEqual(fences.mask_code_spans(text), text)
 
     def test_strict_leaves_literals_and_refuses_open_maps(self):
         got = engine.strict({"type": "object",

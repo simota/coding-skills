@@ -210,6 +210,7 @@ another skill's playbook — which should name the skill, not reach into it.
 ## Working on it
 
 ```sh
+python3 -m pip install -r coding-tools/requirements.txt   # PyYAML, markdown-it-py
 make check      # what CI runs: the rules, proof they still fire, the tool tests,
                 # the git figures, and that every delivered block is current
 make render     # after editing anything in coding-registry/delivered/

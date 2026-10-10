@@ -69,14 +69,16 @@ render:
 	@python3 coding-tools/render.py
 
 # `--git-path` resolves the hooks directory in a worktree and under
-# core.hooksPath, where `.git` is a file or the hooks live elsewhere. A
-# core.hooksPath outside this repository is shared with every other repository
+# core.hooksPath, where `.git` is a file or the hooks live elsewhere. A hooks
+# directory inside the git directory or the worktree (a local `.githooks`) is
+# this repository's; one outside both is shared with every other repository
 # on the machine, and a different pre-commit already there is someone's: both
 # are left alone unless FORCE=1.
 hooks:
 	@hooks=$$(git rev-parse --path-format=absolute --git-path hooks) && \
-	common=$$(git rev-parse --path-format=absolute --git-common-dir) || exit 1; \
-	case "$$hooks/" in "$$common"/*) ;; *) \
+	common=$$(git rev-parse --path-format=absolute --git-common-dir) && \
+	top=$$(git rev-parse --show-toplevel) || exit 1; \
+	case "$$hooks/" in "$$common"/*|"$$top"/*) ;; *) \
 		if [ "$(FORCE)" != 1 ]; then echo "refusing: $$hooks is outside this repository (a shared core.hooksPath); FORCE=1 installs there anyway"; exit 1; fi;; esac; \
 	if { [ -e "$$hooks/pre-commit" ] || [ -L "$$hooks/pre-commit" ]; } && \
 			! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" 2>/dev/null && [ "$(FORCE)" != 1 ]; then \

@@ -18,7 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import fence_mask, h2_title, marker_lines, mask_code_spans  # noqa: E402
+from fences import h2_lines, links, live_text, marker_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -59,17 +59,9 @@ LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 # the form that breaks: it resolves against the skill directory, not against
 # the directory the file writing it lives in.
 TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
-# A marker in a code span (`#TODO(agent):`) is a mention of the convention, not
-# a marker. Excluding only those — rather than any line with a backtick on it —
-# is what leaves V22 something to check: every marker in the corpus shares its
-# line with some other code span.
+# A marker in code (`#TODO(agent):`) is a mention of the convention, not a
+# marker; V22 reads only what renders outside code (`fences.live_text`).
 MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
-
-
-def outside_code_spans(text: str) -> str:
-    """Code spans blanked, as `fences.mask_code_spans` reads them: a marker
-    quoted in a span is a mention of the convention, not a marker."""
-    return mask_code_spans(text)
 
 
 def read(p: Path) -> str:
@@ -122,11 +114,12 @@ def walk(d: Path):
 
 
 def sections(text: str) -> dict[str, str]:
-    """`## ` headings as rendered — one inside a code fence is text, not a section."""
+    """Level-2 headings as rendered — one inside code is text, not a section."""
     out, cur, buf = {}, None, []
     lines = text.splitlines()
-    for line, fenced in zip(lines, fence_mask(lines)):
-        title = None if fenced else h2_title(line)
+    heads = h2_lines(lines)
+    for i, line in enumerate(lines):
+        title = heads.get(i)
         if title is not None:
             if cur:
                 out[cur] = "\n".join(buf)
@@ -225,10 +218,9 @@ def v8_links():
     for f in ROOT.rglob("*.md"):
         if ".git" in f.parts:
             continue
-        # A link shown in a code span or fence is an example, not a link.
-        for raw in LINK_RE.findall(mask_code_spans(read(f))):
-            target = raw.split()[0] if raw.strip() else raw   # drop a "title"
-            if target.startswith(("http", "#", "mailto:")):
+        # A link shown in code is an example, not a link.
+        for target in links(read(f)):
+            if not target or target.startswith(("http", "#", "mailto:")):
                 continue
             path = (f.parent / target.split("#")[0])
             if target.startswith("/") or not path.resolve().is_relative_to(ROOT.resolve()):
@@ -407,8 +399,8 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
     way the path is normalised lexically, so a link whose `..` climbs out of
     the skill directory points at nothing once installed."""
     import os.path
-    for raw in LINK_RE.findall(mask_code_spans(read(f))):
-        target = raw.split()[0].split("#")[0] if raw.strip() else ""
+    for href in links(read(f)):
+        target = href.split("#")[0]
         if not target or target.startswith(("http", "mailto:", "/")):
             continue
         norm = os.path.normpath(str(where / target))
@@ -488,13 +480,12 @@ def v22_markers_classified():
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
         text = read(f)
-        # Spans are read across the whole page: one may open on one line and
-        # close on the next, and a backtick with no close is literal text.
-        for i, (line, bare) in enumerate(zip(text.splitlines(),
-                                             outside_code_spans(text).splitlines()), 1):
-            if MARKER_RE.search(bare):
+        lines = text.splitlines()
+        for i, rendered in sorted(live_text(text).items()):
+            if MARKER_RE.search(rendered):
+                line = lines[i] if i < len(lines) else rendered
                 if not any(c in line for c in VOCAB["residual_classes"]):
-                    fail("V22", f"{f.relative_to(ROOT)}:{i} marker carries no residual class")
+                    fail("V22", f"{f.relative_to(ROOT)}:{i + 1} marker carries no residual class")
 
 
 def v23_labels():
