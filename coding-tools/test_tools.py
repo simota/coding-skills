@@ -290,6 +290,13 @@ class Validator(unittest.TestCase):
         self.assertTrue(m is None or not validate._is_enumeration(
             [w.strip() for w in m.group(1).split("|")]))
 
+    def test_a_class_spelled_with_references_classifies_its_marker(self):
+        import validate
+        self.assertEqual(validate.unclassified_markers(
+            "<div>#TODO&#40;agent): fix UNVER&#73;FIED</div>\n"), [])
+        self.assertEqual(validate.unclassified_markers(
+            "#" + "TODO(agent): fix `UNVERIFIED`\n\n#" + "TODO(agent): fix\n"), [2])
+
 
 class Round4(unittest.TestCase):
     """Each of these passed silently, or crashed, before the fix it names."""

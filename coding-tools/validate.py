@@ -479,13 +479,19 @@ def v22_markers_classified():
     for f in ROOT.rglob("*.md"):
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
-        text = read(f)
-        lines = text.splitlines()
-        for i, rendered in sorted(live_text(text).items()):
-            if MARKER_RE.search(rendered):
-                line = lines[i] if i < len(lines) else rendered
-                if not any(c in line for c in VOCAB["residual_classes"]):
-                    fail("V22", f"{f.relative_to(ROOT)}:{i + 1} marker carries no residual class")
+        for i in unclassified_markers(read(f)):
+            fail("V22", f"{f.relative_to(ROOT)}:{i + 1} marker carries no residual class")
+
+
+def unclassified_markers(text: str) -> list[int]:
+    """Lines whose rendered marker has no residual class. The class may sit in
+    code on the line (`UNVERIFIED`) or be spelled with references in HTML, so
+    the source line and the rendered text are both read."""
+    lines = text.splitlines()
+    return [i for i, rendered in sorted(live_text(text).items())
+            if MARKER_RE.search(rendered)
+            and not any(c in rendered or (i < len(lines) and c in lines[i])
+                        for c in VOCAB["residual_classes"])]
 
 
 def v23_labels():
