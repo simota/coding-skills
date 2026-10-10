@@ -28,7 +28,7 @@ removes it, with the failing case that proves the diagnosis.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -64,7 +64,7 @@ removes it, with the failing case that proves the diagnosis.
 | The stack trace points at library code | The cause is almost always in the argument you passed. Read the call site before the library |
 | The fix is not obvious after the cause is proved | Hand the shape decision to `coding-plan` rather than improvising in a hot file |
 | The same failure has been chased twice with no progress | Stop and state what is known, what was ruled out, and what would settle it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | The fix is written and about to be run | **Predict what the reproduction does now** — which assert, what output — before running it. A fix confirmed by a run nobody predicted is a fix nobody can explain |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·

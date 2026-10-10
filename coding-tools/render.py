@@ -16,7 +16,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import fence_mask, marker_lines        # noqa: E402
+from fences import h2_lines, marker_lines          # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 H = yaml.safe_load((ROOT / "coding-registry" / "harness.yaml").read_text(encoding="utf-8"))
@@ -37,14 +37,16 @@ class Malformed(ValueError):
 
 def heading_line(lines: list[str], section: str) -> int | None:
     """The index of `## <section>` as a whole line outside any fence."""
-    for i, (line, fenced) in enumerate(zip(lines, fence_mask(lines))):
-        if line == f"## {section}" and not fenced:
-            return i
-    return None
+    return next((i for i, title in sorted(h2_lines(lines).items()) if title == section),
+                None)
 
 
 def render(path: Path) -> bool:
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as e:
+        raise Malformed(f"{path.parent.name}/{path.name}: not UTF-8 ({e.reason} at byte "
+                        f"{e.start}); fix by hand") from None
     original = text
     for key, spec in H["delivered"].items():
         open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
@@ -78,9 +80,7 @@ def render(path: Path) -> bool:
                 print(f"  {path.name}: no section {spec['section']!r}", file=sys.stderr)
                 continue
             # append at the end of that section, before the next heading
-            mask = fence_mask(lines)
-            end = next((i for i in range(start + 1, len(lines))
-                        if lines[i].startswith("## ") and not mask[i]), len(lines))
+            end = next((i for i in sorted(h2_lines(lines)) if i > start), len(lines))
             while end > start + 1 and not lines[end - 1].strip():
                 end -= 1
             lines[end:end] = payload.split("\n")

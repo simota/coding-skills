@@ -18,7 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import fence_mask, marker_lines, mask_code_spans  # noqa: E402
+from fences import h2_lines, links, live_text, marker_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -59,24 +59,16 @@ LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 # the form that breaks: it resolves against the skill directory, not against
 # the directory the file writing it lives in.
 TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
-# A marker in a code span (`#TODO(agent):`) is a mention of the convention, not
-# a marker. Excluding only those — rather than any line with a backtick on it —
-# is what leaves V22 something to check: every marker in the corpus shares its
-# line with some other code span.
+# A marker in code (`#TODO(agent):`) is a mention of the convention, not a
+# marker; V22 reads only what renders outside code (`fences.live_text`).
 MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
-
-
-def outside_code_spans(text: str) -> str:
-    """Code spans blanked, as `fences.mask_code_spans` reads them: a marker
-    quoted in a span is a mention of the convention, not a marker."""
-    return mask_code_spans(text)
 
 
 def read(p: Path) -> str:
     """A page that cannot be read — a looping or dangling link — is a failure
     to report, not a traceback that hides every other rule's result."""
     try:
-        return p.read_text(encoding="utf-8")
+        return p.read_text(encoding="utf-8").removeprefix("\ufeff")   # a BOM is not content
     except (OSError, UnicodeDecodeError) as e:
         fail("V27", f"{p.relative_to(ROOT)} cannot be read: {getattr(e, 'strerror', None) or e}")
         return ""
@@ -95,9 +87,11 @@ def frontmatter(text: str, label: str) -> dict:
     if label in _FRONTMATTER:
         return _FRONTMATTER[label]
     out: dict = {}
-    if text.startswith("---\n"):
+    # Only unindented `---` lines delimit it; one inside a block scalar does not.
+    m = re.match(r"---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", text, re.S)
+    if m:
         try:
-            got = yaml.safe_load(text.split("---\n", 2)[1])
+            got = yaml.safe_load(m.group(1))
         except yaml.YAMLError as e:
             fail("V1", f"{label} frontmatter is not valid YAML: " + str(e).splitlines()[0])
             got = {}
@@ -120,14 +114,16 @@ def walk(d: Path):
 
 
 def sections(text: str) -> dict[str, str]:
-    """`## ` headings as rendered — one inside a code fence is text, not a section."""
+    """Level-2 headings as rendered — one inside code is text, not a section."""
     out, cur, buf = {}, None, []
     lines = text.splitlines()
-    for line, fenced in zip(lines, fence_mask(lines)):
-        if line.startswith("## ") and not fenced:
+    heads = h2_lines(lines)
+    for i, line in enumerate(lines):
+        title = heads.get(i)
+        if title is not None:
             if cur:
                 out[cur] = "\n".join(buf)
-            cur, buf = line[3:].strip(), []
+            cur, buf = title, []
         elif cur:
             buf.append(line)
     if cur:
@@ -222,9 +218,9 @@ def v8_links():
     for f in ROOT.rglob("*.md"):
         if ".git" in f.parts:
             continue
-        for raw in LINK_RE.findall(read(f)):
-            target = raw.split()[0] if raw.strip() else raw   # drop a "title"
-            if target.startswith(("http", "#", "mailto:")):
+        # A link shown in code is an example, not a link.
+        for target in links(read(f)):
+            if not target or target.startswith(("http", "#", "mailto:")):
                 continue
             path = (f.parent / target.split("#")[0])
             if target.startswith("/") or not path.resolve().is_relative_to(ROOT.resolve()):
@@ -403,8 +399,8 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
     way the path is normalised lexically, so a link whose `..` climbs out of
     the skill directory points at nothing once installed."""
     import os.path
-    for raw in LINK_RE.findall(read(f)):
-        target = raw.split()[0].split("#")[0] if raw.strip() else ""
+    for href in links(read(f)):
+        target = href.split("#")[0]
         if not target or target.startswith(("http", "mailto:", "/")):
             continue
         norm = os.path.normpath(str(where / target))
@@ -484,13 +480,12 @@ def v22_markers_classified():
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
         text = read(f)
-        # Spans are read across the whole page: one may open on one line and
-        # close on the next, and a backtick with no close is literal text.
-        for i, (line, bare) in enumerate(zip(text.splitlines(),
-                                             outside_code_spans(text).splitlines()), 1):
-            if MARKER_RE.search(bare):
+        lines = text.splitlines()
+        for i, rendered in sorted(live_text(text).items()):
+            if MARKER_RE.search(rendered):
+                line = lines[i] if i < len(lines) else rendered
                 if not any(c in line for c in VOCAB["residual_classes"]):
-                    fail("V22", f"{f.relative_to(ROOT)}:{i} marker carries no residual class")
+                    fail("V22", f"{f.relative_to(ROOT)}:{i + 1} marker carries no residual class")
 
 
 def v23_labels():
@@ -511,8 +506,8 @@ def v23_labels():
         if want is None:
             continue
         lines = read(f).splitlines()
-        if lines and lines[0].strip() == "---":          # skip frontmatter
-            end = next((i for i, l in enumerate(lines[1:], 1) if l.strip() == "---"), 0)
+        if lines and lines[0].rstrip() == "---":         # skip frontmatter
+            end = next((i for i, l in enumerate(lines[1:], 1) if l.rstrip() == "---"), 0)
             lines = lines[end + 1:]
         first = next((l for l in lines if l.strip()), "")
         if first.strip() != f"<!-- {SET}:{want} -->":
@@ -1005,8 +1000,11 @@ def main() -> int:
     if got is None or got.returncode != 0:
         hooks = ""                        # not a repository: the hook's own checkout
     else:
-        on = (ROOT / got.stdout.strip()).exists()
-        hooks = f" · hooks {'on' if on else 'off — run: make hooks'}"
+        installed = ROOT / got.stdout.strip()
+        ours = (ROOT / "coding-tools" / "githooks" / "pre-commit").read_bytes()
+        state = ("off — run: make hooks" if not installed.exists() else "on"
+                 if installed.read_bytes() == ours else "foreign — not this repo's pre-commit")
+        hooks = f" · hooks {state}"
     print(f"{len(RULES)} rules · {len(SKILLS)} skills{hooks}")
     if FAILURES:
         for f in sorted(FAILURES):

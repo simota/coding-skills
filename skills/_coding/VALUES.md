@@ -79,6 +79,5 @@ harness, not to work around it silently.
 - Two contracts in `_coding/` give conflicting instructions for this exact case
 
 When it fires: do the work, state which rule was suspended and why, and record
-the harness gap as an `OUT-OF-SCOPE` residual — a marker where this run may
-write, `open` otherwise. Suspending a rule silently is the failure this section
-exists to prevent.
+the harness gap as an `OUT-OF-SCOPE` residual in `open`, marked too where this
+run may write. Suspending a rule silently is the failure this section prevents.

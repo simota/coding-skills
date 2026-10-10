@@ -7,6 +7,17 @@
 # a staged violation. Git exports GIT_DIR and GIT_INDEX_FILE to hooks; they are
 # dropped before anything runs, so no tool below can act on this repository.
 set -e
+# Installed somewhere shared (a global core.hooksPath), this runs in other
+# repositories too; there it has nothing to check. This repository is the one
+# whose last commit or whose index carries the validator — the index alone
+# would let a commit that deletes the validator skip it.
+if ! git cat-file -e :coding-tools/validate.py 2>/dev/null; then
+	if git cat-file -e HEAD:coding-tools/validate.py 2>/dev/null; then
+		echo "this commit removes coding-tools/validate.py; commit that with --no-verify, deliberately" >&2
+		exit 1
+	fi
+	exit 0
+fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 git checkout-index -a --prefix="$tmp/"

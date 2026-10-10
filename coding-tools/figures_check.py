@@ -44,6 +44,13 @@ failures: list[str] = []
 # repository that inherits them is the real one: `reset --hard`, `branch -D`
 # and `gc --prune=now` below would run against the repository being committed.
 GIT_ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+# The global config is not the only per-user input: git also reads
+# $XDG_CONFIG_HOME/git/ignore and git/attributes by default, and either one can
+# hide an untracked file or turn a diff binary.
+GIT_ENV.update(XDG_CONFIG_HOME=os.devnull,
+               GIT_CONFIG_COUNT="2",
+               GIT_CONFIG_KEY_0="core.excludesFile", GIT_CONFIG_VALUE_0=os.devnull,
+               GIT_CONFIG_KEY_1="core.attributesFile", GIT_CONFIG_VALUE_1=os.devnull)
 GIT_ENV.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
                GIT_TERMINAL_PROMPT="0", LC_ALL="C")
 
@@ -81,9 +88,29 @@ class Repo:
         self.must("commit", "-qm", msg)
 
 
+def page_text(page: pathlib.Path) -> str:
+    """A page that is gone or unreadable is a failure, not a traceback."""
+    try:
+        return page.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        fail(page, f"cannot be read ({getattr(e, 'strerror', None) or e}) — "
+                   "the checker has stopped checking anything")
+        return ""
+
+
+def states(page: pathlib.Path, *commands: str) -> None:
+    """The page still says what the check re-runs. A check whose page has lost
+    the claim — or the page itself — is checking nothing, and says so."""
+    text = page_text(page)
+    for command in commands:
+        if text and command not in text:
+            fail(page, f"no longer mentions `{command}` — the check that re-runs it "
+                       "has stopped checking anything")
+
+
 def fenced(page: pathlib.Path, contains: str) -> list[str]:
     """The lines of the first fenced block containing a marker string."""
-    for b in fenced_blocks(page.read_text().splitlines()):
+    for b in fenced_blocks(page_text(page).splitlines()):
         if any(contains in l for l in b):
             return b
     fail(page, f"no fenced block containing {contains!r} — "
@@ -247,6 +274,8 @@ def check_scoping(tmp: pathlib.Path) -> int:
 def check_recovery(tmp: pathlib.Path) -> int:
     """recovery.md: committed work is recoverable, uncommitted work is not, and
     `git add` alone puts content where fsck can still reach it."""
+    states(RECOVERY, "reset --hard", "restore .", "fsck --lost-found", "stash -u",
+           "checkout -f", "gc --prune=now", "branch -D")
     n = 0
     r = Repo(tmp / "reset")
     r.write("f.txt", "v1\n"); r.commit("c1")
@@ -338,6 +367,7 @@ def check_stash_fix(tmp: pathlib.Path) -> int:
     """oracles.md: `stash push -u -- <fix paths>` removes a fix that includes a
     new file, leaves the test alone, and `pop` brings the fix back; without
     `-u` the new file is refused."""
+    states(ORACLES, "git stash push -u --", "git stash pop")
     r = Repo(tmp / "stash-fix")
     r.write("fix.txt", "bug\n"); r.write("test.txt", "t0\n"); r.commit("c1")
     r.write("fix.txt", "fixed\n"); r.write("helper.txt", "new\n"); r.write("test.txt", "NEW-TEST\n")
@@ -357,6 +387,7 @@ def check_stash_fix(tmp: pathlib.Path) -> int:
 def check_revert(tmp: pathlib.Path) -> int:
     """oracles.md: `revert --no-commit` then `--abort` restores the fix, keeps an
     unstaged test edit, and discards a staged one."""
+    states(ORACLES, "git revert --no-commit", "git revert --abort")
     n = 0
     for staged in (False, True):
         r = Repo(tmp / f"revert-{'staged' if staged else 'unstaged'}")

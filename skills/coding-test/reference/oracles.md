@@ -2,8 +2,11 @@
 # Oracles — Where the Expected Value Comes From
 
 Purpose: The sources a test's expected value can legitimately have, what each one can falsify, and the shapes that assert nothing.
+
 Read when: writing any assertion, reviewing a suite that passes while behaviour is wrong, or deciding whether a test is worth keeping.
+
 Source: git — only the regression-test rule's recipe depends on it, and it is run against whatever is installed; the catalogue itself is this set's own.
+
 Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. Both halves of the git recipe are re-run by `make figures` on every commit — the stash with a newly created fix file, and the revert with staged and unstaged test edits; the catalogue has no automated check.
 
 To test something you must already know the right answer. Where that answer came

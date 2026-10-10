@@ -1,0 +1,4 @@
+# What the tools import. CI installs exactly these; so does `make check` locally:
+#   python3 -m pip install -r coding-tools/requirements.txt
+pyyaml==6.0.2
+markdown-it-py==3.0.0

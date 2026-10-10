@@ -28,7 +28,7 @@ way it is. This skill produces understanding, never a diff.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -54,7 +54,7 @@ way it is. This skill produces understanding, never a diff.
 | Three searches returned nothing | The vocabulary is wrong. Find the entry point and read outward instead of guessing more names |
 | The answer looks obvious after one file | Confirm with a second, independent signal before reporting it |
 | Framework or generated code dominates the result | Exclude it by path and search again. Vendored code answers questions about the vendor |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -89,8 +89,8 @@ runtime behaviour is `executed` — the test, the script, or the program was run
   with the `file:line` a marker belongs at — never as a write
 - **`DONE` here**: the question answered, every claim anchored to a path,
   confidence stated, unexamined areas named
-- Writing nothing, `evidence` is keyed by the files the answer cites — each
-  `inspected` with the reason "read-only question", or `executed` where run
+- Writing nothing, the sweep reads `0 changed / 0 evidenced`; the `file:line`s
+  the answer cites are its anchors, each `inspected` (read-only) or `executed` where run
 - **Say what you did not cover.** An exploration reported without its boundary
   reads as exhaustive, and the next person builds on a gap they cannot see
 <!-- deliver:report -->

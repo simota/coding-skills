@@ -28,7 +28,7 @@ green honestly.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -65,7 +65,7 @@ green honestly.
 | The suite is slow | Find the few slow tests before optimising the many fast ones. Slow suites stop being run, and an unrun suite catches nothing |
 | A test fails after a change | Classify it **before** editing either. If the code may be wrong, the cause is `coding-debug`'s (`registry/capabilities.yaml`); repair only what is shown to be the test's fault |
 | Asked to raise coverage to a number | Say what the number will and will not buy, then cover the behaviour that would break silently |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run a new test | **Predict the failure first** — which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing. For behaviour that already works, get the red by breaking the code under test on purpose, then restore it |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·

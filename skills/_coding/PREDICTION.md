@@ -2,7 +2,7 @@
 # PREDICTION — what was expected, written before it was known
 
 Binding on the skills `registry/harness.yaml` names in `signature.required_of`,
-the ones that change what code does. The completion contract grades a claim
+the ones that edit code and run it. The completion contract grades a claim
 *after* the fact; this one fixes it *before*. Both are needed: an ungraded claim
 is a wish, and an unregistered expectation is unfalsifiable.
 

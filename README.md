@@ -22,7 +22,7 @@ through. Each skill owns one phase and returns evidence rather than assurances.
 **The prediction is the only part of a run that cannot be revised in hindsight.**
 Every observed output has a story that accommodates it, so an explanation
 written after the output is evidence that language is flexible, not that the
-code was understood. So a skill that causes an observable change registers one
+code was understood. So a skill that edits and runs code registers one
 line before it runs — what will be run, and what observable result changes —
 and reports `hit`, `miss`, or `void` after. **A `miss` costs nothing; an
 unrecorded `miss` costs the run.** Two consecutive misses in one area mean the
@@ -210,6 +210,7 @@ another skill's playbook — which should name the skill, not reach into it.
 ## Working on it
 
 ```sh
+python3 -m pip install -r coding-tools/requirements.txt   # PyYAML, markdown-it-py
 make check      # what CI runs: the rules, proof they still fire, the tool tests,
                 # the git figures, and that every delivered block is current
 make render     # after editing anything in coding-registry/delivered/

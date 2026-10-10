@@ -223,7 +223,7 @@ signature:
   required_of: [coding-debug, coding-implement, coding-refactor, coding-test]
   own_word: redict
 
-# Blocks copied verbatim into every SKILL.md. Naming a shared file is not the
+# Blocks copied verbatim into each SKILL.md that owes them. Naming a shared file is not the
 # same as reaching it: a contract kept only in _coding/ goes unread on most
 # launches. render.py writes these back; the validator checks they match.
 delivered:

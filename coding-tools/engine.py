@@ -50,33 +50,58 @@ class EngineError(RuntimeError):
     """The engine did not answer. Never a verdict."""
 
 
+class Unchecked(EngineError):
+    """The schema asks for a check this runner cannot make. Unlike a mismatch,
+    it is never absorbed by `not`, `anyOf` or `oneOf`: a check that could not
+    run is not a check that failed, and treating it as one inverts the answer."""
+
+
 def _types(schema: dict) -> list:
     t = schema.get("type")
     return t if isinstance(t, list) else [t]
 
 
-def strict(schema: dict) -> dict:
+# Keywords whose values are schemas, by shape. Everything else is a literal —
+# a `const`, an `enum`, a `default` — and is copied, never rewritten.
+_SUBSCHEMA = {"items", "not", "additionalProperties", "if", "then", "else", "contains"}
+_SUBSCHEMA_LIST = {"anyOf", "oneOf", "allOf", "prefixItems"}
+_SUBSCHEMA_MAP = {"properties", "$defs", "definitions", "patternProperties"}
+
+
+def strict(schema):
     """Every object closed, which is what codex requires and agy tolerates.
 
-    Recurses through nested schemas, lists of them (`anyOf`, `prefixItems`) and
-    nullable objects. A map — `additionalProperties` given as a schema — cannot
-    be closed without changing what it accepts, so it stops rather than being
-    silently narrowed to `{}`.
+    Recurses through the keywords that hold schemas and nothing else, so a
+    literal that happens to look like a schema is left as written. A map — an
+    object whose `additionalProperties` is a schema or `true` — cannot be closed
+    without changing what it accepts, so it stops rather than being narrowed.
     """
-    if isinstance(schema, list):
-        return [strict(s) for s in schema]
     if not isinstance(schema, dict):
         return schema
-    out = {k: strict(v) if isinstance(v, (dict, list)) else v for k, v in schema.items()}
+    out = {}
+    for k, v in schema.items():
+        if k in _SUBSCHEMA:
+            out[k] = strict(v)
+        elif k in _SUBSCHEMA_LIST and isinstance(v, list):
+            out[k] = [strict(s) for s in v]
+        elif k in _SUBSCHEMA_MAP and isinstance(v, dict):
+            out[k] = {name: strict(s) for name, s in v.items()}
+        else:
+            out[k] = v
     if "object" in _types(out):
-        extra = schema.get("additionalProperties")
-        if isinstance(extra, dict):
-            raise EngineError("a schema with additionalProperties as a schema (a map) "
-                              "cannot be closed; codex rejects it open")
+        extra = schema.get("additionalProperties", False)
+        if extra is not False:
+            raise EngineError("an object open to further keys (additionalProperties "
+                              f"{extra!r}) cannot be closed; codex rejects it open")
         out["additionalProperties"] = False
-        out["properties"] = {k: strict(v) for k, v in (out.get("properties") or {}).items()}
+        out.setdefault("properties", {})
     return out
 
+
+_CHECKED = {"type", "properties", "required", "items", "additionalProperties",
+            "anyOf", "oneOf", "allOf", "not", "enum", "const"}
+_ANNOTATIONS = {"title", "description", "default", "examples", "$schema", "$id",
+                "$comment", "$defs", "definitions", "deprecated", "readOnly", "writeOnly"}
 
 _JSON_TYPES = {"string": str, "boolean": bool, "object": dict, "array": list,
                "null": type(None)}
@@ -104,6 +129,23 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
         return
     if schema is False or not isinstance(schema, dict):
         raise EngineError(f"{where} is checked against a schema that accepts nothing")
+    # A keyword this does not evaluate would pass whatever the engine sent, which
+    # is the trust this function exists to withhold. It stops instead.
+    unchecked = set(schema) - _CHECKED - _ANNOTATIONS
+    if unchecked:
+        raise Unchecked(f"the schema at {where} uses {sorted(unchecked)}, which this "
+                          "runner does not check; simplify the schema")
+    for option in schema.get("allOf") or []:
+        conforms(obj, option, where)
+    if "not" in schema:
+        try:
+            conforms(obj, schema["not"], where)
+        except Unchecked:
+            raise
+        except EngineError:
+            pass
+        else:
+            raise EngineError(f"{where} matches a schema it must not match")
     for key in ("anyOf", "oneOf"):
         options = schema.get(key)
         if isinstance(options, list) and options:
@@ -112,6 +154,8 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
                 try:
                     conforms(obj, option, where)
                     fits += 1
+                except Unchecked:
+                    raise
                 except EngineError:
                     pass
             if fits == 0 or (key == "oneOf" and fits > 1):
@@ -139,6 +183,9 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
         for key, sub in (schema.get("properties") or {}).items():
             if key in obj and isinstance(sub, (dict, bool)):   # `false` is a schema too
                 conforms(obj[key], sub, f"{where}.{key}")
+        extra = schema.get("additionalProperties", True)
+        for key in set(obj) - set(schema.get("properties") or {}):
+            conforms(obj[key], extra, f"{where}.{key}")
     if isinstance(obj, list) and isinstance(schema.get("items"), (dict, bool)):
         for i, item in enumerate(obj):
             conforms(item, schema["items"], f"{where}[{i}]")
@@ -163,14 +210,14 @@ def _ask(engine: str, prompt: str, schema: dict) -> dict:
         if engine == "codex":
             out = d / "answer.json"
             argv = ["codex", "exec", "--output-schema", str(s), "-o", str(out),
-                    "--sandbox", "read-only", "--skip-git-repo-check", prompt]
+                    "--sandbox", "read-only", "--skip-git-repo-check", _as_argument(prompt)]
             r = _spawn(engine, argv)
             body = out.read_text(encoding="utf-8") if out.exists() else ""
             if not body.strip():
                 raise EngineError(f"codex wrote no answer.\n{_tail(r)}")
             return _parse(engine, body)
         if engine == "claude":
-            argv = ["claude", "-p", prompt, "--output-format", "json",
+            argv = ["claude", "-p", _as_argument(prompt), "--output-format", "json",
                     "--json-schema", json.dumps(schema)]
             r = _spawn(engine, argv)
             envelope = _parse(engine, r.stdout)
@@ -191,12 +238,22 @@ def _ask(engine: str, prompt: str, schema: dict) -> dict:
 
 
 def _spawn(engine: str, argv: list[str]) -> subprocess.CompletedProcess:
+    """Every way the engine can fail to start or answer is an EngineError — a
+    caller asking several engines keeps the verdicts the others gave."""
     try:
-        return subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT)
+        return subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT,
+                              encoding="utf-8", errors="replace")
     except FileNotFoundError:
         raise EngineError(f"{engine} is not on PATH") from None
     except subprocess.TimeoutExpired:
         raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
+    except OSError as e:                  # E2BIG: a prompt too long for one argument
+        raise EngineError(f"{engine} could not be started: {e}") from None
+
+
+def _as_argument(prompt: str) -> str:
+    """A prompt opening with `-` (YAML frontmatter, a rule) is read as an option."""
+    return "\n" + prompt if prompt.startswith("-") else prompt
 
 
 def _parse(engine: str, body: str) -> dict:
