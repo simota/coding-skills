@@ -19,7 +19,7 @@ Something differs between the pass and the fail. Work the list:
 | Test order | Passes alone, fails in the suite (or vice versa) | Run the file alone; run the suite with a fixed seed and then a different one |
 | Shared state | Fails only after certain other tests ran in the same process; passes alone in a fresh one | Look for module-level state, class attributes, caches, singletons, an unclean DB |
 | Time | Fails near midnight, month end, or at a specific hour | Freeze the clock and re-run at the boundary |
-| Timezone or locale | Fails in CI, passes locally | Re-run under a 45-minute, DST-observing zone and a non-ASCII locale — `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`, after `locale -a` confirms the locale is installed: a missing one falls back to C — loudly where the code calls `setlocale`, silently everywhere else. Note `TZ=` with no value means UTC, which is what CI already runs |
+| Timezone or locale | Fails in CI, passes locally | Re-run under a 45-minute, DST-observing zone and a non-ASCII locale — `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`, after `locale -a` confirms the locale is installed: a missing one silently leaves the program in the C locale (C.UTF-8 under Python 3.7+) unless the caller checks what `setlocale` returned. Note `TZ=` with no value means UTC, which is what CI already runs |
 | Concurrency | Fails under load or on a machine with more cores | Run repeatedly with parallelism forced |
 | Real I/O | Fails when the network is slow or absent | Cut the network and see |
 | Unordered collections | Fails on some runs with the same data | Look for a set, a Go map, a JSON object round-trip, or a query without `ORDER BY`. Python dicts have kept insertion order since 3.7 — they are not the culprit |

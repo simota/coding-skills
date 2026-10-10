@@ -2,8 +2,11 @@
 # History — Asking Git the Right Question
 
 Purpose: The commands that answer "why is it like this", and the ones that look right and answer something else.
+
 Read when: the question is about the past — when a value changed, who introduced a line, where deleted code went, why a decision was made.
+
 Source: git — the commands below are re-run against the git actually installed, so there is no version to pin.
+
 Verified: 2026-10-09 — every fenced output below was produced by running the command in a fixture
 repository, and the `-S`/`-G` and `..`/`...` fences are re-run by `make figures` on every commit,
 against the git actually installed: a release that changed one of those behaviours fails the build
@@ -108,7 +111,7 @@ Deleted code is not gone; it is unreachable from the working tree.
 |---|---|
 | Which commit deleted this file | `git log --diff-filter=D --name-only -- ':(glob)**/<name>'` — without `:(glob)`, `**/` misses a file at the top level |
 | Where did this function go | `git log --all -S'<name>' --oneline` then read the diff |
-| Grep the whole history | `git rev-list --all \| xargs git grep -n '<pattern>'` — no trailing `--`: xargs appends the revisions, and after `--` they are read as paths and nothing matches |
+| Grep the whole history | `git rev-list --all`, piped to `xargs git grep -n '<pattern>'` — no trailing `--`: xargs appends the revisions, and after `--` they are read as paths and nothing matches |
 | See the file as it was | `git show <commit>^:<path>` — note the `^`; at the deleting commit the path no longer exists |
 | A commit you cannot reach any more | `git reflog` first, `git fsck --lost-found` second |
 

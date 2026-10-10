@@ -2,8 +2,11 @@
 # Machine-Authored Code — What to Check That a Human Diff Would Not Need
 
 Purpose: The defect classes that concentrate in generated code, each with the check that decides it.
+
 Read when: reviewing a diff an agent wrote — including one this session wrote.
+
 Source: git — only the example of `git <subcommand> -h` under check 1 depends on it; the checks themselves use whatever tools the repo has.
+
 Verified: 2026-08-21 — catalogue of defect classes and their checks; the checks are runnable, the frequency claims are deliberately absent — no automated check.
 
 Generated code fails differently from hand-written code. It is fluent, locally

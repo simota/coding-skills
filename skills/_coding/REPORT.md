@@ -1,9 +1,9 @@
 <!-- coding:contract -->
 # REPORT — what a person reads
 
-Binding on every `coding-*` skill. The other axes decide what must be true;
+Binding on every `coding-*` skill. The other contracts decide what must be true;
 this one decides what reaches the reader: **a report that gets skimmed is a
-report that did not happen**, and everything the other axes bought is lost at
+report that did not happen**, and everything the other contracts bought is lost at
 the last step.
 
 ## Record and view are different objects
@@ -50,7 +50,7 @@ comes.
 4. **What is next** — one line, or nothing if the answer is nothing
 
 A `T1` run with nothing unresolved reports lines 1 and 2; a `T2` adds line 4. A
-`T0` folds it all into line 1: status, before/after, `hit`/`miss`, sweep, residuals.
+`T0` folds it all into line 1: status, sweep, residuals, and before/after and `hit`/`miss` where owed.
 
 ## Proportion
 

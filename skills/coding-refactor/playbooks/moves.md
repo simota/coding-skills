@@ -58,8 +58,8 @@ compatibility shims for versions no longer running.
 - **A name that is also data is not renamed by a refactor** — a class or field
   name written into pickles, JSON, an ORM column, a stored enum name, a message
   schema, or a reflection or config string. Check whether it is persisted or
-  serialised first; if it is, the rename is a migration (`coding-plan`, data and
-  deployed clients). The same holds for reordering enum members whose ordinal is stored
+  serialised first; if it is, the rename is a migration — sequenced per
+  `coding-plan` (data and deployed clients), built by `coding-implement`. The same holds for reordering enum members whose ordinal is stored
 - Rename with the tool, not by hand. A regex rename catches a substring in an
   unrelated identifier, and the resulting bug looks nothing like a rename
 

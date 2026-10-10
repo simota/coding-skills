@@ -29,7 +29,7 @@ branches; it does not fix code to make a commit tidy.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -53,11 +53,11 @@ branches; it does not fix code to make a commit tidy.
 | Writing the PR or the release notes | [pr](playbooks/pr.md) |
 | A commit does not build or test green on its own | It is not a commit. Reorder or squash until each one stands alone |
 | The diff contains something you did not intend | Remove it before anything else. Do not explain it in the description |
-| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u`. Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
+| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u` restored with `git stash pop --index` (a plain `pop` unstages everything). Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
 | A generated file is in the diff | Separate commit, and say why it changed |
 | A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
 | The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over

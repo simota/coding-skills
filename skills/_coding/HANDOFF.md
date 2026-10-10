@@ -47,6 +47,7 @@ next: "<the skill that should receive this, or none>"
   A run that may not write that file sets it `false` and names where the marker
   belongs; the first receiver that may edit it places it and flips the flag
   (`_coding/CONTRACT.md` § Residuals)
+- **Review findings travel in `done`**, each with rank and certainty; `open` is for residuals
 - Pass the change in state, not the working log. Reasoning does not travel
 
 ## What the receiver checks before starting

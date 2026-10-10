@@ -2,8 +2,11 @@
 # Recovery — What Git Can Undo, and What Nothing Can
 
 Purpose: Which destructive operations are reversible, by what command, and which destroy work no record holds.
+
 Read when: before running anything that discards state — reset, restore, checkout, clean, stash, rebase, amend, force-push — or after one already ran.
+
 Source: git — every row was produced against the git actually installed, so there is no version to pin.
+
 Verified: 2026-10-09 — every row except `git checkout <sha>` and `rm -rf` was produced by performing
 the operation in a fixture repository and attempting the recovery. `make figures` re-runs, on every
 commit and against the git actually installed: `reset --hard` and the reflog, `gc --prune=now`
@@ -76,7 +79,8 @@ So the rule before any destructive operation is one of:
 1. `git add -A` — only when nothing in the index is curated; content survives in
    the object store, findable via `fsck`
 2. `git stash -u` — **`-u` is required**; plain `git stash` leaves untracked
-   files in the worktree, where the next `clean -fd` takes them
+   files in the worktree, where the next `clean -fd` takes them. Restore it with
+   `git stash pop --index`: a plain `pop` brings staged changes back unstaged
 3. `git commit` on a scratch branch — the strongest, and the reflog indexes it
 
 A verified fixture run: with untracked `untracked.txt` present, `git stash`

@@ -31,7 +31,7 @@ adjacent work is defined in `registry/capabilities.yaml`.
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
@@ -67,7 +67,7 @@ adjacent work is defined in `registry/capabilities.yaml`.
 | Nothing runs end to end yet, or progress feels fast and unverifiable | [traps](playbooks/traps.md) |
 | The change would also tidy something nearby | Do not. Behaviour change and cleanup in one diff is unreviewable — mark it and hand it to `coding-refactor` |
 | A test fails and the quickest fix is to change the test | Establish which is wrong first. Changing the test to match the code deletes the only evidence you had |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running claude\|codex\|agy` and a JSON list of `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run it for the first time | **Predict the observable** — the status code, the value written, the line logged. Where the prediction cannot be written, the spec has a hole, and it is cheaper to find it here |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -82,9 +82,9 @@ adjacent work is defined in `registry/capabilities.yaml`.
 
 - Always: get permission first for anything irreversible, anything that leaves
   the machine (push, deploy, send, publish), anything touching secrets or
-  credentials, and any change spanning ten or more files. **The only exception
-  is one substitution applied identically everywhere** — reversible, in scope,
-  or checkable by a script you wrote are not exceptions
+  credentials, and any change spanning ten or more files. **For the ten-file rule
+  only, one substitution applied identically everywhere is exempt** — reversible,
+  in scope, or checkable by a script you wrote does not exempt a change
 - Always: match the surrounding naming, error handling, and level of abstraction
 - Always: build the means of checking the change alongside the change. A change
   with no way to run it gets split into one that can be run

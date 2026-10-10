@@ -54,7 +54,7 @@ who calls it.
   returning `Animal`. Narrowing the return is the safe direction — for callers;
   for implementers and overriders, both directions reverse. Both are source
   compatibility only: **on the JVM and .NET any signature change breaks compiled
-  callers** (`NoSuchMethodError`) until they rebuild, so a published library
+  callers** (`NoSuchMethodError` on the JVM, `MissingMethodException` on .NET) until they rebuild, so a published library
   adds an overload instead
 - **Adding a required field to a request** breaks old callers; adding an optional
   one with a default does not

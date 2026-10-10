@@ -2,8 +2,11 @@
 # Diff Scoping — Reviewing All of the Change
 
 Purpose: Getting the complete change set before judging it, and the commands that silently return a subset.
+
 Read when: starting any review, or when a review found nothing and that seems surprising.
+
 Source: git — the commands below are re-run against the git actually installed, so there is no version to pin.
+
 Verified: 2026-08-21 — the command outputs below were produced by running them in a fixture repository.
 Re-run by `make figures` on every commit, against the git actually installed: a release that
 changed one of these behaviours fails the build instead of quietly making the page wrong.

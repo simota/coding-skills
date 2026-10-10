@@ -2,7 +2,7 @@
   reversible, under three files, acceptance in one sentence: act and report in
   one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
   brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size
+  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
 - **A dialogue comes first** when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
