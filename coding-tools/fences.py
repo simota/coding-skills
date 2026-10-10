@@ -91,13 +91,16 @@ def _inline(text: str):
 
 class _Visible(HTMLParser):
     """The text an HTML block shows, by line offset. A `<` that opens no tag is
-    text, as a browser shows it; comments and attributes are not.
+    text, as a browser shows it; comments, attributes and the contents of a
+    script or style are not.
 
     A text run is read back from its source span and decoded one source line
     at a time, so a reference lands on the line it is written on (`&#10;`
     shows a break but occupies no line), and it is decoded by the browser's
     rules (`&amp` and `&#40` work without `;`, `&colon` does not), whatever
     this Python's parser makes of it."""
+
+    SCRIPT = ("script", "style")
 
     def __init__(self, source: str) -> None:
         super().__init__(convert_charrefs=True)
@@ -106,6 +109,7 @@ class _Visible(HTMLParser):
         for line in source.split("\n"):
             self.starts.append(self.starts[-1] + len(line) + 1)
         self.text_from: int | None = None
+        self.hidden = False  # inside a script or style, which shows nothing
         self.out: dict[int, str] = {}
 
     def _offset(self) -> int:
@@ -123,14 +127,23 @@ class _Visible(HTMLParser):
         self.text_from = None
 
     def handle_data(self, data: str) -> None:
-        if self.text_from is None:
+        if self.text_from is None and not self.hidden:
             self.text_from = self._offset()
 
     def _boundary(self, *_args) -> None:
         self._flush(self._offset())
 
-    handle_starttag = handle_endtag = handle_startendtag = _boundary
-    handle_comment = handle_decl = handle_pi = unknown_decl = _boundary
+    def handle_starttag(self, tag: str, attrs) -> None:
+        self._boundary()
+        if tag in self.SCRIPT:
+            self.hidden = True
+
+    def handle_endtag(self, tag: str) -> None:
+        self._boundary()
+        if tag in self.SCRIPT:
+            self.hidden = False
+
+    handle_startendtag = handle_comment = handle_decl = handle_pi = unknown_decl = _boundary
 
     def close(self) -> None:
         super().close()
