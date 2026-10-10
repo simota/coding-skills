@@ -137,9 +137,9 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
             if key not in obj:
                 raise EngineError(f"{where} has no {key!r}, which the schema requires")
         for key, sub in (schema.get("properties") or {}).items():
-            if key in obj and isinstance(sub, dict):
+            if key in obj and isinstance(sub, (dict, bool)):   # `false` is a schema too
                 conforms(obj[key], sub, f"{where}.{key}")
-    if isinstance(obj, list) and isinstance(schema.get("items"), dict):
+    if isinstance(obj, list) and isinstance(schema.get("items"), (dict, bool)):
         for i, item in enumerate(obj):
             conforms(item, schema["items"], f"{where}[{i}]")
 
