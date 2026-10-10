@@ -247,6 +247,12 @@ class Markdown(unittest.TestCase):
         text = "one\ntwo `x\ny` three\n" + self.M
         self.assertIn(self.M, fences.live_text(text)[3])
 
+    def test_line_numbers_survive_decoded_references(self):
+        shown = fences.live_text("<div>&#10;" + self.M + "\nUNVERIFIED &amp; &NewLine;x\n</div>")
+        self.assertIn(self.M, shown[0])
+        self.assertNotIn(self.M, shown.get(1, ""))
+        self.assertIn("&", shown[1])
+
     def test_links_are_read_as_rendered(self):
         self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])
         self.assertEqual(fences.links("`[a](x.md)`\n\n```\n[b](y.md)\n```"), [])

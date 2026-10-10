@@ -17,6 +17,7 @@ line number.
 from __future__ import annotations
 
 import functools
+import html
 from html.parser import HTMLParser
 
 from markdown_it import MarkdownIt
@@ -90,17 +91,30 @@ def _inline(text: str):
 
 class _Visible(HTMLParser):
     """The text an HTML block shows, by line offset. A `<` that opens no tag is
-    text, as a browser shows it; comments and attributes are not."""
+    text, as a browser shows it; comments and attributes are not.
+
+    Character references are decoded where they are written: `&#10;` shows a
+    line break but occupies no source line, so it must not move what follows
+    it onto the next one."""
 
     def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
+        super().__init__(convert_charrefs=False)
         self.out: dict[int, str] = {}
+
+    def _add(self, line: int, piece: str) -> None:
+        self.out[line] = self.out.get(line, "") + piece
 
     def handle_data(self, data: str) -> None:
         line = self.getpos()[0] - 1
         for offset, piece in enumerate(data.split("\n")):
             if piece.strip():
-                self.out[line + offset] = self.out.get(line + offset, "") + piece
+                self._add(line + offset, piece)
+
+    def handle_charref(self, name: str) -> None:
+        self._add(self.getpos()[0] - 1, " " + html.unescape(f"&#{name};").replace("\n", " "))
+
+    def handle_entityref(self, name: str) -> None:
+        self._add(self.getpos()[0] - 1, " " + html.unescape(f"&{name};").replace("\n", " "))
 
 
 def live_text(text: str) -> dict[int, str]:
