@@ -80,29 +80,36 @@ def mask_code_spans(text: str) -> str:
     lines = text.split("\n")
     mask = fence_mask(lines)
     out = [" " * len(l) if fenced else l for l, fenced in zip(lines, mask)]
-    # Paragraphs: maximal runs of unfenced lines, cut before any block start.
+    # A block quote is read by its content: `> ` is the container, not text,
+    # so a span may continue from one quoted line to the next.
+    quote = [len(_QUOTE.match(l).group()) for l in lines]
+    body = [l[q:] for l, q in zip(lines, quote)]
+    # Paragraphs: maximal runs of unfenced lines in one container, cut before
+    # any block start.
     paragraphs, cur = [], []
-    for i, line in enumerate(lines):
-        if mask[i] or (cur and _BLOCK_START.match(line)):
+    for i in range(len(lines)):
+        moved = cur and (quote[i] > 0) != (quote[cur[-1]] > 0)
+        if mask[i] or moved or (cur and _BLOCK_START.match(body[i])):
             if cur:
                 paragraphs.append(cur)
             cur = []
-        if mask[i] or not line.strip():
+        if mask[i] or not body[i].strip():
             continue
-        if h_any(line):                       # a heading is a block of one line
+        if h_any(body[i]):                    # a heading is a block of one line
             paragraphs.append([i])
             continue
         cur.append(i)
     if cur:
         paragraphs.append(cur)
     for para in paragraphs:
-        for start, end in _spans("\n".join(lines[i] for i in para)):
+        for start, end in _spans("\n".join(body[i] for i in para)):
             pos = 0
             for i in para:                    # map the span back onto its lines
-                a, b = max(start - pos, 0), min(end - pos, len(lines[i]))
+                a, b = max(start - pos, 0), min(end - pos, len(body[i]))
                 if a < b:
+                    a, b = a + quote[i], b + quote[i]
                     out[i] = out[i][:a] + " " * (b - a) + out[i][b:]
-                pos += len(lines[i]) + 1
+                pos += len(body[i]) + 1
     return "\n".join(out)
 
 
@@ -130,6 +137,7 @@ def _spans(text: str) -> list[tuple[int, int]]:
         i = close.end()
 
 
+_QUOTE = re.compile(r"(?: {0,3}>[ ]?)*")
 _ATX = re.compile(r"^ {0,3}#{1,6}(?:[ \t]|$)")
 
 

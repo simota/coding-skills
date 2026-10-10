@@ -74,8 +74,8 @@ render:
 # on the machine, and a different pre-commit already there is someone's: both
 # are left alone unless FORCE=1.
 hooks:
-	@hooks=$$(cd "$$(git rev-parse --git-path hooks)" 2>/dev/null && pwd -P || git rev-parse --git-path hooks); \
-	common=$$(cd "$$(git rev-parse --git-common-dir)" && pwd -P); \
+	@hooks=$$(git rev-parse --path-format=absolute --git-path hooks) && \
+	common=$$(git rev-parse --path-format=absolute --git-common-dir) || exit 1; \
 	case "$$hooks/" in "$$common"/*) ;; *) \
 		if [ "$(FORCE)" != 1 ]; then echo "refusing: $$hooks is outside this repository (a shared core.hooksPath); FORCE=1 installs there anyway"; exit 1; fi;; esac; \
 	if [ -e "$$hooks/pre-commit" ] && ! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" && [ "$(FORCE)" != 1 ]; then \

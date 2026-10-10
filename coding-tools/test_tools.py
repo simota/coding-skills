@@ -299,6 +299,26 @@ class Round4(unittest.TestCase):
             with self.assertRaises(engine.Unchecked, msg=schema):
                 engine.conforms(1, schema)
 
+    def test_a_span_continues_across_quoted_lines(self):
+        text = "> `example\n> #TODO(agent): example`"
+        self.assertNotIn("#TODO", fences.mask_code_spans(text))
+        self.assertTrue(fences.mask_code_spans(text).startswith(">"))
+
+    def test_make_hooks_recreates_a_missing_hooks_directory(self):
+        root = pathlib.Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+            subprocess.run(["git", "init", "-q", tmp], check=True, env=env)
+            (pathlib.Path(tmp) / "coding-tools" / "githooks").mkdir(parents=True)
+            for f in ("Makefile", "coding-tools/githooks/pre-commit"):
+                (pathlib.Path(tmp) / f).write_bytes((root / f).read_bytes())
+            subprocess.run(["rm", "-rf", f"{tmp}/.git/hooks"], check=True)
+            r = subprocess.run(["make", "-s", "hooks"], cwd=tmp, env=env,
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertTrue((pathlib.Path(tmp) / ".git" / "hooks" / "pre-commit").exists())
+
     def test_a_heading_is_a_block_of_its_own(self):
         text = "## head `\n[bad](missing) `"
         self.assertEqual(fences.mask_code_spans(text), text)
