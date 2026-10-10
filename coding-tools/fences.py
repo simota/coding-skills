@@ -60,3 +60,38 @@ def marker_lines(lines: list[str], marker: str) -> list[int]:
     quoted in prose or shown in an example is text, not a delimiter."""
     return [i for i, (line, fenced) in enumerate(zip(lines, fence_mask(lines)))
             if line.strip() == marker and not fenced]
+
+
+def mask_code_spans(text: str) -> str:
+    """The text with every inline code span blanked out, newlines kept, so a
+    line number still points at the same line.
+
+    As CommonMark reads spans: a run of n backticks opens one only if it is not
+    escaped, and only a run of exactly n closes it — possibly on a later line
+    of the same paragraph, never past a blank line. A run with no such close is
+    literal text, and what follows it is not hidden.
+    """
+    out = list(text)
+    i = 0
+    for m in re.finditer(r"`+", text):
+        start = m.start()
+        if start < i:
+            continue
+        backslashes = 0
+        while start - backslashes > 0 and text[start - backslashes - 1] == "\\":
+            backslashes += 1
+        if backslashes % 2:                   # an escaped backtick is literal
+            i = start + 1
+            continue
+        run = m.group()
+        paragraph_end = text.find("\n\n", m.end())
+        limit = len(text) if paragraph_end == -1 else paragraph_end
+        close = re.compile(rf"(?<!`){run}(?!`)").search(text, m.end(), limit)
+        if close is None:
+            i = m.end()
+            continue
+        for k in range(start, close.end()):
+            if out[k] != "\n":
+                out[k] = " "
+        i = close.end()
+    return "".join(out)

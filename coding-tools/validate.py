@@ -18,7 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import fence_mask, marker_lines        # noqa: E402
+from fences import fence_mask, marker_lines, mask_code_spans  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -66,22 +66,10 @@ TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
 MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
 
 
-def outside_code_spans(line: str) -> str:
-    """The line with its code spans removed, as CommonMark reads them: a run of
-    n backticks opens a span that only a run of exactly n closes, so
-    ``#TODO(agent): x`` is one span, not two empty ones around the marker. A
-    span left open runs on to the next line, so the rest of the line goes too."""
-    out, i = [], 0
-    for m in re.finditer(r"`+", line):
-        if m.start() < i:
-            continue
-        close = re.compile(rf"(?<!`){m.group()}(?!`)").search(line, m.end())
-        out.append(line[i:m.start()])
-        if close is None:
-            return "".join(out)
-        i = close.end()
-    out.append(line[i:])
-    return "".join(out)
+def outside_code_spans(text: str) -> str:
+    """Code spans blanked, as `fences.mask_code_spans` reads them: a marker
+    quoted in a span is a mention of the convention, not a marker."""
+    return mask_code_spans(text)
 
 
 def read(p: Path) -> str:
@@ -495,8 +483,12 @@ def v22_markers_classified():
     for f in ROOT.rglob("*.md"):
         if ".git" in f.parts or f.parts[-2:-1] == ("delivered",):
             continue
-        for i, line in enumerate(read(f).splitlines(), 1):
-            if MARKER_RE.search(outside_code_spans(line)):
+        text = read(f)
+        # Spans are read across the whole page: one may open on one line and
+        # close on the next, and a backtick with no close is literal text.
+        for i, (line, bare) in enumerate(zip(text.splitlines(),
+                                             outside_code_spans(text).splitlines()), 1):
+            if MARKER_RE.search(bare):
                 if not any(c in line for c in VOCAB["residual_classes"]):
                     fail("V22", f"{f.relative_to(ROOT)}:{i} marker carries no residual class")
 

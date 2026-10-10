@@ -77,6 +77,9 @@ class Engine(unittest.TestCase):
             engine.conforms({"a": {}}, {"anyOf": [
                 {"type": "object", "required": ["b"]}, {"type": "null"}]})
         engine.conforms(None, {"anyOf": [{"type": "object"}, {"type": "null"}]})
+        engine.conforms(None, {"anyOf": [False, {"type": "null"}]})   # boolean subschemas
+        with self.assertRaises(engine.EngineError):
+            engine.conforms(1, {"anyOf": [False]})
 
     def test_a_boolean_is_not_a_number_in_const_or_enum(self):
         for value, schema in ((True, {"const": 1}), (True, {"enum": [1]}),
@@ -219,8 +222,15 @@ class Validator(unittest.TestCase):
         self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(double)))
         real = "a `x` #TODO(agent): DEFERRED real"
         self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(real)))
+        literal = "literal \\` then #TODO(agent): fix"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(literal)))
+        unmatched = "a lone ` then #TODO(agent): fix"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(unmatched)))
+        across = "quarantined with a `#TODO(agent):\nUNVERIFIED` marker"
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(across)))
+        self.assertEqual(validate.outside_code_spans(across).count("\n"), 1)
         open_span = "**quarantined with a `#TODO(agent):"
-        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
 
     def test_a_pipe_in_a_shell_example_is_not_an_enumeration(self):
         import validate

@@ -100,6 +100,10 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
     runner exists not to take on faith: `"refuted": "false"` is a string, and
     read as truthy it reverses the verdict.
     """
+    if schema is True:                    # JSON Schema: `true` accepts anything
+        return
+    if schema is False or not isinstance(schema, dict):
+        raise EngineError(f"{where} is checked against a schema that accepts nothing")
     for key in ("anyOf", "oneOf"):
         options = schema.get(key)
         if isinstance(options, list) and options:
