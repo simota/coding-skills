@@ -219,6 +219,7 @@ class Markdown(unittest.TestCase):
             "in a list item after a span opener": "a ` lone\n- item " + self.M + " `x`",
             "in a nested quote": "> `example\n> > " + self.M + "`",
             "inside an HTML block": "<div>\n" + self.M + "\n</div>",
+            "between bare angle brackets in an HTML block": "<div>\nx < " + self.M + " > y\n</div>",
         }
         for name, text in cases.items():
             self.assertTrue(self.live(text), msg=name)
@@ -256,6 +257,8 @@ class Markdown(unittest.TestCase):
         lines = ["## Done when ##", "   ## Verify with  ", "    ## code", "### Three",
                  "Setext", "------", "```", "## fenced", "```"]
         self.assertEqual(fences.h2_lines(lines), {0: "Done when", 1: "Verify with", 4: "Setext"})
+        self.assertEqual(fences.h2_lines(["> ## Verify with", "", "- ## Done when", "",
+                                          "## Real"]), {4: "Real"})
 
     def test_fences(self):
         lines = ["~~~~", "```", "~~~", "~~~~", "## After", "``` a`b", "x"]

@@ -17,7 +17,7 @@ line number.
 from __future__ import annotations
 
 import functools
-import re
+from html.parser import HTMLParser
 
 from markdown_it import MarkdownIt
 
@@ -51,12 +51,14 @@ def blocks(lines: list[str]) -> list[list[str]]:
 
 
 def h2_lines(lines: list[str]) -> dict[int, str]:
-    """{line index: title} for every level-2 heading, ATX or setext, as it
-    renders — closing hashes and surrounding spaces gone."""
+    """{line index: title} for every top-level level-2 heading, ATX or setext,
+    as it renders — closing hashes and surrounding spaces gone. A heading in a
+    quote or a list item is part of an example, not a section of the page."""
     toks = _tokens("\n".join(lines))
     return {tok.map[0]: toks[i + 1].content.strip()
             for i, tok in enumerate(toks)
-            if tok.type == "heading_open" and tok.tag == "h2" and tok.map}
+            if tok.type == "heading_open" and tok.tag == "h2" and tok.level == 0
+            and tok.map}
 
 
 def marker_lines(lines: list[str], marker: str) -> list[int]:
@@ -86,8 +88,19 @@ def _inline(text: str):
                 line += 1
 
 
-_COMMENT = re.compile(r"<!--.*?-->", re.S)
-_TAG = re.compile(r"<[^>]*>")
+class _Visible(HTMLParser):
+    """The text an HTML block shows, by line offset. A `<` that opens no tag is
+    text, as a browser shows it; comments and attributes are not."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.out: dict[int, str] = {}
+
+    def handle_data(self, data: str) -> None:
+        line = self.getpos()[0] - 1
+        for offset, piece in enumerate(data.split("\n")):
+            if piece.strip():
+                self.out[line + offset] = self.out.get(line + offset, "") + piece
 
 
 def live_text(text: str) -> dict[int, str]:
@@ -101,13 +114,12 @@ def live_text(text: str) -> dict[int, str]:
             out[line] = out.get(line, "") + child.content
     for tok in _tokens(text):
         if tok.type == "html_block" and tok.map:
-            # Blank each comment in place so the lines after it keep their numbers.
-            visible = _COMMENT.sub(lambda m: "\n" * m.group().count("\n"), tok.content)
-            for offset, raw in enumerate(visible.split("\n")):
-                shown = _TAG.sub("", raw)
-                if shown.strip():
-                    i = tok.map[0] + offset
-                    out[i] = out.get(i, "") + shown
+            parser = _Visible()
+            parser.feed(tok.content)
+            parser.close()
+            for offset, shown in parser.out.items():
+                i = tok.map[0] + offset
+                out[i] = out.get(i, "") + shown
     return out
 
 
