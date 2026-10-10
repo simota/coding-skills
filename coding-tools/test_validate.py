@@ -451,6 +451,10 @@ def _(r): (r / f"{S}coding-test/repo").symlink_to("../..")
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "status: done | PARTIAL | BLOCKED\n\n## ")
 
 
+@case("V27-undecodable")
+def _(r): (r / f"{S}coding-test/playbooks/flaky.md").write_bytes(b"<!-- coding:guidance -->\n\xff\xfe\n")
+
+
 def main() -> int:
     baseline = run(ROOT)
     if "green" not in baseline:

@@ -67,9 +67,21 @@ MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
 
 
 def outside_code_spans(line: str) -> str:
-    """The line with its code spans removed; a span left open runs on to the
-    next line, so everything after an unmatched backtick goes too."""
-    return re.sub(r"`[^`]*`", "", line).split("`", 1)[0]
+    """The line with its code spans removed, as CommonMark reads them: a run of
+    n backticks opens a span that only a run of exactly n closes, so
+    ``#TODO(agent): x`` is one span, not two empty ones around the marker. A
+    span left open runs on to the next line, so the rest of the line goes too."""
+    out, i = [], 0
+    for m in re.finditer(r"`+", line):
+        if m.start() < i:
+            continue
+        close = re.compile(rf"(?<!`){m.group()}(?!`)").search(line, m.end())
+        out.append(line[i:m.start()])
+        if close is None:
+            return "".join(out)
+        i = close.end()
+    out.append(line[i:])
+    return "".join(out)
 
 
 def read(p: Path) -> str:
@@ -78,7 +90,7 @@ def read(p: Path) -> str:
     try:
         return p.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as e:
-        fail("V27", f"{p.relative_to(ROOT)} cannot be read: {e.strerror or e}")
+        fail("V27", f"{p.relative_to(ROOT)} cannot be read: {getattr(e, 'strerror', None) or e}")
         return ""
 
 

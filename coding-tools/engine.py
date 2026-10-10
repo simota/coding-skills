@@ -82,6 +82,17 @@ _JSON_TYPES = {"string": str, "boolean": bool, "object": dict, "array": list,
                "null": type(None)}
 
 
+def _same(a, b) -> bool:
+    """JSON equality: Python's `True == 1` would let a boolean pass for a number."""
+    if isinstance(a, bool) or isinstance(b, bool):
+        return type(a) is type(b) and a == b
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        return len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_same(a[k], b[k]) for k in a)
+    return a == b
+
+
 def conforms(obj, schema: dict, where: str = "answer") -> None:
     """Required keys and primitive types, checked here rather than trusted.
 
@@ -101,9 +112,9 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
                     pass
             if fits == 0 or (key == "oneOf" and fits > 1):
                 raise EngineError(f"{where} matches {fits} of the schema's {key} options")
-    if "const" in schema and obj != schema["const"]:
+    if "const" in schema and not _same(obj, schema["const"]):
         raise EngineError(f"{where} is {obj!r}, the schema fixes it at {schema['const']!r}")
-    if isinstance(schema.get("enum"), list) and obj not in schema["enum"]:
+    if isinstance(schema.get("enum"), list) and not any(_same(obj, v) for v in schema["enum"]):
         raise EngineError(f"{where} is {obj!r}, not one of {schema['enum']}")
     types = [t for t in _types(schema) if t]
     if types:

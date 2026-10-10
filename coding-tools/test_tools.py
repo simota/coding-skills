@@ -78,6 +78,13 @@ class Engine(unittest.TestCase):
                 {"type": "object", "required": ["b"]}, {"type": "null"}]})
         engine.conforms(None, {"anyOf": [{"type": "object"}, {"type": "null"}]})
 
+    def test_a_boolean_is_not_a_number_in_const_or_enum(self):
+        for value, schema in ((True, {"const": 1}), (True, {"enum": [1]}),
+                              ([False], {"const": [0]})):
+            with self.assertRaises(engine.EngineError, msg=schema):
+                engine.conforms(value, schema)
+        engine.conforms(1, {"enum": [1, 2]})
+
     def test_parse_takes_the_last_object_line(self):
         self.assertEqual(engine._parse("x", 'log line\n{"ok": true}\n'), {"ok": True})
 
@@ -208,6 +215,10 @@ class Validator(unittest.TestCase):
         import validate
         line = "A Python marker reads `x = f()  #TODO(agent): ...` in the source."
         self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(line)))
+        double = "Documented as ``#TODO(agent): example`` here."
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(double)))
+        real = "a `x` #TODO(agent): DEFERRED real"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(real)))
         open_span = "**quarantined with a `#TODO(agent):"
         self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
 
