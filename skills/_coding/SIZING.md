@@ -79,11 +79,11 @@ proposed in the dialogue rather than invented on the way.
 **An ambiguous or inconsistent term is never resolved by a silent choice.**
 Two meanings for one word, or two names for one concept, is a question
 (`_coding/REPORT.md`): one question, with the default named — the spelling the
-code already uses most. The answer lands in `terms` and is appended to the
-glossary as `term · means · not to be called`, so the next run inherits the
-decision rather than the ambiguity. A `T1` may create the glossary for its
-first settled term; a `T0` never does — it marks what it found `OUT-OF-SCOPE`
-and moves on.
+code already uses most. The answer lands in `terms` and — at `T1` or above,
+where this run may write it — is appended to the glossary as `term · means · not
+to be called`, else it travels in `open`: the next run inherits the decision, not
+the ambiguity. A `T1` may create the glossary for its first settled term; a `T0`
+never does — it records what it found as an `OUT-OF-SCOPE` residual.
 
 ## Constraints do not loosen mid-run
 

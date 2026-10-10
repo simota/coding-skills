@@ -23,6 +23,10 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
+from fences import blocks as fenced_blocks         # noqa: E402
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
 HISTORY = SKILLS / "coding-explore/reference/history.md"
@@ -79,17 +83,7 @@ class Repo:
 
 def fenced(page: pathlib.Path, contains: str) -> list[str]:
     """The lines of the first fenced block containing a marker string."""
-    blocks, cur, inside = [], [], False
-    for line in page.read_text().splitlines():
-        if line.startswith("```"):
-            if inside:
-                blocks.append(cur)
-                cur = []
-            inside = not inside
-            continue
-        if inside:
-            cur.append(line)
-    for b in blocks:
+    for b in fenced_blocks(page.read_text().splitlines()):
         if any(contains in l for l in b):
             return b
     fail(page, f"no fenced block containing {contains!r} — "
@@ -340,6 +334,26 @@ def check_recovery(tmp: pathlib.Path) -> int:
     return n
 
 
+def check_stash_fix(tmp: pathlib.Path) -> int:
+    """oracles.md: `stash push -u -- <fix paths>` removes a fix that includes a
+    new file, leaves the test alone, and `pop` brings the fix back; without
+    `-u` the new file is refused."""
+    r = Repo(tmp / "stash-fix")
+    r.write("fix.txt", "bug\n"); r.write("test.txt", "t0\n"); r.commit("c1")
+    r.write("fix.txt", "fixed\n"); r.write("helper.txt", "new\n"); r.write("test.txt", "NEW-TEST\n")
+    if "did not match" not in r.git("stash", "push", "--", "fix.txt", "helper.txt"):
+        fail(ORACLES, "`stash push -- <paths>` accepted an untracked fix file; the page "
+                      "says `-u` is needed for it")
+    r.must("stash", "push", "-q", "-u", "--", "fix.txt", "helper.txt")
+    if ((r.d / "fix.txt").read_text() != "bug\n" or (r.d / "helper.txt").exists()
+            or "NEW-TEST" not in (r.d / "test.txt").read_text()):
+        fail(ORACLES, "`stash push -u -- <fix paths>` did not remove exactly the fix")
+    r.must("stash", "pop", "-q")
+    if (r.d / "fix.txt").read_text() != "fixed\n" or not (r.d / "helper.txt").exists():
+        fail(ORACLES, "`stash pop` did not bring the whole fix back")
+    return 2
+
+
 def check_revert(tmp: pathlib.Path) -> int:
     """oracles.md: `revert --no-commit` then `--abort` restores the fix, keeps an
     unstaged test edit, and discards a staged one."""
@@ -374,10 +388,11 @@ def main() -> int:
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
                   "staged", "untracked", "force", "gc", "switch", "branchd",
-                  "revert-staged", "revert-unstaged"):
+                  "revert-staged", "revert-unstaged", "stash-fix"):
             (tmp / d).mkdir()
         checks = (check_pickaxe(tmp) + check_dots(tmp)
-                  + check_scoping(tmp) + check_recovery(tmp) + check_revert(tmp))
+                  + check_scoping(tmp) + check_recovery(tmp) + check_revert(tmp)
+                  + check_stash_fix(tmp))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     if failures:

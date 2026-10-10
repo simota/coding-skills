@@ -55,8 +55,14 @@ Short, mechanical, non-negotiable:
 - Any string reaching an interpreter — and the defence is sink-specific, not one
   rule: SQL wants **parameterised queries** (not escaping); a shell wants an
   **argv array**, never a built command line; a path wants **canonicalise then
-  allowlist**; a URL wants a **host allowlist** (SSRF); markup wants
-  **context-aware output encoding**
+  allowlist**; a URL wants a **host allowlist checked on the resolved IP** —
+  private, loopback and link-local denied, the connection made to that IP, and
+  redirects re-checked or off (SSRF); markup wants **context-aware output
+  encoding**. SQL identifiers — a sort column, a direction, a table — cannot be
+  bound; they go through an allowlist
+- Untrusted bytes into a deserialiser that can instantiate types (`pickle`,
+  `yaml.load`, `ObjectInputStream`, `BinaryFormatter`) or an XML parser with
+  external entities on. A data-only format or a safe loader, nothing else
 - AuthZ checked on the new path, not just authentication? Object-level, not just route-level?
 - Secrets in the diff, in a fixture, in a log line, in an error message returned to a user?
 - New dependency — what is it, who publishes it, what does it pull in?

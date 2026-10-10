@@ -23,6 +23,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
 import engine                                       # noqa: E402
+import fences                                       # noqa: E402
 import figures_check                                # noqa: E402
 import refute                                       # noqa: E402
 import render                                       # noqa: E402
@@ -67,6 +68,25 @@ class Engine(unittest.TestCase):
                 engine.conforms(bad, refute.SCHEMA)
         engine.conforms({"refuted": False, "reason": "r", "what_would_settle_it": "w"},
                         refute.SCHEMA)
+
+    def test_conforms_checks_enum_const_and_alternatives(self):
+        engine.conforms(10 ** 400, {"type": "integer"})          # no OverflowError
+        with self.assertRaises(engine.EngineError):
+            engine.conforms("maybe", {"type": "string", "enum": ["yes", "no"]})
+        with self.assertRaises(engine.EngineError):
+            engine.conforms({"a": {}}, {"anyOf": [
+                {"type": "object", "required": ["b"]}, {"type": "null"}]})
+        engine.conforms(None, {"anyOf": [{"type": "object"}, {"type": "null"}]})
+        engine.conforms(None, {"anyOf": [False, {"type": "null"}]})   # boolean subschemas
+        with self.assertRaises(engine.EngineError):
+            engine.conforms(1, {"anyOf": [False]})
+
+    def test_a_boolean_is_not_a_number_in_const_or_enum(self):
+        for value, schema in ((True, {"const": 1}), (True, {"enum": [1]}),
+                              ([False], {"const": [0]})):
+            with self.assertRaises(engine.EngineError, msg=schema):
+                engine.conforms(value, schema)
+        engine.conforms(1, {"enum": [1, 2]})
 
     def test_parse_takes_the_last_object_line(self):
         self.assertEqual(engine._parse("x", 'log line\n{"ok": true}\n'), {"ok": True})
@@ -149,6 +169,15 @@ class Render(unittest.TestCase):
             fence_end = text.index("```\n", 4)
             self.assertNotIn("<!-- deliver:", text[:fence_end])
 
+    def test_a_marker_quoted_in_prose_is_not_a_delimiter(self):
+        key = next(iter(render.H["delivered"]))
+        quoted = f"The block between `<!-- deliver:{key} -->` and its close is generated."
+        with tempfile.TemporaryDirectory() as tmp:
+            p = self.skill(tmp, self.SECTIONS.replace("own words", quoted, 1))
+            render.render(p)
+            self.assertFalse(render.render(p))
+            self.assertIn(quoted, p.read_text(encoding="utf-8"))
+
     def test_an_unpaired_marker_stops_the_render(self):
         key = next(iter(render.H["delivered"]))
         for broken in (f"<!-- deliver:{key} -->\n",
@@ -158,6 +187,57 @@ class Render(unittest.TestCase):
                 p = self.skill(tmp, self.SECTIONS.replace("own words", broken, 1))
                 with self.assertRaises(render.Malformed):
                     render.render(p)
+
+
+class Fences(unittest.TestCase):
+    def test_a_fence_lookalike_inside_a_fence_does_not_close_it(self):
+        """The case that used to toggle three times and swallow the page."""
+        lines = ["```text", "```example", "```", "## Done when", "x"]
+        self.assertEqual(fences.kinds(lines), ["open", "body", "close", "text", "text"])
+
+    def test_tildes_and_longer_fences(self):
+        lines = ["~~~~", "```", "~~~", "~~~~", "## After"]
+        self.assertEqual(fences.kinds(lines), ["open", "body", "body", "close", "text"])
+
+    def test_an_info_string_with_a_backtick_is_not_a_fence(self):
+        self.assertEqual(fences.kinds(["``` a`b", "## H"]), ["text", "text"])
+
+    def test_blocks_and_an_unclosed_fence(self):
+        self.assertEqual(fences.blocks(["a", "```", "x", "```", "```py", "y"]), [["x"], ["y"]])
+
+    def test_sections_after_a_nested_lookalike_are_found(self):
+        import validate
+        text = "## Owns\n```text\n```example\n```\n## Done when\nyes\n"
+        self.assertEqual(validate.sections(text).get("Done when"), "yes")
+
+
+class Validator(unittest.TestCase):
+    """False positives: content these rules must leave alone."""
+
+    def test_a_marker_inside_a_code_span_is_a_mention(self):
+        import validate
+        line = "A Python marker reads `x = f()  #TODO(agent): ...` in the source."
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(line)))
+        double = "Documented as ``#TODO(agent): example`` here."
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(double)))
+        real = "a `x` #TODO(agent): DEFERRED real"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(real)))
+        literal = "literal \\` then #TODO(agent): fix"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(literal)))
+        unmatched = "a lone ` then #TODO(agent): fix"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(unmatched)))
+        across = "quarantined with a `#TODO(agent):\nUNVERIFIED` marker"
+        self.assertIsNone(validate.MARKER_RE.search(validate.outside_code_spans(across)))
+        self.assertEqual(validate.outside_code_spans(across).count("\n"), 1)
+        open_span = "**quarantined with a `#TODO(agent):"
+        self.assertIsNotNone(validate.MARKER_RE.search(validate.outside_code_spans(open_span)))
+
+    def test_a_pipe_in_a_shell_example_is_not_an_enumeration(self):
+        import validate
+        line = "List the environment with `ENV | sort` first."
+        m = validate.ENUM_RE.search(line)
+        self.assertTrue(m is None or not validate._is_enumeration(
+            [w.strip() for w in m.group(1).split("|")]))
 
 
 class Figures(unittest.TestCase):

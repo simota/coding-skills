@@ -51,7 +51,8 @@ checking them against each other.
 
 A diagram carries the same rung as the finding it belongs to — its certainty
 label from the severity playbook (Confirmed / Likely / Question) and its
-evidence grade. It never raises either, and three things keep it a finding rather than an illustration:
+evidence grade. It never raises either, and three things keep it a finding
+rather than an illustration:
 
 - **`labelled`** — every mark names something that was opened. A region, a file,
   a step that exists. An unlabelled box is a guess that looks like a fact

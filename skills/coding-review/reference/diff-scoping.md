@@ -70,7 +70,7 @@ cannot drift apart; the prose around them is not checked — re-read the other p
 |---|---|
 | The diff is dominated by a reformat | Re-read with `-w`, review the real change, and report the mixing as its own finding |
 | Files were renamed | `-M` (usually on by default) shows a rename as a rename; `-C` also detects copies. Without them a move reads as a large delete plus a large add, and the review drowns |
-| A lockfile or generated file is present | Confirm it matches its source of truth. Do not read it line by line |
+| A lockfile or generated file is present | Confirm it matches its source of truth. Do not read it line by line — but check that no `resolved` URL or integrity hash changed for a version that did not, which is where lockfile injection hides |
 | A submodule pointer moved | `git diff --submodule=log` names the commits. The diff otherwise shows only a hash, and a hash review is not a review |
 | Binary or vendored paths | State that they were excluded and why. Silent exclusion is the failure this whole page is about |
 | The PR is the unit | Read the PR diff, not the local branch. They differ whenever the base moved or a maintainer pushed |
@@ -85,4 +85,5 @@ cannot drift apart; the prose around them is not checked — re-read the other p
 
 Both belong in the report. A finding is `inspected` evidence; a finding
 demonstrated by running the case is `executed` and worth far more. When neither
-is possible, the finding is `asserted` and does not carry a defect's label.
+is possible, the finding is `asserted` and goes in only as a `Question`, never
+with a defect's label.

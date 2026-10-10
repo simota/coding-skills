@@ -55,6 +55,11 @@ compatibility shims for versions no longer running.
 - Units and nullability belong in the name where the type does not carry them
 - A rename crossing a public boundary is not a refactor — it breaks callers you
   cannot see, and needs the add-migrate-remove sequence
+- **A name that is also data is not renamed by a refactor** — a class or field
+  name written into pickles, JSON, an ORM column, a stored enum name, a message
+  schema, or a reflection or config string. Check whether it is persisted or
+  serialised first; if it is, the rename is a migration (`coding-plan`, data and
+  deployed clients). The same holds for reordering enum members whose ordinal is stored
 - Rename with the tool, not by hand. A regex rename catches a substring in an
   unrelated identifier, and the resulting bug looks nothing like a rename
 

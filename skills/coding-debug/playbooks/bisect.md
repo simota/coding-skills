@@ -13,13 +13,15 @@ Use when it worked before. Cheapest first move whenever a good commit exists.
 2. `git bisect start && git bisect bad <bad> && git bisect good <good>`
 3. Script the check and use `git bisect run <script>`. The script must exit
    non-zero **only** for this failure — a build error at some midpoint scores as
-   bad and points at the wrong commit. Exit 125 for "cannot test this commit"
+   bad and points at the wrong commit. Exit 125 for "cannot test this commit".
+   An exit code of 128 or more (a signal: 139 segfault, 137 killed) aborts the
+   whole run, so wrap the check and map a crash to 1, or to 125 if unrelated
 4. **Keep the script outside the working tree.** Each step checks out an older
    commit, and a script committed into the repo disappears at every commit that
    predates it. Git reports `bogus exit code 127` and stops the run, leaving the
    bisect open and `HEAD` detached at the midpoint — it reads as a broken
-   repository and is a path problem. Pass an absolute path
-   from a temporary directory instead
+   repository and is a path problem. Pass an absolute path from a temporary
+   directory instead
 5. When it lands on a commit, **read the diff and explain the mechanism**. The
    bisect names the change; it does not explain it. A merge commit or a
    thousand-line refactor means the answer is a lead, not a cause
@@ -65,9 +67,10 @@ layer entry, a queue, the point where a value is transformed.
   were false?" and go look for that
 - **Write down what was ruled out**, with how. An investigation without this
   list revisits the same dead end an hour later
-- **After two failed hypotheses in one area, question the premise** (the
-  `_coding/PREDICTION.md` stop rule). Is the reproduction
-  actually testing what you think? Is the code you are reading the code that runs?
+- **After two consecutive misses in one area, question the premise** — an
+  observation that came out other than registered, not a hypothesis your own
+  test was built to disprove (the `_coding/PREDICTION.md` stop rule). Is the
+  reproduction actually testing what you think? Is the code you are reading the code that runs?
   Is it the right process, the right build, the right environment?
 
 ## The cause is proved when

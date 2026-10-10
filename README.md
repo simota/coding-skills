@@ -56,7 +56,7 @@ advertising a competitor.
 
 **Contracts are delivered, not referenced.** A rule kept in `skills/_coding/` is read
 on a minority of launches, so the operative part of each contract is copied
-verbatim into every `SKILL.md` between `<!-- deliver:… -->` markers.
+verbatim into each `SKILL.md` that owes it, between `<!-- deliver:… -->` markers.
 `coding-registry/delivered/` holds the source, `make render` writes it back, and a
 rule fails if any copy has drifted. The longer prose stays in `skills/_coding/`.
 
@@ -80,8 +80,8 @@ read on first match.
 
 **Residuals are visible or they do not exist.** Anything left behind is
 `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED` and appears in the
-handoff's `open` list. A skill holding `Edit` or `Write` also drops a
-`#TODO(agent):` marker in the tree; a report-only skill names where one belongs
+handoff's `open` list. A run that may write the file also drops a
+`#TODO(agent):` marker in the tree; one that may not names where it belongs
 and leaves the writing to its receiver. The report closes and is gone; the
 marker stays.
 
@@ -120,10 +120,10 @@ coding-skills/
 ├── Makefile
 ├── coding-registry/            # budgets, boundaries, routes, delivered blocks
 ├── coding-tools/               # validate · test_validate · test_tools · render ·
-│                               # figures_check · engine · refute · githooks/
+│                               # figures_check · fences · engine · refute · githooks/
 ├── docs/                       # the generated overview page (not edited here)
 └── skills/                     # everything the CLI reads
-    ├── _coding/                # contracts in force on every run
+    ├── _coding/                # shared contracts, and routing guidance
     └── coding-<phase>/         # a SKILL.md is what makes this a skill, and
         │                       # only skills are installed
         ├── SKILL.md            # Owns / Before starting / Decide first /
@@ -131,7 +131,7 @@ coding-skills/
         ├── _coding   -> ../_coding        # short names: the parent scopes them
         ├── registry  -> ../../coding-registry
         ├── refute.py -> ../../coding-tools/refute.py   # harness `linked_tools`
-        ├── playbooks/          # loaded only when a Decide-first row points at one
+        ├── playbooks/          # loaded only when a SKILL.md row points at one
         └── reference/          # no line budget, carries dated headers instead
 ```
 
@@ -140,7 +140,7 @@ builds throwaway repositories and checks every documented behaviour against the
 git actually installed — that `-S` misses an equal-count edit, that three-dot
 diff isolates a branch's own work, that `restore .` leaves no trace where
 `git add` leaves a recoverable blob, that `checkout -f` discards tracked edits
-and leaves untracked files. 29 behaviours, about two seconds, in `make check`, CI
+and leaves untracked files. 31 behaviours, about two seconds, in `make check`, CI
 and the pre-commit hook. Where a page prints an output, that output is parsed from
 the page, so editing the page to say something false fails too — proven by
 injecting both kinds of break, including deleting a block so the checker matches
@@ -200,7 +200,8 @@ a convenience: a skill is handed its own directory as the base for relative
 paths, and those paths are normalised *lexically*, so `../_coding/X.md` does
 not travel back through the install symlink. A shell follows the link and finds
 the file, which is what makes this fail quietly rather than loudly. A rule
-rejects any `..` and checks that every path named in a `SKILL.md`, a playbook,
+rejects any backticked path containing `..` and any link that climbs out of the
+skill directory, and checks that every path named in a `SKILL.md`, a playbook,
 **or a shared contract** resolves from a skill directory. Extending that check
 past `SKILL.md` found two live breaks: a contract pointing at
 `registry/capabilities.yaml` from the wrong base, and a playbook pointing into

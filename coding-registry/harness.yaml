@@ -28,12 +28,12 @@ limits:
   # Derived, not chosen: a skill that owes the prediction mechanism carries 58
   # delivered lines plus 10 marker lines (68); the others carry 51 + 8 (59). That
   # leaves 88 lines of the skill's own words under the cap; the measured own-content
-  # max is 87, in coding-test. Each raise has been the same move for a delivered
+  # max is 88, in coding-test — at the cap. Each raise has been the same move for a delivered
   # block that grew (120 -> 130 -> 135 -> 156), the last for the sixth axis: the
   # 17 lines that bound what the run says at the end.
   skill_md_lines: 156
   description_chars: 200        # the listing truncates past this
-  playbook_lines: 300           # measured max: 109
+  playbook_lines: 300           # measured max: 116
   playbooks_per_skill: 8        # measured max: 3
   # Raised for the sixth axis. CONTRACT.md is the file nearest the cap; REPORT.md
   # arrived with the sixth axis and is the densest — the moments, the order at

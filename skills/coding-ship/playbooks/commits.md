@@ -11,8 +11,8 @@ changes for another. Practical consequences:
 
 - A rename and a logic change are two commits. Together, the logic change is
   invisible in a wall of renamed lines
-- A dependency bump and the code adapting to it are two commits, unless the code
-  does not compile without both
+- A dependency bump and the code adapting to it are two commits, unless the tree
+  is not green — build **and** tests — without both
 - Reformatting is always its own commit, and ideally its own PR
 - A fix and its regression test belong together — the test is the fix's evidence,
   and separating them breaks the revert
@@ -94,7 +94,11 @@ to wonder.
 
 - Anything others are blocked on goes first
 - **An additive migration** — a new column, table, or index — merges and deploys
-  **before** the code that reads it. **A destructive one is the reverse**:
+  **before** the code that reads it, provided the running code's writes still
+  succeed: the column is nullable or defaulted, and no new `NOT NULL`, `UNIQUE`,
+  `CHECK` or foreign key rejects them. Run DDL with a short lock timeout and
+  retry — a queued `ALTER` blocks every query behind it — and build indexes
+  without blocking writes (`CREATE INDEX CONCURRENTLY`, or an online schema tool). **A destructive one is the reverse**:
   deploying a `DROP` ahead of the code that stopped using the column takes the
   running version down. Anything destructive follows the expand/contract order
   `coding-plan` sequences, never a single ordering rule

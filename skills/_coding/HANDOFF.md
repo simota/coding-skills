@@ -44,8 +44,8 @@ next: "<the skill that should receive this, or none>"
   `OUT-OF-SCOPE` travel as record, so the receiver learns what was already
   decided against rather than rediscovering it
 - **`written` says whether the `#TODO(agent):` marker is in the tree yet.**
-  A report-only skill sets it `false` and names where the marker belongs; the
-  first receiver holding `Edit` or `Write` places it and flips the flag
+  A run that may not write that file sets it `false` and names where the marker
+  belongs; the first receiver that may edit it places it and flips the flag
   (`_coding/CONTRACT.md` § Residuals)
 - Pass the change in state, not the working log. Reasoning does not travel
 
@@ -57,8 +57,8 @@ next: "<the skill that should receive this, or none>"
 3. Does every key of `evidence` exist on disk, and is every level above `asserted`?
 4. Do `swept` and `evidence` agree, and does every marker counted appear in
    `open`? A coverage claim that does not add up is no coverage
-5. Is any `open` entry `written: false`? If you hold `Edit` or `Write`, placing
-   those markers is part of your run
+5. Is any `open` entry `written: false`? If your run may edit that file, placing
+   the marker is part of your run
 6. Is any `inspected` level missing its reason? That is `asserted` renamed
 7. Does the work about to start fall under the brief's `excludes`?
 

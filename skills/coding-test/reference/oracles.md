@@ -4,7 +4,7 @@
 Purpose: The sources a test's expected value can legitimately have, what each one can falsify, and the shapes that assert nothing.
 Read when: writing any assertion, reviewing a suite that passes while behaviour is wrong, or deciding whether a test is worth keeping.
 Source: git — only the regression-test rule's recipe depends on it, and it is run against whatever is installed; the catalogue itself is this set's own.
-Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. The committed-fix half of the git recipe is re-run by `make figures` on every commit, staged and unstaged test edits both; the catalogue has no automated check.
+Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. Both halves of the git recipe are re-run by `make figures` on every commit — the stash with a newly created fix file, and the revert with staged and unstaged test edits; the catalogue has no automated check.
 
 To test something you must already know the right answer. Where that answer came
 from decides whether the test is evidence or decoration — and a decorative test
@@ -94,7 +94,7 @@ re-running the tool records the bug and turns it green.
 |---|---|
 | Expected value copied from the output | Asserts the code equals itself |
 | `assertDoesNotThrow` as the only assertion | A function returning the wrong answer quietly passes |
-| Asserting a mock was called | Tests the test's own wiring |
+| Asserting an internal collaborator was called, or any mock without its arguments | Tests the test's own wiring. A call across an outbound boundary — the email sent, the event published — with its arguments asserted is the behaviour, not this |
 | Mocking the unit under test | Nothing under test remains |
 | A conditional around the assertion | Different runs assert different things; the test names no case |
 | Comparing against a constant that also lives in the implementation | One edit changes both |
@@ -103,11 +103,15 @@ re-running the tool records the bug and turns it green.
 
 A test for a fixed bug must be **seen failing on the pre-fix code**. Remove the
 fix, run it, watch it fail for the stated reason, restore the fix, run it again.
-Remove only the fix, and only recoverably: uncommitted, `git stash push -- <fix
-paths>` and `git stash pop` (never the test file, never `restore`, which keeps
-no copy); committed, `git revert --no-commit <sha>` with the test edits committed
-or left unstaged, then put it back with `git revert --abort` — `--abort` resets
-the index, so a staged test edit is discarded with it.
+Remove only the fix, and only recoverably:
+
+- **Uncommitted**: `git stash push -u -- <fix paths>`, run, `git stash pop`.
+  Never the test file, and never `restore`, which keeps no copy. `-u` because
+  without it a newly created fix file is refused and the test runs with the fix
+  still in place
+- **Committed**: `git revert --no-commit <sha>`, run, `git revert --abort`, with
+  the test edits committed or left unstaged — `--abort` resets the index, so a
+  staged test edit is discarded with it
 
 Both observations are `executed` evidence and both belong in the report. A
 regression test that was never observed red is a guess with a filename — it may

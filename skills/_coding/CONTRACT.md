@@ -39,17 +39,17 @@ document exists to prevent. Falling short is reported as falling short.
 ## Residuals
 
 Anything left behind is classified, and every residual is recorded in the
-handoff's `open` list with its class and the `file:line` a marker belongs at —
-one entry per residual, never one per file (a `T0`, with no handoff, names them in its line).
+handoff's `open` list (a `T0`, with no handoff, names it in its one line) with
+its class and the `file:line` a marker belongs at — one per residual, not per file.
 
-**Who writes the marker into the tree depends on the tool grant.** A skill
-holding `Edit` or `Write` places the `#TODO(agent): <CLASS> <action>` marker itself,
-where a reader would next look, and names it in `open`. A report-only skill
-(`coding-explore`, `coding-review`, and any run whose grant lacks the tool for
-the file in question) records the entry in `open` alone and leaves the writing
-to whoever receives the handoff. **A report-only skill never edits the tree to
-satisfy this rule** — doing so would break the guarantee that makes its output
-trustworthy.
+**Who writes the marker depends on what the run may write.** A run that may
+edit the file in question places the `#TODO(agent): <CLASS> <action>` marker
+itself, where a reader would next look, and names it in `open`. A run that may
+not — `coding-explore` and `coding-review` anywhere, `coding-plan` in a file it
+did not create, `coding-ship` in the diff it ships — records the entry in `open`
+alone and leaves the writing to whoever receives the handoff. **A report-only
+skill never edits the tree to satisfy this rule** — doing so would break the
+guarantee that makes its output trustworthy.
 
 | Class | Means |
 |---|---|

@@ -1,4 +1,6 @@
 <!-- coding:deferred -->
+# Diagram Forms — One Shape per Trigger
+
 Purpose: the copy-paste form for each trigger, so a diagram costs a minute rather than a decision.
 Read when: a finding has hit one of the triggers and the shape is not obvious.
 Source: none — the shapes are this set's own; nothing outside the page can move them.
@@ -7,7 +9,7 @@ that this page and `visualise` between them define every trigger, form and floor
 word the registry declares; a rule in this set's validator (V36) re-runs that on
 every commit, so a word deleted from here fails the build.
 
-# Forms
+## Forms
 
 Four shapes, one per trigger, cover almost everything, and the fan is the `hops`
 form turned outwards. Pick by trigger, not by taste.
@@ -83,12 +85,12 @@ It needs a renderer, so it is a trade.
 ````
 ```mermaid
 flowchart LR
-  B[brief axis 3] --> P[prompt v2]
-  P --> R1[run 1]
-  P --> R2[run 2]
-  R1 --> C1[cand 1 · ok]
-  R2 --> C3[cand 3 · shipped]
-  C3 -.->|exclusion never re-checked| B
+  H[api/handler.ts:42] --> S[auth/session.ts:88]
+  H --> A[audit/log.ts:15]
+  S --> C[cache/session.ts:31]
+  S --> U[db/user.ts:210]
+  C --> U
+  S -.->|null on expiry, unchecked| U
 ```
 ````
 

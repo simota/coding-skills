@@ -27,10 +27,11 @@ help:
 	@echo "make figures   re-run the git behaviour the reference layer states"
 	@echo "make refute CLAIMS=claims.json RUNNING=claude   put each claim to the engines that did not make it"
 	@echo "make engines   ask each checker engine for one object; reports what is unreachable"
+	@echo "make drift     re-render the delivered blocks; fail if any were stale"
 	@echo "make render    write the delivered blocks back into every SKILL.md"
 	@echo "make hooks     install the pre-commit hook"
 	@echo "make link      symlink the skills into claude / codex / agy"
-	@echo "make unlink    remove those symlinks"
+	@echo "make unlink    remove those symlinks (FORCE=1: dangling ones too)"
 	@echo "make status    show what is linked"
 
 check: validate test figures drift
@@ -76,8 +77,10 @@ hooks:
 # coding-tools/ share it and must never be installed.
 SKILL_DIRS := $(patsubst %/SKILL.md,%,$(wildcard skills/coding-*/SKILL.md))
 
-# A link is this repo's only when it points at this repo's skill. Another
-# checkout's link with the same name is left alone by every target here.
+# A link is this repo's only when it points at this repo's skill. Any other link
+# with the same name is left alone — a dangling one too, since nothing here can
+# tell a moved checkout of this repo from another installation whose target is
+# gone. `FORCE=1` lets link replace, and unlink remove, a dangling one.
 link:
 	@for dir in $(HOST_DIRS); do \
 		if [ ! -d "$$(dirname "$$dir")" ]; then echo "skip $$dir (host not installed here)"; continue; fi; \
@@ -85,7 +88,11 @@ link:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; want="$(REPO)/$$path"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" != "$$want" ]; then \
+			if [ -L "$$target" ] && [ ! -e "$$target" ] && [ "$(FORCE)" = 1 ]; then \
+				old=$$(readlink "$$target"); ln -sfn "$$want" "$$target"; echo "  relink $$name (was dangling: $$old)"; \
+			elif [ -L "$$target" ] && [ ! -e "$$target" ]; then \
+				echo "  skip $$name (dangling link to $$(readlink "$$target"); FORCE=1 replaces it)"; \
+			elif [ -L "$$target" ] && [ "$$(readlink "$$target")" != "$$want" ]; then \
 				echo "  skip $$name (links to $$(readlink "$$target"), not this repo)"; \
 			elif [ -e "$$target" ] && [ ! -L "$$target" ]; then \
 				echo "  skip $$name (a real path is already there)"; \
@@ -101,7 +108,8 @@ unlink:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+			if [ -L "$$target" ] && { [ "$$(readlink "$$target")" = "$(REPO)/$$path" ] || \
+					{ [ ! -e "$$target" ] && [ "$(FORCE)" = 1 ]; }; }; then \
 				rm "$$target"; echo "  unlink $$name"; \
 			elif [ -L "$$target" ]; then echo "  keep $$name (links elsewhere)"; fi; \
 		done; \
@@ -112,8 +120,10 @@ status:
 		echo "$$dir"; \
 		for path in $(SKILL_DIRS); do \
 			name=$$(basename "$$path"); target="$$dir/$$name"; \
-			if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
-				if [ -e "$$target" ]; then echo "  linked   $$name"; else echo "  dangling $$name"; fi; \
+			if [ -L "$$target" ] && [ ! -e "$$target" ]; then \
+				echo "  dangling $$name -> $$(readlink "$$target") (FORCE=1 make link replaces it)"; \
+			elif [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(REPO)/$$path" ]; then \
+				echo "  linked   $$name"; \
 			elif [ -L "$$target" ]; then echo "  foreign  $$name -> $$(readlink "$$target")"; \
 			elif [ -e "$$target" ]; then echo "  occupied $$name (a real path)"; \
 			else echo "  unlinked $$name"; fi; \
