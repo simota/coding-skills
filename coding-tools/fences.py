@@ -87,8 +87,12 @@ def mask_code_spans(text: str) -> str:
             if cur:
                 paragraphs.append(cur)
             cur = []
-        if not mask[i] and line.strip():
-            cur.append(i)
+        if mask[i] or not line.strip():
+            continue
+        if h_any(line):                       # a heading is a block of one line
+            paragraphs.append([i])
+            continue
+        cur.append(i)
     if cur:
         paragraphs.append(cur)
     for para in paragraphs:
@@ -124,6 +128,14 @@ def _spans(text: str) -> list[tuple[int, int]]:
             continue
         found.append((start, close.end()))
         i = close.end()
+
+
+_ATX = re.compile(r"^ {0,3}#{1,6}(?:[ \t]|$)")
+
+
+def h_any(line: str) -> bool:
+    """Whether the line is an ATX heading of any level."""
+    return _ATX.match(line) is not None
 
 
 _H2 = re.compile(r"^ {0,3}##[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$")

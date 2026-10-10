@@ -292,6 +292,17 @@ class Round4(unittest.TestCase):
                 engine.conforms(value, schema)
         engine.conforms({"x": 1}, {"title": "t", "properties": {"x": {"description": "d"}}})
 
+    def test_an_unchecked_keyword_is_never_absorbed_by_a_combinator(self):
+        for schema in ({"not": {"minimum": 0}},
+                       {"anyOf": [{"minimum": 0}, {"type": "integer"}]},
+                       {"oneOf": [{"maximum": 0}]}):
+            with self.assertRaises(engine.Unchecked, msg=schema):
+                engine.conforms(1, schema)
+
+    def test_a_heading_is_a_block_of_its_own(self):
+        text = "## head `\n[bad](missing) `"
+        self.assertEqual(fences.mask_code_spans(text), text)
+
     def test_strict_leaves_literals_and_refuses_open_maps(self):
         got = engine.strict({"type": "object",
                              "properties": {"k": {"const": {"type": "object"}}}})

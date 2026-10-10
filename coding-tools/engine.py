@@ -50,6 +50,12 @@ class EngineError(RuntimeError):
     """The engine did not answer. Never a verdict."""
 
 
+class Unchecked(EngineError):
+    """The schema asks for a check this runner cannot make. Unlike a mismatch,
+    it is never absorbed by `not`, `anyOf` or `oneOf`: a check that could not
+    run is not a check that failed, and treating it as one inverts the answer."""
+
+
 def _types(schema: dict) -> list:
     t = schema.get("type")
     return t if isinstance(t, list) else [t]
@@ -127,13 +133,15 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
     # is the trust this function exists to withhold. It stops instead.
     unchecked = set(schema) - _CHECKED - _ANNOTATIONS
     if unchecked:
-        raise EngineError(f"the schema at {where} uses {sorted(unchecked)}, which this "
+        raise Unchecked(f"the schema at {where} uses {sorted(unchecked)}, which this "
                           "runner does not check; simplify the schema")
     for option in schema.get("allOf") or []:
         conforms(obj, option, where)
     if "not" in schema:
         try:
             conforms(obj, schema["not"], where)
+        except Unchecked:
+            raise
         except EngineError:
             pass
         else:
@@ -146,6 +154,8 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
                 try:
                     conforms(obj, option, where)
                     fits += 1
+                except Unchecked:
+                    raise
                 except EngineError:
                     pass
             if fits == 0 or (key == "oneOf" and fits > 1):
