@@ -13,7 +13,9 @@ Use when it worked before. Cheapest first move whenever a good commit exists.
 2. `git bisect start && git bisect bad <bad> && git bisect good <good>`
 3. Script the check and use `git bisect run <script>`. The script must exit
    non-zero **only** for this failure — a build error at some midpoint scores as
-   bad and points at the wrong commit. Exit 125 for "cannot test this commit"
+   bad and points at the wrong commit. Exit 125 for "cannot test this commit".
+   An exit code of 128 or more (a signal: 139 segfault, 137 killed) aborts the
+   whole run, so wrap the check and map a crash to 1, or to 125 if unrelated
 4. **Keep the script outside the working tree.** Each step checks out an older
    commit, and a script committed into the repo disappears at every commit that
    predates it. Git reports `bogus exit code 127` and stops the run, leaving the

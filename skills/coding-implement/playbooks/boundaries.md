@@ -25,7 +25,7 @@ For each boundary call, decide explicitly and write down the choice:
 |---|---|
 | Timeout — how long? | The default is often infinite, and one slow dependency stalls everything |
 | Retry — how many, with what backoff? | Either no resilience, or a retry storm amplifying an outage |
-| Is the operation idempotent? | Retries duplicate the effect. Decide before adding the retry |
+| Is the operation idempotent? | Retries duplicate the effect. A timeout is an unknown outcome, not a failure: the effect may have happened. Make the retry safe first — an idempotency key the server dedupes on, or a consumer that records processed message IDs in the same transaction as the effect — back off with jitter, and retry at one layer only, because nested retries multiply |
 | Partial failure — what state is left? | Half-applied changes with no record of which half |
 | What does the caller see? | An internal exception leaks a stack trace to a user, or vanishes into a log |
 | What gets logged, and without what? | Either nothing to debug with, or credentials in the log |
@@ -46,6 +46,12 @@ size, and anything that will become part of a query, a path, a command, or
 markup. Size limits matter more than they look: an unbounded input is a
 memory-exhaustion bug wearing a parsing bug's clothes.
 
+**Validation is not the injection defence.** The entrance does not know the
+output context — the same string is safe in SQL and unsafe in HTML. Whatever
+was checked upstream, the sink defends itself: bind query parameters, pass argv
+as a list, encode for the output context, resolve and contain a path where it is
+opened. That is not re-validation; it is the only check that knows the context.
+
 ## Concurrency and time
 
 - **Nothing is atomic across a boundary.** Read-modify-write against a database
@@ -55,7 +61,12 @@ memory-exhaustion bug wearing a parsing bug's clothes.
   caught and retried, or a lock with an owner and a timeout. **A plain transaction is not
   one of them**: at `READ COMMITTED` — the default in PostgreSQL, Oracle, and
   SQL Server — two transactions happily read the same row and overwrite each
-  other's update
+  other's update, and MySQL's default `REPEATABLE READ` loses it just as quietly.
+  An in-SQL `SET n = n + 1` is atomic without any of this. `FOR UPDATE` locks
+  only rows that exist: for "create if absent", rely on a unique constraint
+  (`INSERT ... ON CONFLICT` / `ON DUPLICATE KEY`). Retry on a serialization
+  failure or deadlock (SQLSTATE `40001`/`40P01`, MySQL 1213/1205) around the
+  whole transaction, never a single statement
 - **The clock is a boundary.** Take time as an input rather than calling `now()`
   deep inside logic — untestable otherwise, and wrong across timezones anyway
 - **Order is not guaranteed** for anything queued, retried, or delivered
@@ -76,5 +87,5 @@ memory-exhaustion bug wearing a parsing bug's clothes.
 - The real contract was read or the real call was made once
 - Timeout, retry, and idempotency were each decided, and the decisions are visible in the code
 - Failures are caught narrowly, and what the caller sees is deliberate
-- Validation happens at the entrance and exactly once
+- Validation happens at the entrance once; every query, command, path and markup sink defends itself regardless
 - The failure path was actually exercised — unplugged, timed out, or fed a malformed response

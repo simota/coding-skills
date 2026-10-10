@@ -94,7 +94,7 @@ re-running the tool records the bug and turns it green.
 |---|---|
 | Expected value copied from the output | Asserts the code equals itself |
 | `assertDoesNotThrow` as the only assertion | A function returning the wrong answer quietly passes |
-| Asserting a mock was called | Tests the test's own wiring |
+| Asserting an internal collaborator was called, or any mock without its arguments | Tests the test's own wiring. A call across an outbound boundary — the email sent, the event published — with its arguments asserted is the behaviour, not this |
 | Mocking the unit under test | Nothing under test remains |
 | A conditional around the assertion | Different runs assert different things; the test names no case |
 | Comparing against a constant that also lives in the implementation | One edit changes both |

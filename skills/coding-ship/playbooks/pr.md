@@ -49,7 +49,8 @@ one — it teaches the reader the headings are decorative.
 
 ```
 - `pytest tests/billing` — 214 passed, includes 3 new cases for the proration boundary
-- Ran the migration against a copy of staging: 1.2M rows, 40s, no lock contention
+- Ran the migration against a copy of staging: 1.2M rows, 40s, with a 2s lock timeout.
+  Contention under live traffic not tested (the copy was idle)
 - Not covered: the legacy import path (no fixtures exist) — #TODO(agent): DEFERRED resume when legacy fixtures exist
 ```
 
@@ -64,6 +65,9 @@ extracted.
 - **Group by what changed for the user**: added, changed, fixed, removed
 - **Write the effect, not the mechanism.** "Exports no longer time out on
   accounts with more than 50k rows", not "increased worker timeout"
+- **The version follows the change**: a breaking change is a major bump (a minor
+  one while the major is 0); a deprecation is a minor bump that names the
+  release removing it
 - **Breaking changes first**, with the exact migration step required. Anything a
   reader must act on goes above anything they may merely enjoy
 - **Omit internal changes entirely** unless they change behaviour, performance,

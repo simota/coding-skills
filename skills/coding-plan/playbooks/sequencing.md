@@ -62,7 +62,9 @@ These never fit in one step, whatever the plan says:
 
 1. Add the new shape alongside the old — nothing reads it yet
 2. Write both, read old
-3. Backfill, and verify the backfill on real data
+3. Backfill in bounded batches, each its own short transaction, and only once
+   step 2 runs on every instance — rows an old instance writes mid-rollout are
+   otherwise missed. Then verify the backfill on real data
 4. Read new, keep writing both
 5. Stop writing old
 6. Remove the old shape, once nothing in flight can still reference it

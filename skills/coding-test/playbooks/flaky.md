@@ -24,6 +24,8 @@ Something differs between the pass and the fail. Work the list:
 | Real I/O | Fails when the network is slow or absent | Cut the network and see |
 | Unordered collections | Fails on some runs with the same data | Look for a set, a Go map, a JSON object round-trip, or a query without `ORDER BY`. Python dicts have kept insertion order since 3.7 — they are not the culprit |
 | Randomness | Fails roughly one run in N | Seed it and find the failing seed |
+| Unawaited async | Fails in whichever test runs next; errors appear after the test finished | Await or return every promise; fail on open handles (Jest's `--detectOpenHandles`) and on unawaited-coroutine warnings |
+| Duration assertion | Fails only on slow or loaded machines | Look for asserts on elapsed time, or timeouts tighter than CI needs. Assert on a fake clock instead |
 | Resource limits | Fails only in CI | Ports, file handles, memory, disk, or a leftover container |
 
 Reproduce it before fixing: a repeat flag (pytest-repeat's `--count=100`), a

@@ -44,11 +44,18 @@ who calls it.
 
 ## Compatibility, if anything already calls it
 
-- **Adding is safe. Removing and renaming are not.** Widening a parameter type
-  is safe — it accepts everything it did before. **Widening a return type is
-  not**: a caller written against `Dog` breaks when you start returning
-  `Animal`. Narrowing the return is the safe direction — for callers. For
-  implementers and overriders of the interface, both directions reverse
+- **Removing and renaming break callers; adding usually does not, but not
+  always.** A new response field breaks a strict deserialiser (Jackson's default,
+  `additionalProperties: false`); a new enum value breaks an exhaustive match; a
+  new interface method breaks implementers; a new struct field breaks positional
+  literals; a parameter inserted mid-list breaks positional calls
+- **Widening a parameter type** accepts everything it did before. **Widening a
+  return type does not**: a caller written against `Dog` breaks when you start
+  returning `Animal`. Narrowing the return is the safe direction — for callers;
+  for implementers and overriders, both directions reverse. Both are source
+  compatibility only: **on the JVM and .NET any signature change breaks compiled
+  callers** (`NoSuchMethodError`) until they rebuild, so a published library
+  adds an overload instead
 - **Adding a required field to a request** breaks old callers; adding an optional
   one with a default does not
 - **Removing a field from a response** breaks readers you cannot see. Deprecate,
