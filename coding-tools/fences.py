@@ -83,12 +83,13 @@ def mask_code_spans(text: str) -> str:
     # A block quote is read by its content: `> ` is the container, not text,
     # so a span may continue from one quoted line to the next.
     quote = [len(_QUOTE.match(l).group()) for l in lines]
+    depth = [l[:q].count(">") for l, q in zip(lines, quote)]   # nested quotes differ
     body = [l[q:] for l, q in zip(lines, quote)]
     # Paragraphs: maximal runs of unfenced lines in one container, cut before
     # any block start.
     paragraphs, cur = [], []
     for i in range(len(lines)):
-        moved = cur and (quote[i] > 0) != (quote[cur[-1]] > 0)
+        moved = cur and depth[i] != depth[cur[-1]]
         if mask[i] or moved or (cur and _BLOCK_START.match(body[i])):
             if cur:
                 paragraphs.append(cur)

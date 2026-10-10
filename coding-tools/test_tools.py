@@ -304,6 +304,30 @@ class Round4(unittest.TestCase):
         self.assertNotIn("#TODO", fences.mask_code_spans(text))
         self.assertTrue(fences.mask_code_spans(text).startswith(">"))
 
+    def test_a_nested_quote_is_another_container(self):
+        text = "> `example\n> > #TODO(agent): example`"
+        self.assertIn("#TODO(agent)", fences.mask_code_spans(text))
+
+    def test_make_hooks_replaces_a_dangling_hook_link_only_when_forced(self):
+        root = pathlib.Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+            subprocess.run(["git", "init", "-q", tmp], check=True, env=env)
+            (pathlib.Path(tmp) / "coding-tools" / "githooks").mkdir(parents=True)
+            for f in ("Makefile", "coding-tools/githooks/pre-commit"):
+                (pathlib.Path(tmp) / f).write_bytes((root / f).read_bytes())
+            hook = pathlib.Path(tmp) / ".git" / "hooks" / "pre-commit"
+            hook.parent.mkdir(exist_ok=True)
+            hook.symlink_to("/nonexistent/hook")
+            plain = subprocess.run(["make", "-s", "hooks"], cwd=tmp, env=env,
+                                   capture_output=True, text=True)
+            self.assertIn("refusing", plain.stdout)
+            forced = subprocess.run(["make", "-s", "hooks", "FORCE=1"], cwd=tmp, env=env,
+                                    capture_output=True, text=True)
+            self.assertEqual(forced.returncode, 0, forced.stdout + forced.stderr)
+            self.assertFalse(hook.is_symlink())
+
     def test_make_hooks_recreates_a_missing_hooks_directory(self):
         root = pathlib.Path(__file__).resolve().parent.parent
         with tempfile.TemporaryDirectory() as tmp:

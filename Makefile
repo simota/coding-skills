@@ -78,9 +78,10 @@ hooks:
 	common=$$(git rev-parse --path-format=absolute --git-common-dir) || exit 1; \
 	case "$$hooks/" in "$$common"/*) ;; *) \
 		if [ "$(FORCE)" != 1 ]; then echo "refusing: $$hooks is outside this repository (a shared core.hooksPath); FORCE=1 installs there anyway"; exit 1; fi;; esac; \
-	if [ -e "$$hooks/pre-commit" ] && ! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" && [ "$(FORCE)" != 1 ]; then \
+	if { [ -e "$$hooks/pre-commit" ] || [ -L "$$hooks/pre-commit" ]; } && \
+			! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" 2>/dev/null && [ "$(FORCE)" != 1 ]; then \
 		echo "refusing: $$hooks/pre-commit exists and is not this repo's; FORCE=1 replaces it"; exit 1; fi; \
-	mkdir -p "$$hooks" && cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
+	mkdir -p "$$hooks" && rm -f "$$hooks/pre-commit" && cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
 	chmod +x "$$hooks/pre-commit" && echo "pre-commit installed in $$hooks"
 
 # A skill is a directory holding a SKILL.md, under skills/ where the plugin
