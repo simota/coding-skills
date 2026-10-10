@@ -17,7 +17,8 @@ line number.
 from __future__ import annotations
 
 import functools
-import re
+import html
+from html.parser import HTMLParser
 
 from markdown_it import MarkdownIt
 
@@ -51,12 +52,14 @@ def blocks(lines: list[str]) -> list[list[str]]:
 
 
 def h2_lines(lines: list[str]) -> dict[int, str]:
-    """{line index: title} for every level-2 heading, ATX or setext, as it
-    renders — closing hashes and surrounding spaces gone."""
+    """{line index: title} for every top-level level-2 heading, ATX or setext,
+    as it renders — closing hashes and surrounding spaces gone. A heading in a
+    quote or a list item is part of an example, not a section of the page."""
     toks = _tokens("\n".join(lines))
     return {tok.map[0]: toks[i + 1].content.strip()
             for i, tok in enumerate(toks)
-            if tok.type == "heading_open" and tok.tag == "h2" and tok.map}
+            if tok.type == "heading_open" and tok.tag == "h2" and tok.level == 0
+            and tok.map}
 
 
 def marker_lines(lines: list[str], marker: str) -> list[int]:
@@ -86,8 +89,65 @@ def _inline(text: str):
                 line += 1
 
 
-_COMMENT = re.compile(r"<!--.*?-->", re.S)
-_TAG = re.compile(r"<[^>]*>")
+class _Visible(HTMLParser):
+    """The text an HTML block shows, by line offset. A `<` that opens no tag is
+    text, as a browser shows it; comments, attributes and the contents of a
+    script or style are not.
+
+    A text run is read back from its source span and decoded one source line
+    at a time, so a reference lands on the line it is written on (`&#10;`
+    shows a break but occupies no line), and it is decoded by the browser's
+    rules (`&amp` and `&#40` work without `;`, `&colon` does not), whatever
+    this Python's parser makes of it."""
+
+    SCRIPT = ("script", "style")
+
+    def __init__(self, source: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.src = source
+        self.starts = [0]
+        for line in source.split("\n"):
+            self.starts.append(self.starts[-1] + len(line) + 1)
+        self.text_from: int | None = None
+        self.hidden = False  # inside a script or style, which shows nothing
+        self.out: dict[int, str] = {}
+
+    def _offset(self) -> int:
+        line, col = self.getpos()
+        return self.starts[line - 1] + col
+
+    def _flush(self, end: int) -> None:
+        if self.text_from is None:
+            return
+        first = self.src.count("\n", 0, self.text_from)
+        for i, raw in enumerate(self.src[self.text_from:end].split("\n")):
+            shown = html.unescape(raw).replace("\n", " ").replace("\r", " ")
+            if shown:  # a lone space between two tags still separates words
+                self.out[first + i] = self.out.get(first + i, "") + shown
+        self.text_from = None
+
+    def handle_data(self, data: str) -> None:
+        if self.text_from is None and not self.hidden:
+            self.text_from = self._offset()
+
+    def _boundary(self, *_args) -> None:
+        self._flush(self._offset())
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        self._boundary()
+        if tag in self.SCRIPT:
+            self.hidden = True
+
+    def handle_endtag(self, tag: str) -> None:
+        self._boundary()
+        if tag in self.SCRIPT:
+            self.hidden = False
+
+    handle_startendtag = handle_comment = handle_decl = handle_pi = unknown_decl = _boundary
+
+    def close(self) -> None:
+        super().close()
+        self._flush(len(self.src))
 
 
 def live_text(text: str) -> dict[int, str]:
@@ -101,13 +161,12 @@ def live_text(text: str) -> dict[int, str]:
             out[line] = out.get(line, "") + child.content
     for tok in _tokens(text):
         if tok.type == "html_block" and tok.map:
-            # Blank each comment in place so the lines after it keep their numbers.
-            visible = _COMMENT.sub(lambda m: "\n" * m.group().count("\n"), tok.content)
-            for offset, raw in enumerate(visible.split("\n")):
-                shown = _TAG.sub("", raw)
-                if shown.strip():
-                    i = tok.map[0] + offset
-                    out[i] = out.get(i, "") + shown
+            parser = _Visible(tok.content)
+            parser.feed(tok.content)
+            parser.close()
+            for offset, shown in parser.out.items():
+                i = tok.map[0] + offset
+                out[i] = out.get(i, "") + shown
     return out
 
 

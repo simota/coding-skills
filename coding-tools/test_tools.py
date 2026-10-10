@@ -219,6 +219,10 @@ class Markdown(unittest.TestCase):
             "in a list item after a span opener": "a ` lone\n- item " + self.M + " `x`",
             "in a nested quote": "> `example\n> > " + self.M + "`",
             "inside an HTML block": "<div>\n" + self.M + "\n</div>",
+            "between bare angle brackets in an HTML block": "<div>\nx < " + self.M + " > y\n</div>",
+            "spelled with a character reference": "<div>#TODO&#40;agent): fix</div>",
+            "spelled with references, some without semicolons": "<div>x\n&amp#TODO&#40agent)&colon; fix</div>",
+            "after a script closes": "<div><script>x()</script>" + self.M + "</div>",
         }
         for name, text in cases.items():
             self.assertTrue(self.live(text), msg=name)
@@ -238,6 +242,10 @@ class Markdown(unittest.TestCase):
             "indented code": "para\n\n    " + self.M,
             "in an HTML comment": "<!--\n" + self.M + "\n-->",
             "in an HTML attribute": "<div title=\"" + self.M + "\">\nx\n</div>",
+            "split by a space between tags": "<div>#TO<span></span> <b></b>DO(agent): fix</div>",
+            "a reference that needs its semicolon": "<div>x\n#TODO(agent)&colon fix</div>",
+            "in a script": "<script>\nconst s = \"#TODO&#40;agent): fix\";\n</script>",
+            "in a style": "<style>/* " + self.M + " */</style>",
         }
         for name, text in cases.items():
             self.assertFalse(self.live(text), msg=name)
@@ -245,6 +253,12 @@ class Markdown(unittest.TestCase):
     def test_line_numbers_survive_breaks_and_spans(self):
         text = "one\ntwo `x\ny` three\n" + self.M
         self.assertIn(self.M, fences.live_text(text)[3])
+
+    def test_line_numbers_survive_decoded_references(self):
+        shown = fences.live_text("<div>&#10;" + self.M + "\nUNVERIFIED &amp; &NewLine;x\n</div>")
+        self.assertIn(self.M, shown[0])
+        self.assertNotIn(self.M, shown.get(1, ""))
+        self.assertIn("&", shown[1])
 
     def test_links_are_read_as_rendered(self):
         self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])
@@ -256,6 +270,8 @@ class Markdown(unittest.TestCase):
         lines = ["## Done when ##", "   ## Verify with  ", "    ## code", "### Three",
                  "Setext", "------", "```", "## fenced", "```"]
         self.assertEqual(fences.h2_lines(lines), {0: "Done when", 1: "Verify with", 4: "Setext"})
+        self.assertEqual(fences.h2_lines(["> ## Verify with", "", "- ## Done when", "",
+                                          "## Real"]), {4: "Real"})
 
     def test_fences(self):
         lines = ["~~~~", "```", "~~~", "~~~~", "## After", "``` a`b", "x"]
@@ -278,6 +294,13 @@ class Validator(unittest.TestCase):
         m = validate.ENUM_RE.search(line)
         self.assertTrue(m is None or not validate._is_enumeration(
             [w.strip() for w in m.group(1).split("|")]))
+
+    def test_a_class_spelled_with_references_classifies_its_marker(self):
+        import validate
+        self.assertEqual(validate.unclassified_markers(
+            "<div>#TODO&#40;agent): fix UNVER&#73;FIED</div>\n"), [])
+        self.assertEqual(validate.unclassified_markers(
+            "#" + "TODO(agent): fix `UNVERIFIED`\n\n#" + "TODO(agent): fix\n"), [2])
 
 
 class Round4(unittest.TestCase):
