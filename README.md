@@ -140,7 +140,7 @@ builds throwaway repositories and checks every documented behaviour against the
 git actually installed — that `-S` misses an equal-count edit, that three-dot
 diff isolates a branch's own work, that `restore .` leaves no trace where
 `git add` leaves a recoverable blob, that `checkout -f` discards tracked edits
-and leaves untracked files. 31 behaviours, about two seconds, in `make check`, CI
+and leaves untracked files. 34 behaviours, about two seconds, in `make check`, CI
 and the pre-commit hook. Where a page prints an output, that output is parsed from
 the page, so editing the page to say something false fails too — proven by
 injecting both kinds of break, including deleting a block so the checker matches
@@ -213,9 +213,25 @@ another skill's playbook — which should name the skill, not reach into it.
 python3 -m pip install -r coding-tools/requirements.txt   # PyYAML, markdown-it-py
 make check      # what CI runs: the rules, proof they still fire, the tool tests,
                 # the git figures, and that every delivered block is current
+make drift      # check delivered blocks without changing any files
 make render     # after editing anything in coding-registry/delivered/
 make hooks      # run the rules on every commit
 ```
+
+Python 3.11 or later and Git are required for the checks. `make test` runs the
+deliberate-violation suite and discovers every `coding-tools/test_*.py` unit
+test module. A missing Git executable is a failed verification.
+
+The pre-commit hook validates the actual commit tree in an isolated snapshot,
+including sparse-checkout files and excluding intent-to-add placeholders. It
+reads raw Git blobs, so checkout filters, replacement objects and unstaged
+repairs cannot hide a staged violation. The original index is preserved.
+
+Rendering checks every skill before writing any updates. Missing or duplicate
+destination sections, overlapping delivery blocks, and markers that cross a
+section boundary are errors to repair by hand; they never authorize deleting
+hand-written sections. `make drift` reports stale blocks, and `make render`
+applies their updates after this validation succeeds.
 
 Adding a rule means adding a deliberate violation to `coding-tools/test_validate.py`
 and watching it fail. A check only ever seen passing may be checking nothing —
@@ -238,6 +254,11 @@ make link CLAUDE_DIR=.claude/skills
 Each `coding-*` directory is linked individually, so a skills directory keeps
 whatever else it already carries, and a name already taken by a real directory
 is skipped rather than overwritten.
+
+Installation and removal stop with a nonzero status if a filesystem operation
+fails. Existing links to another checkout stay in place; `FORCE=1` permits
+replacing or removing dangling links, while live foreign links and real paths
+remain protected. Host-directory overrides are treated as literal paths.
 
 ## What this does not guarantee
 

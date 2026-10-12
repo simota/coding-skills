@@ -9,6 +9,7 @@ Idempotent: run it, commit the diff.
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -32,7 +33,7 @@ def delivered_to(spec: dict, skill: str) -> bool:
 
 
 class Malformed(ValueError):
-    """A marker pair that cannot be rewritten without guessing where it ends."""
+    """A page that cannot be rewritten without guessing what to replace."""
 
 
 def heading_line(lines: list[str], section: str) -> int | None:
@@ -41,24 +42,59 @@ def heading_line(lines: list[str], section: str) -> int | None:
                 None)
 
 
-def render(path: Path) -> bool:
+def read_text(path: Path) -> str:
     try:
-        text = path.read_text(encoding="utf-8")
+        return path.read_text(encoding="utf-8")
     except UnicodeDecodeError as e:
         raise Malformed(f"{path.parent.name}/{path.name}: not UTF-8 ({e.reason} at byte "
                         f"{e.start}); fix by hand") from None
-    original = text
+    except OSError as e:
+        raise Malformed(f"{path}: cannot read ({e.strerror or e})") from None
+
+
+def check_structure(path: Path, text: str) -> None:
+    """Reject ambiguous ranges before a replacement can swallow hand-written text."""
+    lines = text.split("\n")
+    headings = h2_lines(lines)
+    spans = []
     for key, spec in H["delivered"].items():
-        open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
-        # One marker without the other, a duplicate, or the pair reversed: any
-        # rewrite would either insert a second block or swallow the text between.
-        # Only a whole line outside a fence is a marker; one quoted in prose is not.
-        lines = text.split("\n")
-        opens, closes = marker_lines(lines, open_m), marker_lines(lines, close_m)
+        opens = marker_lines(lines, f"<!-- deliver:{key} -->")
+        closes = marker_lines(lines, f"<!-- /deliver:{key} -->")
         if (len(opens), len(closes)) not in ((0, 0), (1, 1)) or (
                 opens and opens[0] > closes[0]):
             raise Malformed(f"{path.parent.name}/{path.name}: the {key} markers are "
                             f"unpaired ({len(opens)} open, {len(closes)} close); fix by hand")
+        if opens:
+            start, end = opens[0], closes[0]
+            spans.append((start, end, key))
+            if any(start < i <= end for i in headings):
+                raise Malformed(f"{path.parent.name}/{path.name}: the {key} block crosses "
+                                "a section heading; fix by hand")
+        if delivered_to(spec, path.parent.name):
+            matches = [i for i, title in headings.items() if title == spec["section"]]
+            if len(matches) != 1:
+                raise Malformed(f"{path.parent.name}/{path.name}: expected one section "
+                                f"{spec['section']!r}, found {len(matches)}; fix by hand")
+            section_start = matches[0]
+            section_end = min((i for i in headings if i > section_start), default=len(lines))
+            if opens and not section_start < opens[0] < closes[0] < section_end:
+                raise Malformed(f"{path.parent.name}/{path.name}: the {key} block is not "
+                                f"under {spec['section']!r}; fix by hand")
+    spans.sort()
+    for left, right in zip(spans, spans[1:]):
+        if left[1] >= right[0]:
+            raise Malformed(f"{path.parent.name}/{path.name}: the {left[2]} and {right[2]} "
+                            "blocks overlap; fix by hand")
+
+
+def prepared(path: Path) -> tuple[str, bool]:
+    text = read_text(path)
+    check_structure(path, text)
+    original = text
+    for key, spec in H["delivered"].items():
+        open_m, close_m = f"<!-- deliver:{key} -->", f"<!-- /deliver:{key} -->"
+        lines = text.split("\n")
+        opens, closes = marker_lines(lines, open_m), marker_lines(lines, close_m)
         if not delivered_to(spec, path.parent.name):
             if opens:
                 i = opens[0]
@@ -68,8 +104,7 @@ def render(path: Path) -> bool:
                     del lines[i]
                 text = "\n".join(lines)
             continue
-        block = (ROOT / "coding-registry" / "delivered" / f"{key}.md").read_text(
-            encoding="utf-8").rstrip("\n")
+        block = read_text(ROOT / "coding-registry" / "delivered" / f"{key}.md").rstrip("\n")
         payload = f"{open_m}\n{block}\n{close_m}"
         if opens:
             lines[opens[0]:closes[0] + 1] = payload.split("\n")
@@ -77,27 +112,51 @@ def render(path: Path) -> bool:
         else:
             start = heading_line(lines, spec["section"])
             if start is None:
-                print(f"  {path.name}: no section {spec['section']!r}", file=sys.stderr)
-                continue
+                raise Malformed(f"{path.parent.name}/{path.name}: no section "
+                                f"{spec['section']!r}; fix by hand")
             # append at the end of that section, before the next heading
             end = next((i for i in sorted(h2_lines(lines)) if i > start), len(lines))
             while end > start + 1 and not lines[end - 1].strip():
                 end -= 1
             lines[end:end] = payload.split("\n")
             text = "\n".join(lines)
-    if text != original:
+    check_structure(path, text)
+    return text, text != original
+
+
+def render(path: Path) -> bool:
+    text, changed = prepared(path)
+    if changed:
         path.write_text(text, encoding="utf-8")
-        return True
-    return False
+    return changed
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--check", action="store_true", help="fail on stale blocks without writing")
+    args = ap.parse_args(argv)
     try:
-        changed = [d.name for d in sorted(SKILLS_ROOT.glob(f"{PREFIX}*"))
-                   if (d / "SKILL.md").exists() and render(d / "SKILL.md")]
-    except Malformed as e:
+        updates = []
+        for d in sorted(SKILLS_ROOT.glob(f"{PREFIX}*")):
+            path = d / "SKILL.md"
+            if path.exists():
+                text, changed = prepared(path)
+                if changed:
+                    updates.append((path, text))
+        if args.check:
+            if updates:
+                print("stale delivered blocks: " + ", ".join(path.parent.name for path, _ in updates)
+                      + "; run: make render")
+                return 1
+            print("delivered blocks current")
+            return 0
+        # A malformed later skill must not leave earlier skills half-rendered.
+        for path, text in updates:
+            path.write_text(text, encoding="utf-8")
+    except (Malformed, OSError) as e:
         print(f"  {e}", file=sys.stderr)
         return 1
+    changed = [path.parent.name for path, _ in updates]
     print(f"rendered: {len(changed)} changed" + (f" ({', '.join(changed)})" if changed else ""))
     return 0
 

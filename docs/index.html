@@ -165,7 +165,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
     <div class="fact"><b>18</b><span>playbooks</span></div>
     <div class="fact"><b>6</b><span>reference</span></div>
     <div class="fact"><b>38</b><span>static rules</span></div>
-    <div class="fact"><b>1,589</b><span>listing chars</span></div>
+    <div class="fact"><b>1,635</b><span>listing chars</span></div>
   </div>
 </header>
 
@@ -196,7 +196,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <text x="48" y="136" font-family="Archivo,sans-serif" font-weight="700"
             font-size="17" fill="currentColor">8 names + descriptions</text>
       <text x="48" y="156" font-family="'JetBrains Mono',monospace" font-size="10.5"
-            fill="currentColor" opacity=".6">1,589 characters</text>
+            fill="currentColor" opacity=".6">1,635 characters</text>
       <text x="48" y="180" font-family="Archivo,sans-serif" font-size="11.5"
             fill="currentColor" opacity=".72">selection happens here, and on nothing else</text>
       <rect x="420" y="60" width="330" height="132" rx="1" fill="none"
@@ -272,7 +272,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <span class="tag b">full</span>
     </div>
     <div class="card-body">
-      <p>Turning a settled shape into code that runs — new behaviour, changed behaviour, and the wiring between them. Cleanup that changes no behaviour, diagnosis of something already broken, and the tests that prove a change belong to other skills, though this one writes enough of a check to prove its own work.</p>
+      <p>Turning a settled shape into code that runs — new behaviour, changed behaviour, and the wiring between them, with checks that prove the change. Ownership of adjacent work is defined in <code>registry/capabilities.yaml</code>.</p>
       <ul class="rows"><li>feature</li><li>endpoint</li><li>screen</li><li>business-logic</li><li>cli</li><li>integration</li><li>upgrade</li><li>performance</li></ul>
     </div>
   </article>
@@ -282,7 +282,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <span class="tag b">full</span>
     </div>
     <div class="card-body">
-      <p>Getting from a symptom to a proved cause, and then to the smallest fix that removes it. The regression test that keeps it gone belongs to <code>coding-test</code>, though this skill writes the failing case that proves the diagnosis.</p>
+      <p>Getting from a symptom to a proved cause, and then to the smallest fix that removes it, with the failing case that proves the diagnosis.</p>
       <ul class="rows"><li>reproduce</li><li>isolate</li><li>root-cause</li><li>minimal-fix</li><li>regression-diagnosis</li></ul>
     </div>
   </article>
@@ -348,17 +348,21 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <td><code>coding-refactor</code></td></tr>
       <tr><td><code>coding-implement</code></td><td>a defect in code that already ran</td>
       <td><code>coding-debug</code></td></tr>
+      <tr><td><code>coding-implement</code></td><td>a slowdown in code that used to be fast</td>
+      <td><code>coding-debug</code></td></tr>
       <tr><td><code>coding-debug</code></td><td>reading code that works</td>
       <td><code>coding-explore</code></td></tr>
-      <tr><td><code>coding-debug</code></td><td>the guard kept after the fix</td>
+      <tr><td><code>coding-debug</code></td><td>standalone regression-test work beyond the current fix</td>
       <td><code>coding-test</code></td></tr>
       <tr><td><code>coding-refactor</code></td><td>any change a caller can observe</td>
       <td><code>coding-implement</code></td></tr>
       <tr><td><code>coding-refactor</code></td><td>reading a diff for defects</td>
       <td><code>coding-review</code></td></tr>
+      <tr><td><code>coding-refactor</code></td><td>a schema or data migration, or a dependency upgrade and the call-site changes it forces</td>
+      <td><code>coding-implement</code></td></tr>
       <tr><td><code>coding-test</code></td><td>diagnosing why the code is wrong</td>
       <td><code>coding-debug</code></td></tr>
-      <tr><td><code>coding-test</code></td><td>the check that only evidences one run</td>
+      <tr><td><code>coding-test</code></td><td>checks of the current implementation, diagnosis, or refactor, including retained guards</td>
       <td>the skill making that run</td></tr>
       <tr><td><code>coding-review</code></td><td>writing the check that catches the finding</td>
       <td><code>coding-test</code></td></tr>
@@ -381,17 +385,17 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
     <thead><tr><th>Route</th><th>Pattern</th><th>When</th><th>Chain</th><th>Condition</th></tr></thead>
     <tbody>
       <tr><td><code>bug-fix</code></td><td><span class="tag c">linear</span></td>
-      <td>something is broken</td><td class="chain">coding-debug <b>&rarr;</b> coding-test <b>&rarr;</b> coding-ship</td>
+      <td>fix a bug and prepare commits or a PR</td><td class="chain">coding-debug <b>&rarr;</b> coding-ship</td>
       <td><b>gate</b> &middot; the cause fits in one sentence before anything is edited</td></tr>
       <tr><td><code>feature</code></td><td><span class="tag c">linear</span></td>
-      <td>new behaviour, shape not obvious</td><td class="chain">coding-explore <b>&rarr;</b> coding-plan <b>&rarr;</b> coding-implement <b>&rarr;</b> coding-test <b>&rarr;</b> coding-review <b>&rarr;</b> coding-ship</td>
+      <td>new behaviour with design, independent test work, review, and shipping requested</td><td class="chain">coding-explore <b>&rarr;</b> coding-plan <b>&rarr;</b> coding-implement <b>&rarr;</b> coding-test <b>&rarr;</b> coding-review <b>&rarr;</b> coding-ship</td>
       <td><b>gate</b> &middot; the brief&#x27;s open_questions is empty before coding-implement starts</td></tr>
       <tr><td><code>small-feature</code></td><td><span class="tag c">linear</span></td>
-      <td>new behaviour, shape fits in one sentence</td><td class="chain">coding-implement <b>&rarr;</b> coding-test <b>&rarr;</b> coding-ship</td>
+      <td>new behaviour with a settled shape, and commits or a PR requested</td><td class="chain">coding-implement <b>&rarr;</b> coding-ship</td>
       <td>&mdash;</td></tr>
       <tr><td><code>cleanup</code></td><td><span class="tag c">linear</span></td>
-      <td>correct code that is hard to work with</td><td class="chain">coding-explore <b>&rarr;</b> coding-test <b>&rarr;</b> coding-refactor <b>&rarr;</b> coding-test</td>
-      <td><b>gate</b> &middot; a characterisation net exists and is green before coding-refactor starts</td></tr>
+      <td>map unfamiliar code, then restructure it without changing behaviour</td><td class="chain">coding-explore <b>&rarr;</b> coding-refactor</td>
+      <td><b>gate</b> &middot; coding-refactor establishes a green characterisation net before structural edits</td></tr>
       <tr><td><code>coverage-gap</code></td><td><span class="tag c">linear</span></td>
       <td>behaviour is unguarded</td><td class="chain">coding-explore <b>&rarr;</b> coding-test</td>
       <td>&mdash;</td></tr>
@@ -403,7 +407,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <td><b>stops at</b> &middot; classified findings. Nothing is edited</td></tr>
       <tr><td><code>review-to-zero</code></td><td><span class="tag c">loop</span></td>
       <td>land it with no outstanding findings</td><td class="chain">coding-review <b>&rarr;</b> coding-implement</td>
-      <td><b>oracle</b> &middot; no unresolved finding at severity major or above, and one full pass adds none</td></tr></tbody>
+      <td><b>oracle</b> &middot; no unresolved finding of rank 1-4, and one full pass adds none</td></tr></tbody>
   </table></div>
 </section>
 
@@ -502,7 +506,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
         <tr><td>skills</td><td class="num-c">8 / 10</td></tr>
         <tr><td>routes</td><td class="num-c">8 / 12</td></tr>
         <tr><td>shared contract lines</td><td class="num-c">620 / 620</td></tr>
-        <tr><td>repository markdown</td><td class="num-c">4,100 / 4,600</td></tr>
+        <tr><td>repository markdown</td><td class="num-c">4,273 / 4,600</td></tr>
         <tr><td>static rules</td><td class="num-c">38</td></tr>
       </tbody></table></div>
       <p style="margin:14px 0 0;color:var(--muted);font-size:13.5px">Adding a rule means adding a
@@ -540,7 +544,7 @@ make hooks                      # run the rules on every commit</pre>
 
 <footer>
   <p>coding-skills &middot; 8 skills &middot; 38 static rules
-     &middot; 4,100 lines of markdown.<br>
+     &middot; 4,273 lines of markdown.<br>
      Every figure on this page is read off the repository by <code>tools/pages.py</code> in
      <code>agent-toolkit</code>. None of them are typed by hand, and a stale page fails a
      check rather than sitting there looking current.</p>

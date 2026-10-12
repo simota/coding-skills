@@ -365,23 +365,49 @@ def check_recovery(tmp: pathlib.Path) -> int:
 
 def check_stash_fix(tmp: pathlib.Path) -> int:
     """oracles.md: `stash push -u -- <fix paths>` removes a fix that includes a
-    new file, leaves the test alone, and `pop` brings the fix back; without
-    `-u` the new file is refused."""
-    states(ORACLES, "git stash push -u --", "git stash pop")
-    r = Repo(tmp / "stash-fix")
+    new file, leaves the test alone, and `pop --index` restores the working tree and
+    index; without `-u` the new file is refused."""
+    states(ORACLES, "git stash push -u --", "git stash pop --index")
+    n = 0
+    for staged in (False, True):
+        r = Repo(tmp / f"stash-{'staged' if staged else 'unstaged'}")
+        r.write("fix.txt", "bug\n"); r.write("test.txt", "t0\n"); r.commit("c1")
+        r.write("fix.txt", "fixed\n"); r.write("helper.txt", "new\n")
+        r.write("test.txt", "NEW-TEST\n")
+        if staged:
+            r.must("add", "fix.txt")
+        index_before = r.git("write-tree")
+        if "did not match" not in r.git("stash", "push", "--", "fix.txt", "helper.txt"):
+            fail(ORACLES, "`stash push -- <paths>` accepted an untracked fix file; the page "
+                          "says `-u` is needed for it")
+        r.must("stash", "push", "-q", "-u", "--", "fix.txt", "helper.txt")
+        if ((r.d / "fix.txt").read_text() != "bug\n" or (r.d / "helper.txt").exists()
+                or (r.d / "test.txt").read_text() != "NEW-TEST\n"
+                or r.git("show", ":fix.txt") != "bug"):
+            fail(ORACLES, "`stash push -u -- <fix paths>` did not remove exactly the fix")
+        r.must("stash", "pop", "-q", "--index")
+        if ((r.d / "fix.txt").read_text() != "fixed\n"
+                or (r.d / "helper.txt").read_text() != "new\n"
+                or (r.d / "test.txt").read_text() != "NEW-TEST\n"
+                or r.git("write-tree") != index_before):
+            fail(ORACLES, "`stash pop --index` did not restore the whole fix and its staging state")
+        n += 2
+
+    # Path-limited push leaves other staged edits in place, but its saved index
+    # still contains them. Applying that index a second time can conflict.
+    r = Repo(tmp / "stash-test-staged")
     r.write("fix.txt", "bug\n"); r.write("test.txt", "t0\n"); r.commit("c1")
-    r.write("fix.txt", "fixed\n"); r.write("helper.txt", "new\n"); r.write("test.txt", "NEW-TEST\n")
-    if "did not match" not in r.git("stash", "push", "--", "fix.txt", "helper.txt"):
-        fail(ORACLES, "`stash push -- <paths>` accepted an untracked fix file; the page "
-                      "says `-u` is needed for it")
-    r.must("stash", "push", "-q", "-u", "--", "fix.txt", "helper.txt")
-    if ((r.d / "fix.txt").read_text() != "bug\n" or (r.d / "helper.txt").exists()
-            or "NEW-TEST" not in (r.d / "test.txt").read_text()):
-        fail(ORACLES, "`stash push -u -- <fix paths>` did not remove exactly the fix")
-    r.must("stash", "pop", "-q")
-    if (r.d / "fix.txt").read_text() != "fixed\n" or not (r.d / "helper.txt").exists():
-        fail(ORACLES, "`stash pop` did not bring the whole fix back")
-    return 2
+    r.write("fix.txt", "fixed\n"); r.write("test.txt", "NEW-TEST\n")
+    r.must("add", "fix.txt", "test.txt")
+    r.must("stash", "push", "-q", "-u", "--", "fix.txt")
+    pop = subprocess.run(("git", "stash", "pop", "--index"), cwd=r.d,
+                         capture_output=True, text=True, env=GIT_ENV)
+    if (pop.returncode == 0 or not r.git("stash", "list")
+            or r.git("show", ":test.txt") != "NEW-TEST"
+            or r.git("show", "stash@{0}:fix.txt") != "fixed"):
+        fail(ORACLES, "`stash pop --index` did not preserve the stash and staged test "
+                      "when the saved index conflicts")
+    return n + 1
 
 
 def check_revert(tmp: pathlib.Path) -> int:
@@ -413,13 +439,14 @@ def check_revert(tmp: pathlib.Path) -> int:
 
 def main() -> int:
     if not shutil.which("git"):
-        print("figures skipped - git is not on PATH")
-        return 0
+        print("figures failed - git is not on PATH; documented behaviours were not checked")
+        return 1
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="coding-figures-"))
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
                   "staged", "untracked", "force", "gc", "switch", "branchd",
-                  "revert-staged", "revert-unstaged", "stash-fix"):
+                  "revert-staged", "revert-unstaged", "stash-staged", "stash-unstaged",
+                  "stash-test-staged"):
             (tmp / d).mkdir()
         checks = (check_pickaxe(tmp) + check_dots(tmp)
                   + check_scoping(tmp) + check_recovery(tmp) + check_revert(tmp)

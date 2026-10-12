@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -118,6 +119,71 @@ def _same(a, b) -> bool:
     return a == b
 
 
+def _finite_number(raw: str) -> float:
+    value = float(raw)
+    if not math.isfinite(value):
+        raise EngineError(f"non-finite JSON number {raw!r} is not an answer")
+    return value
+
+
+def _check_finite(obj) -> None:
+    """Non-JSON numbers are invalid even under an unconstrained subschema."""
+    if isinstance(obj, float) and not math.isfinite(obj):
+        raise EngineError(f"non-finite JSON number {obj!r} is not an answer")
+    if isinstance(obj, dict):
+        for value in obj.values():
+            _check_finite(value)
+    elif isinstance(obj, list):
+        for value in obj:
+            _check_finite(value)
+
+
+def _check_schema(schema, where: str = "schema") -> None:
+    """Reject malformed or unsupported checks before any answer is evaluated.
+
+    A malformed subschema is not a failed match: absorbing it under `not` or
+    `anyOf` could approve an answer without applying the requested check. Walk
+    even inactive branches here, before starting a paid checker process.
+    """
+    if isinstance(schema, bool):
+        return
+    if not isinstance(schema, dict):
+        raise Unchecked(f"{where} must be an object or boolean schema")
+    unchecked = set(schema) - _CHECKED - _ANNOTATIONS
+    if unchecked:
+        raise Unchecked(f"the schema at {where} uses {sorted(unchecked)}, which this "
+                        "runner does not check; simplify the schema")
+    if "type" in schema:
+        types = _types(schema)
+        if (not types or any(not isinstance(t, str) or
+                             t not in {*_JSON_TYPES, "number", "integer"} for t in types)
+                or len(set(types)) != len(types)):
+            raise Unchecked(f"{where}.type must name distinct JSON types")
+    if "enum" in schema and not isinstance(schema["enum"], list):
+        raise Unchecked(f"{where}.enum must be an array")
+    if "required" in schema:
+        names = schema["required"]
+        if (not isinstance(names, list) or any(not isinstance(k, str) for k in names)
+                or len(set(names)) != len(names)):
+            raise Unchecked(f"{where}.required must be an array of distinct strings")
+    for key in ("properties", "$defs", "definitions"):
+        if key in schema:
+            if not isinstance(schema[key], dict):
+                raise Unchecked(f"{where}.{key} must be an object of schemas")
+            for name, sub in schema[key].items():
+                _check_schema(sub, f"{where}.{key}.{name}")
+    for key in ("items", "additionalProperties", "not"):
+        if key in schema:
+            _check_schema(schema[key], f"{where}.{key}")
+    for key in ("allOf", "anyOf", "oneOf"):
+        if key in schema:
+            options = schema[key]
+            if not isinstance(options, list) or not options:
+                raise Unchecked(f"{where}.{key} must be a non-empty array of schemas")
+            for i, sub in enumerate(options):
+                _check_schema(sub, f"{where}.{key}[{i}]")
+
+
 def conforms(obj, schema: dict, where: str = "answer") -> None:
     """Required keys and primitive types, checked here rather than trusted.
 
@@ -125,21 +191,21 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
     runner exists not to take on faith: `"refuted": "false"` is a string, and
     read as truthy it reverses the verdict.
     """
+    _check_schema(schema)
+    _check_finite(obj)
+    _conforms(obj, schema, where)
+
+
+def _conforms(obj, schema, where: str) -> None:
     if schema is True:                    # JSON Schema: `true` accepts anything
         return
-    if schema is False or not isinstance(schema, dict):
+    if schema is False:
         raise EngineError(f"{where} is checked against a schema that accepts nothing")
-    # A keyword this does not evaluate would pass whatever the engine sent, which
-    # is the trust this function exists to withhold. It stops instead.
-    unchecked = set(schema) - _CHECKED - _ANNOTATIONS
-    if unchecked:
-        raise Unchecked(f"the schema at {where} uses {sorted(unchecked)}, which this "
-                          "runner does not check; simplify the schema")
     for option in schema.get("allOf") or []:
-        conforms(obj, option, where)
+        _conforms(obj, option, where)
     if "not" in schema:
         try:
-            conforms(obj, schema["not"], where)
+            _conforms(obj, schema["not"], where)
         except Unchecked:
             raise
         except EngineError:
@@ -152,7 +218,7 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
             fits = 0
             for option in options:
                 try:
-                    conforms(obj, option, where)
+                    _conforms(obj, option, where)
                     fits += 1
                 except Unchecked:
                     raise
@@ -182,19 +248,24 @@ def conforms(obj, schema: dict, where: str = "answer") -> None:
                 raise EngineError(f"{where} has no {key!r}, which the schema requires")
         for key, sub in (schema.get("properties") or {}).items():
             if key in obj and isinstance(sub, (dict, bool)):   # `false` is a schema too
-                conforms(obj[key], sub, f"{where}.{key}")
+                _conforms(obj[key], sub, f"{where}.{key}")
         extra = schema.get("additionalProperties", True)
         for key in set(obj) - set(schema.get("properties") or {}):
-            conforms(obj[key], extra, f"{where}.{key}")
+            _conforms(obj[key], extra, f"{where}.{key}")
     if isinstance(obj, list) and isinstance(schema.get("items"), (dict, bool)):
         for i, item in enumerate(obj):
-            conforms(item, schema["items"], f"{where}[{i}]")
+            _conforms(item, schema["items"], f"{where}[{i}]")
 
 
 def run(engine: str, prompt: str, schema: dict) -> dict:
     """Ask `engine` for one object matching `schema`. Raises rather than guessing."""
-    got = _ask(engine, prompt, schema)
-    conforms(got, schema, f"{engine}'s answer")
+    _check_schema(schema)
+    try:
+        got = _ask(engine, prompt, schema)
+    except (OSError, UnicodeError) as e:
+        raise EngineError(f"{engine} could not complete its run: {e}") from None
+    _check_finite(got)
+    _conforms(got, schema, f"{engine}'s answer")
     return got
 
 
@@ -212,7 +283,12 @@ def _ask(engine: str, prompt: str, schema: dict) -> dict:
             argv = ["codex", "exec", "--output-schema", str(s), "-o", str(out),
                     "--sandbox", "read-only", "--skip-git-repo-check", _as_argument(prompt)]
             r = _spawn(engine, argv)
-            body = out.read_text(encoding="utf-8") if out.exists() else ""
+            try:
+                body = out.read_text(encoding="utf-8")
+            except FileNotFoundError:
+                body = ""
+            except (OSError, UnicodeError) as e:
+                raise EngineError(f"codex's answer could not be read: {e}.\n{_tail(r)}") from None
             if not body.strip():
                 raise EngineError(f"codex wrote no answer.\n{_tail(r)}")
             return _parse(engine, body)
@@ -241,14 +317,17 @@ def _spawn(engine: str, argv: list[str]) -> subprocess.CompletedProcess:
     """Every way the engine can fail to start or answer is an EngineError — a
     caller asking several engines keeps the verdicts the others gave."""
     try:
-        return subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT,
-                              encoding="utf-8", errors="replace")
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT,
+                                encoding="utf-8", errors="replace")
     except FileNotFoundError:
         raise EngineError(f"{engine} is not on PATH") from None
     except subprocess.TimeoutExpired:
         raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
-    except OSError as e:                  # E2BIG: a prompt too long for one argument
+    except (OSError, ValueError) as e:     # E2BIG, or a NUL in a prompt argument
         raise EngineError(f"{engine} could not be started: {e}") from None
+    if result.returncode:
+        raise EngineError(f"{engine} exited with status {result.returncode}.\n{_tail(result)}")
+    return result
 
 
 def _as_argument(prompt: str) -> str:
@@ -259,14 +338,16 @@ def _as_argument(prompt: str) -> str:
 def _parse(engine: str, body: str) -> dict:
     stripped = body.strip()
     try:
-        got = json.loads(stripped)
-        if isinstance(got, dict):
-            return got
+        got = json.loads(stripped, parse_float=_finite_number, parse_constant=_finite_number)
     except ValueError:
         pass
+    else:
+        if isinstance(got, dict):
+            return got
+        raise EngineError(f"{engine} returned {type(got).__name__}, not an object")
     for line in reversed(stripped.splitlines()):
         try:
-            got = json.loads(line)
+            got = json.loads(line, parse_float=_finite_number, parse_constant=_finite_number)
         except ValueError:
             continue
         if isinstance(got, dict):
@@ -333,7 +414,8 @@ def main() -> int:
         print("need --prompt-file and --schema", file=sys.stderr)
         return 2
     try:
-        engine = a.engine or other_than(a.running)
+        default_checker = other_than(a.running)  # validate even with an explicit checker
+        engine = a.engine or default_checker
         if engine == a.running:
             raise EngineError(f"{engine} is the engine running this; "
                               "a verdict from it is not a check")

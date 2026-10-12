@@ -26,11 +26,8 @@ jobs:
       - name: Every rule still fires
         run: python3 coding-tools/test_validate.py
       - name: The tools stop where they say they stop
-        run: python3 coding-tools/test_tools.py
+        run: python3 -m unittest discover -s coding-tools -p 'test_*.py'
       - name: Documented git behaviour still holds
         run: python3 coding-tools/figures_check.py
       - name: Delivered blocks are current
-        run: |
-          python3 coding-tools/render.py
-          git diff --exit-code || {
-            echo "SKILL.md delivery blocks are stale — run: make render"; exit 1; }
+        run: python3 coding-tools/render.py --check

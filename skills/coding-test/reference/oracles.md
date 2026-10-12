@@ -108,10 +108,13 @@ A test for a fixed bug must be **seen failing on the pre-fix code**. Remove the
 fix, run it, watch it fail for the stated reason, restore the fix, run it again.
 Remove only the fix, and only recoverably:
 
-- **Uncommitted**: `git stash push -u -- <fix paths>`, run, `git stash pop`.
+- **Uncommitted**: `git stash push -u -- <fix paths>`, run, `git stash pop --index`.
   Never the test file, and never `restore`, which keeps no copy. `-u` because
   without it a newly created fix file is refused and the test runs with the fix
-  still in place
+  still in place. `--index` restores the fix's staging state as well as its
+  contents. Keep edits outside `<fix paths>` committed or unstaged: otherwise
+  restoring the saved index can conflict with those already-staged edits. On
+  failure the stash is kept; do not drop it before recovering the fix
 - **Committed**: `git revert --no-commit <sha>`, run, `git revert --abort`, with
   the test edits committed or left unstaged — `--abort` resets the index, so a
   staged test edit is discarded with it

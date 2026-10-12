@@ -9,16 +9,18 @@ belongs in a review, not in this file.
 """
 from __future__ import annotations
 
+import os.path
 import re
 import sys
 import unicodedata
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import h2_lines, links, live_text, marker_lines  # noqa: E402
+from fences import code_spans, h2_lines, links, live_text, marker_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -30,9 +32,31 @@ def fail(rule: str, msg: str) -> None:
 
 # --- corpus ------------------------------------------------------------------
 
+class UniqueKeyLoader(yaml.SafeLoader):
+    """A repeated key must not silently replace an earlier permission or limit."""
+
+    def construct_mapping(self, node, deep=False):
+        seen = set()
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                continue  # An explicit key may override a YAML merge.
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                if key in seen:
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping", node.start_mark,
+                        f"found duplicate key {key!r}", key_node.start_mark)
+                seen.add(key)
+            except TypeError:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping", node.start_mark,
+                    "found an unhashable key", key_node.start_mark) from None
+        return super().construct_mapping(node, deep=deep)
+
+
 def load(name: str):
     with (ROOT / "coding-registry" / name).open(encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+        return yaml.load(fh, Loader=UniqueKeyLoader)
 
 
 H = load("harness.yaml")
@@ -53,12 +77,11 @@ PLATFORM_DIRS = set(H["platform_dirs"])
 SKILLS_ROOT = ROOT / H["skills_dir"] if H.get("skills_dir") else ROOT
 SKILL_DIRS = sorted(p for p in SKILLS_ROOT.glob(f"{PREFIX}*") if (p / "SKILL.md").exists())
 SKILLS = [p.name for p in SKILL_DIRS]
-LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 # A backticked token is a path if it contains a slash or names a file. Matching
 # only on the slash misses the bare sibling reference (`SIZING.md`), which is
 # the form that breaks: it resolves against the skill directory, not against
 # the directory the file writing it lives in.
-TICK_PATH_RE = re.compile(r"`([^`\s]*(?:/[^`\s]*|\.(?:md|yaml|py)))`")
+PATH_TOKEN_RE = re.compile(r"[^\s]*(?:/[^\s]*|\.(?:md|yaml|py))")
 # A marker in code (`#TODO(agent):`) is a mention of the convention, not a
 # marker; V22 reads only what renders outside code (`fences.live_text`).
 MARKER_RE = re.compile(r"#" + r"TODO\(agent\):")
@@ -68,8 +91,12 @@ def read(p: Path) -> str:
     """A page that cannot be read — a looping or dangling link — is a failure
     to report, not a traceback that hides every other rule's result."""
     try:
-        return p.read_text(encoding="utf-8").removeprefix("\ufeff")   # a BOM is not content
-    except (OSError, UnicodeDecodeError) as e:
+        target = p.resolve(strict=True)
+        if not target.is_relative_to(ROOT.resolve()):
+            fail("V27", f"{p.relative_to(ROOT)} points outside the repo ({target})")
+            return ""
+        return target.read_text(encoding="utf-8").removeprefix("\ufeff")   # a BOM is not content
+    except (OSError, RuntimeError, UnicodeDecodeError) as e:
         fail("V27", f"{p.relative_to(ROOT)} cannot be read: {getattr(e, 'strerror', None) or e}")
         return ""
 
@@ -91,15 +118,20 @@ def frontmatter(text: str, label: str) -> dict:
     m = re.match(r"---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", text, re.S)
     if m:
         try:
-            got = yaml.safe_load(m.group(1))
+            got = yaml.load(m.group(1), Loader=UniqueKeyLoader)
         except yaml.YAMLError as e:
             fail("V1", f"{label} frontmatter is not valid YAML: " + str(e).splitlines()[0])
             got = {}
         if not isinstance(got, dict):
             fail("V1", f"{label} frontmatter is not a mapping of keys to values")
             got = {}
-        out = {str(k): "" if v is None else v if isinstance(v, str) else str(v)
-               for k, v in got.items()}
+        for key, value in got.items():
+            if key in ("name", "description", "allowed-tools") and not isinstance(value, str):
+                fail("V1", f"{label} frontmatter {key} must be a string")
+                value = ""
+            out[str(key)] = "" if value is None else value if isinstance(value, str) else str(value)
+    else:
+        fail("V1", f"{label} has no complete YAML frontmatter at the start of the page")
     _FRONTMATTER[label] = out
     return out
 
@@ -107,7 +139,15 @@ def frontmatter(text: str, label: str) -> dict:
 def walk(d: Path):
     """Every entry under d, not descending through a link — `_coding` and
     `registry` are judged as links, not re-walked as directories."""
-    for entry in sorted(d.iterdir()):
+    try:
+        if not d.resolve(strict=True).is_relative_to(ROOT.resolve()):
+            fail("V27", f"{d.relative_to(ROOT)} points outside the repo")
+            return
+        entries = sorted(d.iterdir())
+    except (OSError, RuntimeError) as e:
+        fail("V27", f"{d.relative_to(ROOT)} cannot be walked: {getattr(e, 'strerror', None) or e}")
+        return
+    for entry in entries:
         yield entry
         if entry.is_dir() and not entry.is_symlink():
             yield from walk(entry)
@@ -131,6 +171,43 @@ def sections(text: str) -> dict[str, str]:
     return out
 
 
+def section_links(text: str, title: str) -> list[str]:
+    """Parse the whole page so a link may use a definition in another section."""
+    lines = text.splitlines()
+    heads = list(h2_lines(lines).items())
+    targets = []
+    for index, (start, name) in enumerate(heads):
+        if name == title:
+            end = heads[index + 1][0] if index + 1 < len(heads) else len(lines)
+            targets.extend(links(text, line_range=(start + 1, end)))
+    return targets
+
+
+def local_link_path(href: str) -> str | None:
+    target = urlsplit(href)
+    if target.scheme.lower() == "file":
+        raise ValueError("file: links are not repository-relative")
+    if target.scheme or target.netloc:
+        return None
+    return unquote(target.path)
+
+
+def link_paths(base: Path, targets: list[str]) -> set[Path]:
+    found = set()
+    for href in targets:
+        try:
+            path = local_link_path(href)
+        except ValueError:
+            continue  # V8 reports malformed URLs.
+        if path:
+            found.add(Path(os.path.normpath(base / path)))
+    return found
+
+
+def inline_paths(text: str) -> list[str]:
+    return [value for value in code_spans(text) if PATH_TOKEN_RE.fullmatch(value)]
+
+
 FIXED_SECTIONS = ["Owns", "Before starting", "Decide first",
                   "Always / Never", "Verify with", "Done when"]
 
@@ -143,7 +220,13 @@ def v1_sizes():
         n = len(t.splitlines())
         if n > LIM["skill_md_lines"]:
             fail("V1", f"{d.name}/SKILL.md is {n} lines (max {LIM['skill_md_lines']})")
-        desc = frontmatter(t, d.name).get("description", "")
+        metadata = frontmatter(t, d.name)
+        for field in ("name", "description", "allowed-tools"):
+            if not metadata.get(field, "").strip():
+                fail("V1", f"{d.name} frontmatter is missing a non-empty {field}")
+        if metadata.get("name") and metadata["name"] != d.name:
+            fail("V1", f"{d.name} frontmatter name is {metadata['name']!r}, not its directory name")
+        desc = metadata.get("description", "")
         if len(desc) > LIM["description_chars"]:
             fail("V1", f"{d.name} description is {len(desc)} chars "
                        f"(max {LIM['description_chars']}; the listing truncates)")
@@ -174,10 +257,9 @@ def v4_playbook_orphans():
         pb_dir = d / "playbooks"
         if not pb_dir.exists():
             continue
-        body = sections(read(d / "SKILL.md")).get("Decide first", "")
-        linked = {Path(m).name for m in LINK_RE.findall(body)}
+        linked = link_paths(d, section_links(read(d / "SKILL.md"), "Decide first"))
         for pb in sorted(pb_dir.glob("*.md")):
-            if pb.name not in linked:
+            if pb not in linked:
                 fail("V4", f"{d.name}/playbooks/{pb.name} is not linked from Decide first")
 
 
@@ -220,13 +302,17 @@ def v8_links():
             continue
         # A link shown in code is an example, not a link.
         for target in links(read(f)):
-            if not target or target.startswith(("http", "#", "mailto:")):
-                continue
-            path = (f.parent / target.split("#")[0])
-            if target.startswith("/") or not path.resolve().is_relative_to(ROOT.resolve()):
-                fail("V8", f"{f.relative_to(ROOT)} links to {target}, outside the repo")
-            elif not path.exists():
-                fail("V8", f"{f.relative_to(ROOT)} links to missing {target}")
+            try:
+                local = local_link_path(target)
+                if not local:
+                    continue
+                path = f.parent / local
+                if Path(local).is_absolute() or not path.resolve().is_relative_to(ROOT.resolve()):
+                    fail("V8", f"{f.relative_to(ROOT)} links to {target}, outside the repo")
+                elif not path.exists():
+                    fail("V8", f"{f.relative_to(ROOT)} links to missing {target}")
+            except (OSError, RuntimeError, ValueError) as e:
+                fail("V8", f"{f.relative_to(ROOT)} cannot resolve link {target!r}: {e}")
 
 
 def _norm(s: str) -> str:
@@ -255,7 +341,15 @@ def _says(text: str, phrase: str) -> bool:
 
 def v10_fixtures():
     pairs = [(_norm(s), name) for name, c in CAP.items() for s in c.get("signals", [])]
-    for entry in FIX if isinstance(FIX, list) else []:
+    if not isinstance(FIX, list) or not FIX:
+        fail("V10", "fixtures.yaml must be a non-empty list of ask/expect mappings")
+        return
+    for index, entry in enumerate(FIX, 1):
+        if not isinstance(entry, dict) or any(
+                not isinstance(entry.get(key), str) or not entry[key].strip()
+                for key in ("ask", "expect")):
+            fail("V10", f"fixture {index} must name non-empty ask and expect strings")
+            continue
         ask, expect = _norm(entry["ask"]), entry["expect"]
         hits = [(len(sig), owner) for sig, owner in pairs if _says(ask, sig)]
         if not hits:
@@ -295,11 +389,14 @@ def v14_patterns():
         if p not in VOCAB["patterns"]:
             fail("V14", f"route {name} uses pattern {p!r}, not in the vocabulary")
         if p == "loop":
-            for key in ("oracle", "checker", "max_cycles"):
-                if key not in r:
-                    fail("V14", f"loop route {name} is missing {key}")
-        if p == "report-only" and "stops_at" not in r:
-            fail("V14", f"report-only route {name} is missing stops_at")
+            for key in ("oracle", "checker"):
+                if not isinstance(r.get(key), str) or not r[key].strip():
+                    fail("V14", f"loop route {name} needs a non-empty {key}")
+            cycles = r.get("max_cycles")
+            if type(cycles) is not int or cycles <= 0:
+                fail("V14", f"loop route {name} max_cycles must be a positive integer")
+        if p == "report-only" and (not isinstance(r.get("stops_at"), str) or not r["stops_at"].strip()):
+            fail("V14", f"report-only route {name} needs a non-empty stops_at")
 
 
 def v15_permission_class():
@@ -370,6 +467,8 @@ def v19_paths_resolve():
     applies to the shared contracts too — they are read *by* a skill, so a
     sibling-relative path in them points at nothing once installed.
     """
+    if not SKILL_DIRS:
+        return  # V3 reports the missing roster.
     probe = SKILL_DIRS[0]
     shared = sorted((SKILLS_ROOT / SHARED).glob("*.md"))
     for d in SKILL_DIRS:
@@ -386,7 +485,8 @@ def v19_paths_resolve():
 # under one of the set's own roots. `node_modules/` in a search playbook is an
 # example of the reader's project, not a pointer into this repo.
 def _is_own_reference(p: str) -> bool:
-    if any(p.startswith(x) or p == x for x in H.get("external_paths", [])):
+    if any(p == x or (x.endswith("/") and p.startswith(x))
+           for x in H.get("external_paths", [])):
         return False
     if p.endswith((".md", ".yaml", ".py")):
         return True
@@ -398,10 +498,12 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
     the file that holds them (`where`, relative to the skill directory). Either
     way the path is normalised lexically, so a link whose `..` climbs out of
     the skill directory points at nothing once installed."""
-    import os.path
     for href in links(read(f)):
-        target = href.split("#")[0]
-        if not target or target.startswith(("http", "mailto:", "/")):
+        try:
+            target = local_link_path(href)
+        except ValueError:
+            continue  # V8 reports malformed URLs.
+        if not target or Path(target).is_absolute():
             continue
         norm = os.path.normpath(str(where / target))
         if norm == ".." or norm.startswith("../"):
@@ -410,8 +512,8 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
         elif not (base / norm).exists():
             fail("V19", f"{label} links to {target!r}, which does not resolve from a "
                         "skill directory")
-    for p in TICK_PATH_RE.findall(read(f)):
-        if p.startswith(("http", "~", "/")) or " " in p or not _is_own_reference(p):
+    for p in inline_paths(read(f)):
+        if p.startswith(("~", "/")) or re.match(r"[A-Za-z][A-Za-z0-9+.-]*:", p) or not _is_own_reference(p):
             continue
         if ".." in p:
             fail("V19", f"{label} references {p!r}; paths are normalised lexically, "
@@ -486,12 +588,18 @@ def v22_markers_classified():
 def unclassified_markers(text: str) -> list[int]:
     """Lines whose rendered marker has no residual class. The class may sit in
     code on the line (`UNVERIFIED`) or be spelled with references in HTML, so
-    the source line and the rendered text are both read."""
-    lines = text.splitlines()
-    return [i for i, rendered in sorted(live_text(text).items())
-            if MARKER_RE.search(rendered)
-            and not any(c in rendered or (i < len(lines) and c in lines[i])
-                        for c in VOCAB["residual_classes"])]
+    rendered prose and code are checked separately. Hidden comments and
+    attributes cannot supply a class that no reader sees."""
+    classes = [re.compile(rf"(?<![\w-]){re.escape(word)}(?![\w-])")
+               for word in VOCAB["residual_classes"]]
+    missing = []
+    for line, rendered in sorted(live_text(text).items()):
+        if not MARKER_RE.search(rendered):
+            continue
+        visible = [rendered, *code_spans(text, line_range=(line, line + 1), include_html=True)]
+        if not any(pattern.search(fragment) for pattern in classes for fragment in visible):
+            missing.append(line)
+    return missing
 
 
 def v23_labels():
@@ -621,13 +729,13 @@ def v30_reference_orphans():
         ref_dir = d / "reference"
         if not ref_dir.exists():
             continue
-        body = sections(read(d / "SKILL.md")).get("Decide first", "")
-        linked = {Path(m).name for m in LINK_RE.findall(body)}
+        linked = link_paths(d, section_links(read(d / "SKILL.md"), "Decide first"))
         for pb in sorted((d / "playbooks").glob("*.md")) if (d / "playbooks").exists() else []:
-            linked |= {Path(m).name for m in LINK_RE.findall(read(pb))}
-            linked |= {Path(m).name for m in TICK_PATH_RE.findall(read(pb))}
+            text = read(pb)
+            linked |= link_paths(pb.parent, links(text))
+            linked |= {Path(os.path.normpath(d / p)) for p in inline_paths(text)}
         for f in sorted(ref_dir.glob("*.md")):
-            if f.name not in linked:
+            if f not in linked:
                 fail("V30", f"{f.relative_to(ROOT)} is reachable from nothing — "
                             "not the Decide first table, not a playbook")
 
@@ -669,8 +777,13 @@ def v32_checker_engine():
     independent one to reach for — and that the route defers the choice.
     """
     eng = H.get("engines") or {}
-    runs_on = eng.get("runs_on") or []
-    if len(runs_on) < 2:
+    runs_on = eng.get("runs_on") if isinstance(eng, dict) else None
+    if not isinstance(runs_on, list) or any(not isinstance(name, str) or not name.strip() for name in runs_on):
+        fail("V32", "engines.runs_on must be a list of non-empty engine names")
+        runs_on = []
+    if len(set(runs_on)) != len(runs_on):
+        fail("V32", "engines.runs_on repeats an engine; duplicate entries are not independent checkers")
+    if len(set(runs_on)) < 2:
         fail("V32", f"engines.runs_on is {runs_on}; with fewer than two engines no "
                     "run can be checked by one that did not produce the work")
     allowed = VOCAB.get("checkers") or []
@@ -745,9 +858,13 @@ def v34_tools_reachable():
                 why = ("its class grants no Bash" if d.name in wanted
                        else f"linked_tools[{tool}] does not name it")
                 fail("V34", f"{d.name} links {tool} and {why}")
-            if link.is_symlink() and link.resolve() != source.resolve():
-                fail("V34", f"{d.name}/{tool} points at {link.resolve()}, not "
-                            "the set's own")
+            if link.is_symlink():
+                try:
+                    target = link.resolve(strict=True)
+                    if target != source.resolve():
+                        fail("V34", f"{d.name}/{tool} points at {target}, not the set's own")
+                except (OSError, RuntimeError):
+                    continue  # V27 reports a broken or looping link.
     tools_dir = (ROOT / f"{SET}-tools").resolve()
     for d in SKILL_DIRS:
         for entry in walk(d):
@@ -857,8 +974,9 @@ def v36_finding_visuals():
         for form in fv["forms"]:
             if form not in _norm(text):
                 fail("V36", f"{name} never names the {form!r} form")
-        body = sections(read(SKILLS_ROOT / name / "SKILL.md")).get("Decide first", "")
-        if fv["playbook"] not in body:
+        linked = link_paths(SKILLS_ROOT / name,
+                            section_links(read(SKILLS_ROOT / name / "SKILL.md"), "Decide first"))
+        if pb not in linked:
             fail("V36", f"{name}/SKILL.md does not reach {fv['playbook']} from "
                         "Decide first; a rule nothing links to is read on no launches")
 
