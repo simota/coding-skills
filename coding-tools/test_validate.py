@@ -22,10 +22,23 @@ sys.dont_write_bytecode = True                     # no __pycache__ in the tools
 import validate                                    # noqa: E402  — for RULES only
 
 
-def run(root: Path) -> str:
-    r = subprocess.run([sys.executable, str(root / "coding-tools" / "validate.py")],
-                       capture_output=True, text=True)
-    return r.stdout + r.stderr
+def run(root: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([sys.executable, str(root / "coding-tools" / "validate.py")],
+                          capture_output=True, text=True)
+
+
+def copy_repository(root: Path, destination: Path) -> None:
+    """TMPDIR may live in the repo; never copy the directory holding this copy."""
+    temporary = destination.parent.resolve()
+    usual = shutil.ignore_patterns(".git", "__pycache__")
+
+    def ignore(directory, names):
+        skipped = set(usual(directory, names))
+        if Path(directory).resolve() == temporary.parent:
+            skipped.add(temporary.name)
+        return skipped
+
+    shutil.copytree(root, destination, symlinks=True, ignore=ignore)
 
 
 S = "skills/"          # everything the CLI reads lives here
@@ -455,11 +468,44 @@ def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "status: done | P
 def _(r): (r / f"{S}coding-test/playbooks/flaky.md").write_bytes(b"<!-- coding:guidance -->\n\xff\xfe\n")
 
 
+@case("V1-name")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "name: coding-test", "name: coding-other")
+
+
+@case("V4-fenced-link")
+def _(r):
+    (r / f"{S}coding-test/playbooks/orphan.md").write_text("<!-- coding:guidance -->\n", encoding="utf-8")
+    sub(r / f"{S}coding-test/SKILL.md", "## Decide first", "## Decide first\n\n```md\n[orphan](playbooks/orphan.md)\n```\n")
+
+
+@case("V10-mapping")
+def _(r): (r / "coding-registry/fixtures.yaml").write_text("ask: where\nexpect: coding-explore\n", encoding="utf-8")
+
+
+@case("V14-stop")
+def _(r): sub(r / "coding-registry/routes.yaml", "max_cycles: 4", "max_cycles: null")
+
+
+@case("V32-duplicate-engine")
+def _(r): sub(r / "coding-registry/harness.yaml", "runs_on: [claude, codex, agy]", "runs_on: [claude, claude]")
+
+
+@case("V27-tool-loop")
+def _(r):
+    link = r / f"{S}coding-test/refute.py"
+    link.unlink()
+    link.symlink_to("refute.py")
+
+
+@case("V22-hidden-class")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when",
+              "## Done when\n\n#TODO(agent): fix <!-- UNVERIFIED -->\n")
+
+
 def main() -> int:
     # The exit code, not the word "green": a failing tree once printed both, and
     # every case then "fired" on a failure that was already there.
-    first = subprocess.run([sys.executable, str(ROOT / "coding-tools" / "validate.py")],
-                           capture_output=True, text=True)
+    first = run(ROOT)
     baseline = first.stdout + first.stderr
     if first.returncode != 0:
         print("the working tree is already failing; fix that first:\n" + baseline)
@@ -469,14 +515,15 @@ def main() -> int:
     for rule, mutate in CASES.items():
         with tempfile.TemporaryDirectory() as tmp:
             copy = Path(tmp) / "repo"
-            shutil.copytree(ROOT, copy, symlinks=True,
-                            ignore=shutil.ignore_patterns(".git", "__pycache__"))
+            copy_repository(ROOT, copy)
             mutate(copy)
-            out = run(copy)
+            result = run(copy)
+            out = result.stdout + result.stderr
             expect = rule.split("-")[0]
-            if not re.search(rf"^\s*{expect}: ", out, re.M):
+            if result.returncode != 1 or "Traceback (most recent call last):" in out \
+                    or not re.search(rf"^\s*{expect}: ", out, re.M):
                 bad.append(rule)
-                print(f"  {rule} did not fire\n{out}")
+                print(f"  {rule} did not report a clean validation failure (exit {result.returncode})\n{out}")
 
     print(f"{len(CASES)} rules exercised, {len(bad)} silent")
     if bad:

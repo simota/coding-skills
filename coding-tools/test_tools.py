@@ -19,6 +19,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
@@ -97,8 +98,72 @@ class Engine(unittest.TestCase):
         self.assertEqual(engine._parse("x", 'log line\n{"ok": true}\n'), {"ok": True})
 
     def test_parse_refuses_output_with_no_object(self):
+        for body in ("[1, 2]\nnot json\n", '[\n{"ok": true}\n]', "null"):
+            with self.subTest(body=body), self.assertRaises(engine.EngineError):
+                engine._parse("x", body)
+
+    def test_nonfinite_numbers_are_not_json_answers(self):
+        for value in ("NaN", "Infinity", "-Infinity", "1e400"):
+            with self.subTest(value=value), self.assertRaises(engine.EngineError):
+                engine._parse("fixture", '{"number": ' + value + '}')
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value), self.assertRaises(engine.EngineError):
+                engine.conforms(value, {"type": "number"})
+        self.assertEqual(engine._parse("fixture", '{"number": ' + str(10 ** 400) + '}'),
+                         {"number": 10 ** 400})
+
+    def test_a_failed_process_cannot_supply_a_verdict(self):
+        with self.assertRaisesRegex(engine.EngineError, "exited with status 7") as failure:
+            engine._spawn("fixture", [sys.executable, "-c",
+                          "import sys; print('{\"ok\": true}'); "
+                          "print('checker failed', file=sys.stderr); sys.exit(7)"])
+        self.assertIn("checker failed", str(failure.exception))
+
+    def test_an_unreadable_answer_is_an_engine_error(self):
+        def corrupt_answer(_name, argv):
+            out = pathlib.Path(argv[argv.index("-o") + 1])
+            out.write_bytes(b"\xff")
+            return subprocess.CompletedProcess(argv, 0, "", "")
+
+        with mock.patch.object(engine, "_spawn", side_effect=corrupt_answer):
+            with self.assertRaisesRegex(engine.EngineError, "codex.*answer"):
+                engine.run("codex", "fixture", engine.SELFTEST)
+
+    def test_explicit_checker_does_not_bypass_running_engine_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = pathlib.Path(tmp) / "prompt.txt"
+            schema = pathlib.Path(tmp) / "schema.json"
+            prompt.write_text("fixture", encoding="utf-8")
+            schema.write_text(json.dumps(engine.SELFTEST), encoding="utf-8")
+            argv = ["engine.py", "claude", "--running", "unknown",
+                    "--prompt-file", str(prompt), "--schema", str(schema)]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(engine, "run", return_value={"ok": True}) as run, \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                self.assertNotEqual(engine.main(), 0)
+            run.assert_not_called()
+
+    def test_malformed_schemas_are_not_silently_accepted(self):
+        for schema in ({"anyOf": []}, {"oneOf": []}, {"enum": "yes"},
+                       {"type": []}, {"type": ""}, {"required": "ok"},
+                       {"properties": {"ok": 7}}, {"items": [False]},
+                       {"not": {"type": "unsupported"}}):
+            with self.subTest(schema=schema), self.assertRaises(engine.Unchecked):
+                engine.conforms({"ok": True}, schema)
+
+    def test_schema_preflight_happens_before_launching_an_engine(self):
+        with mock.patch.object(engine, "_ask", return_value={}) as ask:
+            with self.assertRaises(engine.Unchecked):
+                engine.run("claude", "fixture", {"properties": {"absent": {"minimum": 0}}})
+        ask.assert_not_called()
+
+    def test_local_runner_failures_are_engine_errors(self):
+        with mock.patch.object(engine, "_ask", side_effect=OSError("temporary files unavailable")):
+            with self.assertRaisesRegex(engine.EngineError, "temporary files unavailable"):
+                engine.run("claude", "fixture", engine.SELFTEST)
         with self.assertRaises(engine.EngineError):
-            engine._parse("x", "[1, 2]\nnot json\n")
+            engine._spawn("fixture", [sys.executable, "-c", "pass", "\x00"])
 
     def test_main_requires_running(self):
         argv = sys.argv
@@ -113,6 +178,34 @@ class Engine(unittest.TestCase):
 
 
 class Refute(unittest.TestCase):
+    def test_an_unavailable_checker_does_not_erase_other_readings(self):
+        answer = {"refuted": False, "reason": "checked", "what_would_settle_it": "fixture"}
+        claims = [{"id": "one", "claim": "fixture"}]
+        output = io.StringIO()
+        with mock.patch.object(sys, "argv", ["refute.py", "claims.json", "--running", "claude", "--json"]), \
+                mock.patch.object(refute, "load_claims", return_value=claims), \
+                mock.patch.object(refute, "refuters", return_value=["codex", "agy"]), \
+                mock.patch.object(refute, "ask", side_effect=[engine.EngineError("failed"), answer]), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(refute.main(), 0)
+        result = json.loads(output.getvalue())[0]
+        self.assertEqual(result["verdict"], "STANDS")
+        self.assertEqual(result["independent_readings"], 1)
+        self.assertEqual(result["unreachable"], {"codex": "failed"})
+        self.assertEqual(result["votes"], {"agy": answer})
+
+    def test_a_run_with_no_readings_fails(self):
+        output = io.StringIO()
+        with mock.patch.object(sys, "argv", ["refute.py", "claims.json", "--running", "claude", "--json"]), \
+                mock.patch.object(refute, "load_claims", return_value=[{"id": "one", "claim": "fixture"}]), \
+                mock.patch.object(refute, "refuters", return_value=["codex"]), \
+                mock.patch.object(refute, "ask", side_effect=engine.EngineError("failed")), \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(refute.main(), 1)
+        result = json.loads(output.getvalue())[0]
+        self.assertEqual(result["verdict"], "UNCHECKED")
+        self.assertEqual(result["independent_readings"], 0)
+
     def test_verdicts(self):
         yes, no = {"refuted": True}, {"refuted": False}
         self.assertEqual(refute.verdict({}), "UNCHECKED")
@@ -259,6 +352,82 @@ class Markdown(unittest.TestCase):
         self.assertIn(self.M, shown[0])
         self.assertNotIn(self.M, shown.get(1, ""))
         self.assertIn("&", shown[1])
+
+    def test_inline_source_lines_survive_normalization(self):
+        cases = {
+            "entity after multiline code": "UNVERIFIED `start\nend` #TODO&#40;agent): fix",
+            "escape after multiline code": "UNVERIFIED `start\nend` \\#TODO(agent): fix",
+            "repeated source text": "#TODO(agent): fix UNVERIFIED `start\nend` #TODO(agent): fix",
+            "multiline link destination": "[UNVERIFIED](\nhttps://example.com) #TODO&#40;agent): fix",
+            "inline HTML with a newline": "UNVERIFIED <span title='a\nb'>#TODO&#40;agent): fix</span>",
+            "CRLF and tabs": "UNVERIFIED `start\r\nend`\t#TODO&#40;agent): fix",
+        }
+        for name, source in cases.items():
+            with self.subTest(name=name):
+                self.assertIn(self.M, fences.live_text(source).get(1, ""))
+                import validate
+                self.assertEqual(validate.unclassified_markers(source), [1])
+
+    def test_links_can_be_scoped_without_losing_reference_definitions(self):
+        text = ("[outside](outside.md)\n\n## Verify with\n"
+                "`a\nb` [inside][target]\n\n## Done when\n"
+                "[elsewhere](elsewhere.md)\n\n[target]: inside.md\n")
+        self.assertEqual(fences.links(text, line_range=(3, 5)), ["inside.md"])
+        self.assertEqual(fences.links(text, line_range=(3, 4)), [])
+
+    def test_code_spans_follow_the_markdown_parser(self):
+        text = ("``path`with`ticks.md`` and `two\nlines.md` and \\`plain\\`\n\n"
+                "```\n`not-a-reference.md`\n```\n")
+        self.assertEqual(fences.code_spans(text), ["path`with`ticks.md", "two lines.md"])
+
+    def test_scoped_code_spans_do_not_leak_text_from_another_source_line(self):
+        text = "#TODO(agent): fix `first\nUNVERIFIED` and `next`\n"
+        self.assertEqual(fences.code_spans(text), ["first UNVERIFIED", "next"])
+        self.assertEqual(fences.code_spans(text, line_range=(0, 1)), ["first"])
+        self.assertEqual(fences.code_spans(text, line_range=(1, 2)), ["UNVERIFIED", "next"])
+        self.assertEqual(fences.code_spans(text, line_range=(2, 3)), [])
+
+    def test_hidden_html_cannot_supply_a_code_class(self):
+        import validate
+        for tag in ("script", "style"):
+            source = f"#TODO(agent): fix <{tag}>`UNVERIFIED`</{tag}>"
+            with self.subTest(tag=tag):
+                self.assertEqual(fences.code_spans(source), [])
+                self.assertEqual(validate.unclassified_markers(source), [0])
+                self.assertEqual(fences.code_spans(source + " `visible`"), ["visible"])
+
+    def test_html_code_classes_keep_their_visibility_and_source_line(self):
+        import validate
+        for tag in ("code", "pre"):
+            source = f"#TODO(agent): fix <{tag}>UNVERIFIED</{tag}>"
+            with self.subTest(tag=tag):
+                self.assertEqual(validate.unclassified_markers(source), [])
+                self.assertEqual(fences.code_spans(source), [])
+                self.assertTrue(any("UNVERIFIED" in text for text in
+                                    fences.code_spans(source, line_range=(0, 1), include_html=True)))
+                self.assertEqual(fences.code_spans(source, line_range=(1, 2), include_html=True), [])
+
+    def test_html_code_and_layout_boundaries_do_not_create_markers(self):
+        cases = ("#TO<br>DO(agent): fix", "<div>#TO<br>DO(agent): fix</div>",
+                 "<div>#TO</div><div>DO(agent): fix</div>",
+                 "#TO`example`DO(agent): fix", "#TO![image](image.png)DO(agent): fix",
+                 "a <code>#TODO(agent): fix</code>",
+                 "<pre><code>#TODO(agent): fix</code></pre>",
+                 "a <script>#TODO(agent): fix</script>",
+                 "a <style>#TODO(agent): fix</style>")
+        for source in cases:
+            with self.subTest(source=source):
+                self.assertFalse(self.live(source))
+        self.assertTrue(self.live("a <code>example</code>#TODO(agent): fix"))
+        self.assertTrue(self.live("a <script>example</script>#TODO(agent): fix"))
+
+    def test_raw_html_links_and_images_are_checked_in_source_order(self):
+        text = ("[a](a.md) <a href='b.md?x=1&amp;y=2'>b</a> ![c](c.png)\n\n"
+                "<div>\n<img src='d.png'><a href='e.md'>e</a>\n</div>\n\n"
+                "a <script><a href='hidden.md'>hidden</a></script>\n"
+                "`<a href='code.md'>code</a>`\n")
+        self.assertEqual(fences.links(text), ["a.md", "b.md?x=1&y=2", "c.png", "d.png", "e.md"])
+        self.assertEqual(fences.links(text, line_range=(3, 4)), ["d.png", "e.md"])
 
     def test_links_are_read_as_rendered(self):
         self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])

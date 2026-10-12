@@ -18,11 +18,67 @@ from __future__ import annotations
 
 import functools
 import html
+from bisect import bisect_right
 from html.parser import HTMLParser
 
 from markdown_it import MarkdownIt
+from markdown_it.common.html_blocks import block_names
+from markdown_it.parser_inline import ParserInline
+from markdown_it.rules_inline import StateInline, backtick
 
-_MD = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"])
+
+class _LocatedState(StateInline):
+    """Keep the parser's source line when it emits an inline token.
+
+    Rendered text cannot locate itself reliably in the source: entities and
+    escapes change its spelling, and code spans and link targets fold newlines.
+    Token creation happens before that information is lost. Inline content has
+    the same source lines as its enclosing block, without quote/list prefixes.
+    """
+
+    def __init__(self, *args) -> None:
+        super().__init__(*args)
+        self._starts = [0] + [i + 1 for i, c in enumerate(self.src) if c == "\n"]
+
+    def pushPending(self):
+        token = super().pushPending()
+        line = bisect_right(self._starts, self.pos) - 1
+        token.map = [line - token.content.count("\n"), line + 1]
+        return token
+
+    def push(self, *args):
+        token = super().push(*args)
+        line = bisect_right(self._starts, self.pos) - 1
+        token.map = [line, line + 1]
+        return token
+
+
+class _LocatedInline(ParserInline):
+    def parse(self, src, md, env, tokens):
+        state = _LocatedState(src, md, env, tokens)
+        self.tokenize(state)
+        for rule in self.ruler2.getRules(""):
+            rule(state)
+        return state.tokens
+
+
+def _located_backtick(state, silent):
+    start, count = state.pos, len(state.tokens)
+    matched = backtick(state, silent)
+    if matched and not silent and len(state.tokens) > count:
+        token = state.tokens[-1]
+        if token.type == "code_inline":
+            width = len(token.markup)
+            # The parser already found the closing delimiter. Preserve those
+            # exact source fragments before CommonMark folds their newlines.
+            token.meta["source_lines"] = state.src[start + width:state.pos - width].split("\n")
+    return matched
+
+
+_MD = MarkdownIt("commonmark")
+_MD.inline = _LocatedInline()
+_MD.configure("commonmark", {"html": True}).enable(["table", "strikethrough"])
+_MD.inline.ruler.at("backticks", _located_backtick)
 # Links are reported as written, not percent-encoded: `a b.md` is the path a
 # reader would look for, and `a%20b.md` is not on disk.
 _MD.normalizeLink = lambda url: url
@@ -70,23 +126,12 @@ def marker_lines(lines: list[str], marker: str) -> list[int]:
 
 
 def _inline(text: str):
-    """(line index, child token) for every inline child, in order.
-
-    A break advances the line, and a text fragment is anchored to the first
-    source line at or after the current one that contains it: a code span
-    crossing a line folds its newline into a space, so counting breaks alone
-    would number everything after it one line short."""
-    src = text.split("\n")
+    """(source line index, child token) for every inline child, in order."""
     for tok in _tokens(text):
         if tok.type != "inline" or not tok.map:
             continue
-        line, end = tok.map
         for child in tok.children or []:
-            if child.type == "text" and child.content.strip():
-                line = next((j for j in range(line, end) if child.content in src[j]), line)
-            yield line, child
-            if child.type in ("softbreak", "hardbreak"):
-                line += 1
+            yield tok.map[0] + (child.map[0] if child.map else 0), child
 
 
 class _Visible(HTMLParser):
@@ -100,17 +145,22 @@ class _Visible(HTMLParser):
     rules (`&amp` and `&#40` work without `;`, `&colon` does not), whatever
     this Python's parser makes of it."""
 
-    SCRIPT = ("script", "style")
+    HIDDEN = ("script", "style", "code", "pre")
+    BREAKS = {*block_names, "br", "img", "code", "pre"}
 
-    def __init__(self, source: str) -> None:
+    def __init__(self, source: str, code=None) -> None:
         super().__init__(convert_charrefs=True)
         self.src = source
         self.starts = [0]
         for line in source.split("\n"):
             self.starts.append(self.starts[-1] + len(line) + 1)
         self.text_from: int | None = None
-        self.hidden = False  # inside a script or style, which shows nothing
+        self.hidden: list[str] = []  # script/style text and code are not live prose
         self.out: dict[int, str] = {}
+        self.html_code: dict[int, str] = {}
+        self.links: list[tuple[int, str]] = []
+        self._code = code or {}
+        self.code: list[tuple[int, str, list[str]]] = []
 
     def _offset(self) -> int:
         line, col = self.getpos()
@@ -120,63 +170,156 @@ class _Visible(HTMLParser):
         if self.text_from is None:
             return
         first = self.src.count("\n", 0, self.text_from)
+        output = self.html_code if self.hidden else self.out
         for i, raw in enumerate(self.src[self.text_from:end].split("\n")):
             shown = html.unescape(raw).replace("\n", " ").replace("\r", " ")
             if shown:  # a lone space between two tags still separates words
-                self.out[first + i] = self.out.get(first + i, "") + shown
+                output[first + i] = output.get(first + i, "") + shown
         self.text_from = None
 
     def handle_data(self, data: str) -> None:
-        if self.text_from is None and not self.hidden:
+        if self.text_from is None and not any(t in ("script", "style") for t in self.hidden):
             self.text_from = self._offset()
 
     def _boundary(self, *_args) -> None:
         self._flush(self._offset())
 
+    def _separate(self, tag: str) -> None:
+        if tag in self.BREAKS:
+            line = self.getpos()[0] - 1
+            output = self.html_code if self.hidden else self.out
+            output[line] = output.get(line, "") + " "
+
     def handle_starttag(self, tag: str, attrs) -> None:
         self._boundary()
-        if tag in self.SCRIPT:
-            self.hidden = True
+        self._separate(tag)
+        if not self.hidden and tag in ("a", "img"):
+            attribute = "href" if tag == "a" else "src"
+            target = next((value for key, value in attrs if key == attribute), None)
+            if target is not None:
+                self.links.append((self.getpos()[0] - 1, target))
+        if tag in self.HIDDEN:
+            self.hidden.append(tag)
 
     def handle_endtag(self, tag: str) -> None:
         self._boundary()
-        if tag in self.SCRIPT:
-            self.hidden = False
+        self._separate(tag)
+        if tag in self.hidden:
+            i = len(self.hidden) - 1 - self.hidden[::-1].index(tag)
+            del self.hidden[i:]
 
-    handle_startendtag = handle_comment = handle_decl = handle_pi = unknown_decl = _boundary
+    def handle_comment(self, _data) -> None:
+        self._boundary()
+        # Generated placeholders retain the real token without rendering its
+        # contents. HTMLParser does not expose comments inside script/style,
+        # so hidden code cannot lend a path or residual class to visible prose.
+        code = self._code.get(self._offset())
+        if code is not None and not any(t in ("script", "style") for t in self.hidden):
+            self.code.append(code)
+
+    handle_startendtag = handle_starttag
+    handle_decl = handle_pi = unknown_decl = _boundary
 
     def close(self) -> None:
         super().close()
         self._flush(len(self.src))
 
 
-def live_text(text: str) -> dict[int, str]:
-    """{line index: the text that renders there outside code}. Code spans,
-    code blocks, HTML tags and comments are absent; a span crossing lines is
-    absent on every line it covers. Text inside an HTML block renders too, so
-    it is kept, line by line, with the tags and comments taken out."""
-    out: dict[int, str] = {}
-    for line, child in _inline(text):
-        if child.type == "text":
-            out[line] = out.get(line, "") + child.content
+def _escape(text: str) -> str:
+    # A decoded character reference can contain a newline without occupying a
+    # source line. Keep it encoded until _Visible assigns its source location.
+    return html.escape(text).replace("\n", "&#10;").replace("\r", "&#13;")
+
+
+@functools.lru_cache(maxsize=256)
+def _visible(text: str) -> _Visible:
+    """Project parsed tokens into HTML while preserving their source lines.
+
+    Raw HTML and Markdown then share one visibility pass, including an inline
+    script/code element, raw links, and block boundaries. Code is replaced by a
+    separator so removing an example cannot join two fragments into a marker.
+    """
+    parts: list[str] = []
+    code = {}
+    line = size = 0
+
+    def emit(fragment: str, start: int | None = None) -> int:
+        nonlocal line, size
+        if start is not None and start > line:
+            parts.append("\n" * (start - line))
+            size += start - line
+            line = start
+        offset = size
+        parts.append(fragment)
+        size += len(fragment)
+        line += fragment.count("\n")
+        return offset
+
     for tok in _tokens(text):
+        start = tok.map[0] if tok.map else None
         if tok.type == "html_block" and tok.map:
-            parser = _Visible(tok.content)
-            parser.feed(tok.content)
-            parser.close()
-            for offset, shown in parser.out.items():
-                i = tok.map[0] + offset
-                out[i] = out.get(i, "") + shown
-    return out
+            emit(tok.content, start)
+        elif tok.type in ("fence", "code_block"):
+            emit(" ", start)
+        elif tok.type == "inline" and tok.map:
+            for child in tok.children or []:
+                at = tok.map[0] + (child.map[0] if child.map else 0)
+                if child.type == "text":
+                    emit(_escape(child.content), at)
+                elif child.type == "html_inline":
+                    emit(child.content, at)
+                elif child.type == "code_inline":
+                    offset = emit("<!-- --> ", at)
+                    code[offset] = (at, child.content, child.meta["source_lines"])
+                elif child.type in ("softbreak", "hardbreak"):
+                    emit(" ", at)
+                elif child.type == "link_open":
+                    emit(f'<a href="{_escape(child.attrs.get("href", ""))}">', at)
+                elif child.type == "link_close":
+                    emit("</a>", at)
+                elif child.type == "image":
+                    emit(f'<img src="{_escape(child.attrs.get("src", ""))}">', at)
+        elif tok.nesting:
+            emit(f"<{'/' if tok.nesting < 0 else ''}{tok.tag}>", start)
+        elif tok.type == "hr":
+            emit("<hr>", start)
+    source = "".join(parts)
+    parser = _Visible(source, code)
+    parser.feed(source)
+    parser.close()
+    return parser
 
 
-def links(text: str) -> list[str]:
+def live_text(text: str) -> dict[int, str]:
+    """{source line index: visible prose}, excluding code, tags and comments."""
+    return dict(_visible(text).out)
+
+
+def links(text: str, *, line_range: tuple[int, int] | None = None) -> list[str]:
     """Every link and image target the page renders, reference-style included.
-    A link written inside code is not one."""
+    A link written inside code is not one. An optional zero-based, half-open
+    source range filters uses, while definitions are resolved from the page."""
+    return [target for line, target in _visible(text).links
+            if line_range is None or line_range[0] <= line < line_range[1]]
+
+
+def code_spans(text: str, *, line_range: tuple[int, int] | None = None,
+               include_html: bool = False) -> list[str]:
+    """Inline code contents, excluding fenced/indented examples. With a source
+    range, return only fragments written on those lines: a multiline span must
+    not lend a residual class to a marker on a different source line. Residual
+    checks may include visible HTML code/pre text; path checks leave examples
+    in HTML pre blocks out. Script/style contents are never visible code."""
+    visible = _visible(text)
     found = []
-    for _, child in _inline(text):
-        if child.type == "link_open":
-            found.append(child.attrs.get("href", ""))
-        elif child.type == "image":
-            found.append(child.attrs.get("src", ""))
+    for line, content, source_lines in visible.code:
+        if line_range is None:
+            found.append(content)
+        else:
+            for offset, fragment in enumerate(source_lines):
+                if line_range[0] <= line + offset < line_range[1]:
+                    found.append(fragment)
+    if include_html:
+        found.extend(shown for line, shown in visible.html_code.items()
+                     if line_range is None or line_range[0] <= line < line_range[1])
     return found
