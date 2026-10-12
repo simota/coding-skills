@@ -54,15 +54,37 @@ class UniqueKeyLoader(yaml.SafeLoader):
         return super().construct_mapping(node, deep=deep)
 
 
+class RegistryLoadError(ValueError):
+    """A registry input could not be read or parsed; the corpus cannot run."""
+
+
 def load(name: str):
-    with (ROOT / "coding-registry" / name).open(encoding="utf-8") as fh:
-        return yaml.load(fh, Loader=UniqueKeyLoader)
+    label = f"coding-registry/{name}"
+    try:
+        with (ROOT / label).open(encoding="utf-8") as fh:
+            return yaml.load(fh, Loader=UniqueKeyLoader)
+    except yaml.YAMLError as error:
+        mark = getattr(error, "problem_mark", None)
+        if mark is not None:
+            label += f":{mark.line + 1}:{mark.column + 1}"
+        problem = getattr(error, "problem", None) or str(error).splitlines()[0]
+        raise RegistryLoadError(f"{label}: invalid YAML: {problem}") from error
+    except UnicodeError as error:
+        raise RegistryLoadError(f"{label}: not valid UTF-8: {error}") from error
+    except OSError as error:
+        raise RegistryLoadError(f"{label}: cannot read registry: {error.strerror or error}") from error
 
 
-H = load("harness.yaml")
-CAP = load("capabilities.yaml")
-ROUTES = load("routes.yaml")
-FIX = load("fixtures.yaml")
+# V0 is the input gate. Keep valid imports available to the other tools, but
+# stop before deriving any corpus state from a registry that did not load.
+try:
+    H = load("harness.yaml")
+    CAP = load("capabilities.yaml")
+    ROUTES = load("routes.yaml")
+    FIX = load("fixtures.yaml")
+except RegistryLoadError as error:
+    print(f"V0: {error}", file=sys.stderr)
+    raise SystemExit(1) from None
 
 LIM = H["limits"]
 VOCAB = H["vocabulary"]

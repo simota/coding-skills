@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import contextlib
 import io
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,98 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
 import validate  # noqa: E402
+
+
+class RegistryLoading(unittest.TestCase):
+    def setUp(self):
+        import test_validate
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name) / "repo"
+        test_validate.copy_repository(test_validate.ROOT, self.root)
+
+    def registry(self, name: str) -> Path:
+        return self.root / "coding-registry" / name
+
+    def run_validator(self, *, importing: bool = False) -> subprocess.CompletedProcess[str]:
+        arguments = ["-c", "import validate"] if importing else ["validate.py"]
+        return subprocess.run([sys.executable, *arguments], cwd=self.root / "coding-tools",
+                              capture_output=True, text=True)
+
+    def assert_load_failure(self, name: str, detail: str = "") -> None:
+        for importing in (False, True):
+            with self.subTest(name=name, importing=importing):
+                result = self.run_validator(importing=importing)
+                output = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 1, output)
+                self.assertNotIn("Traceback", output)
+                self.assertRegex(result.stderr, rf"^V0: coding-registry/{name}(?::| )")
+                self.assertIn(detail, result.stderr)
+                self.assertNotIn("green", result.stdout)
+
+    def test_duplicate_keys_in_every_registry_have_controlled_diagnostics(self):
+        additions = {
+            "harness.yaml": "set: coding\n",
+            "capabilities.yaml": "coding-test: {}\n",
+            "routes.yaml": "bug-fix: {}\n",
+            "fixtures.yaml": "- ask: first\n  ask: second\n  expect: coding-test\n",
+        }
+        for name, extra in additions.items():
+            path = self.registry(name)
+            original = path.read_bytes()
+            try:
+                path.write_bytes(original + b"\n" + extra.encode("utf-8"))
+                self.assert_load_failure(name, "duplicate key")
+            finally:
+                path.write_bytes(original)
+
+    def test_invalid_registry_syntax_has_a_controlled_diagnostic(self):
+        self.registry("routes.yaml").write_text("routes: [\n", encoding="utf-8")
+        self.assert_load_failure("routes.yaml", "YAML")
+
+    def test_a_missing_registry_has_a_controlled_diagnostic(self):
+        self.registry("capabilities.yaml").unlink()
+        self.assert_load_failure("capabilities.yaml")
+
+    def test_a_registry_that_cannot_be_opened_has_a_controlled_diagnostic(self):
+        path = self.registry("fixtures.yaml")
+        path.unlink()
+        path.mkdir()
+        self.assert_load_failure("fixtures.yaml")
+
+    def test_non_utf8_registry_bytes_have_a_controlled_diagnostic(self):
+        self.registry("harness.yaml").write_bytes(b"set: coding\nbroken: \xff\n")
+        self.assert_load_failure("harness.yaml", "UTF-8")
+
+    def test_yaml_reader_errors_have_a_controlled_diagnostic(self):
+        self.registry("fixtures.yaml").write_bytes(b"- ask: \x00\n  expect: coding-test\n")
+        self.assert_load_failure("fixtures.yaml", "YAML")
+
+    def test_valid_yaml_merges_and_imported_registry_values_are_preserved(self):
+        harness = self.registry("harness.yaml")
+        with harness.open("a", encoding="utf-8") as stream:
+            stream.write("""
+fixture_defaults: &fixture_defaults
+  inherited: kept
+  override: old
+fixture_second: &fixture_second
+  second: kept
+fixture_merged:
+  <<: [*fixture_defaults, *fixture_second]
+  override: new
+""")
+        script = """import validate
+assert validate.H['fixture_merged'] == {'inherited': 'kept', 'override': 'new', 'second': 'kept'}
+assert validate.CAP['coding-test']['class'] == 'full'
+assert validate.ROUTES['review-to-zero']['max_cycles'] == 4
+assert isinstance(validate.FIX, list) and validate.FIX
+"""
+        imported = subprocess.run([sys.executable, "-c", script], cwd=self.root / "coding-tools",
+                                  capture_output=True, text=True)
+        self.assertEqual(imported.returncode, 0, imported.stdout + imported.stderr)
+        result = self.run_validator()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("green", result.stdout)
 
 
 class ValidatorBoundaries(unittest.TestCase):
