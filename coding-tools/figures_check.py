@@ -32,6 +32,7 @@ SKILLS = ROOT / "skills"
 HISTORY = SKILLS / "coding-explore/reference/history.md"
 SCOPING = SKILLS / "coding-review/reference/diff-scoping.md"
 RECOVERY = SKILLS / "coding-ship/reference/recovery.md"
+SHIP = SKILLS / "coding-ship/SKILL.md"
 ORACLES = SKILLS / "coding-test/reference/oracles.md"
 failures: list[str] = []
 
@@ -275,8 +276,10 @@ def check_recovery(tmp: pathlib.Path) -> int:
     """recovery.md: committed work is recoverable, uncommitted work is not, and
     `git add` alone puts content where fsck can still reach it."""
     states(RECOVERY, "reset --hard", "restore .", "fsck --lost-found", "stash -u",
-           "checkout -f", "gc --prune=now", "branch -D", "a plain `pop` brings staged edits",
+           "checkout -f", "gc --prune=now", "branch -D",
+           "a plain `pop` brings staged edits to tracked files back unstaged",
            "switch --discard-changes <branch>")
+    states(SHIP, "a plain `pop` drops the staging of tracked edits")
     n = 0
     r = Repo(tmp / "reset")
     r.write("f.txt", "v1\n"); r.commit("c1")

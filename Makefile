@@ -92,9 +92,9 @@ hooks:
 			! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" 2>/dev/null && \
 			! { [ -f "$$hooks/pre-commit" ] && [ ! -L "$$hooks/pre-commit" ] && \
 				blob=$$(git hash-object "$$hooks/pre-commit" 2>/dev/null) && [ -n "$$blob" ] && \
-				git log --format= --raw --no-abbrev -- coding-tools/githooks/pre-commit | \
+				git log --root --format= --raw --no-abbrev -- coding-tools/githooks/pre-commit | \
 				awk 'NF > 3 { print $$4 }' | grep -qxF "$$blob"; } && [ "$$FORCE" != 1 ]; then \
-		echo "refusing: $$hooks/pre-commit exists and is not this repo's; FORCE=1 replaces it"; exit 1; fi; \
+		echo "refusing: $$hooks/pre-commit exists and is not a version of this repo's hook in this clone's history; FORCE=1 replaces it"; exit 1; fi; \
 	mkdir -p "$$hooks" && rm -f "$$hooks/pre-commit" && cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
 	chmod +x "$$hooks/pre-commit" && echo "pre-commit installed in $$hooks"
 

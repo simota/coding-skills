@@ -1142,7 +1142,7 @@ def _earlier_hook(installed: Path) -> bool:
     try:
         blob = subprocess.run(["git", "hash-object", str(installed)], cwd=ROOT,
                               capture_output=True, text=True).stdout.strip()
-        log = subprocess.run(["git", "log", "--format=", "--raw", "--no-abbrev", "--",
+        log = subprocess.run(["git", "log", "--root", "--format=", "--raw", "--no-abbrev", "--",
                               "coding-tools/githooks/pre-commit"],
                              cwd=ROOT, capture_output=True, text=True).stdout
     except OSError:

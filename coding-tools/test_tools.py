@@ -113,10 +113,19 @@ class Engine(unittest.TestCase):
                          {"number": 10 ** 400})
 
     def test_a_line_after_the_answer_does_not_stop_the_search(self):
-        for tail in ("NaN", "1e400", "[" * 100000, "1" * 5000):
+        for tail in ("NaN", "1e400", "[" * 100000):
             with self.subTest(tail=tail[:8]):
                 self.assertEqual(engine._parse("x", '{"ok": true}\n' + tail), {"ok": True})
-                self.assertEqual(engine._parse("x", tail + '\n{"ok": true}'), {"ok": True})
+        for log in ("NaN", "1e400"):
+            with self.subTest(log=log):
+                self.assertEqual(engine._parse("x", log + '\n{"ok": true}'), {"ok": True})
+
+    def test_a_refused_answer_is_not_mined_for_a_nested_object(self):
+        for body in ('{\n  "score": NaN,\n  "detail":\n    {"refuted": false}\n}',
+                     '[\n  NaN,\n  {"refuted": true}\n]',
+                     '{\n  "n": 1' + "0" * 5000 + ',\n  "d":\n    {"refuted": false}\n}'):
+            with self.subTest(body=body[:20]), self.assertRaises(engine.EngineError):
+                engine._parse("x", body)
 
     def test_unreadable_answers_are_engine_errors_with_their_reason(self):
         cases = {"too long to read": '{"n": 1' + "0" * 5000 + "}",
@@ -539,16 +548,34 @@ class Validator(unittest.TestCase):
 
     def test_an_earlier_copy_of_the_hook_is_not_foreign(self):
         import validate
-        source = pathlib.Path(validate.ROOT) / "coding-tools/githooks/pre-commit"
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
         with tempfile.TemporaryDirectory() as tmp:
-            copy = pathlib.Path(tmp) / "pre-commit"
-            copy.write_bytes(source.read_bytes())   # the committed version is in history
-            committed = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", str(source)],
-                                       cwd=validate.ROOT).returncode == 0
-            if committed:
-                self.assertTrue(validate._earlier_hook(copy))
-            copy.write_text("#!/bin/sh\necho someone else's\n", encoding="utf-8")
-            self.assertFalse(validate._earlier_hook(copy))
+            repo = pathlib.Path(tmp) / "repo"
+            hook = repo / "coding-tools/githooks/pre-commit"
+            hook.parent.mkdir(parents=True)
+
+            def git(*args):
+                subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                                "-c", "log.showRoot=false", *args],
+                               cwd=repo, env=env, check=True, capture_output=True)
+            git("init", "-q")
+            hook.write_text("#!/bin/sh\necho v1\n", encoding="utf-8")
+            git("add", "."); git("commit", "-qm", "v1")
+            hook.write_text("#!/bin/sh\necho v2\n", encoding="utf-8")
+            git("add", "."); git("commit", "-qm", "v2")
+            git("config", "log.showRoot", "false")   # the root commit still counts
+            installed = pathlib.Path(tmp) / "installed"
+            with mock.patch.object(validate, "ROOT", repo), mock.patch.dict(os.environ, env, clear=True):
+                for content, earlier in (("#!/bin/sh\necho v1\n", True),
+                                         ("#!/bin/sh\necho v2\n", True),
+                                         ("#!/bin/sh\necho someone else's\n", False)):
+                    installed.write_text(content, encoding="utf-8")
+                    with self.subTest(content=content):
+                        self.assertEqual(validate._earlier_hook(installed), earlier)
+                installed.unlink()
+                installed.symlink_to(hook)
+                self.assertFalse(validate._earlier_hook(installed))
 
     def test_a_class_spelled_with_references_classifies_its_marker(self):
         import validate

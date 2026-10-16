@@ -143,6 +143,20 @@ def _loads(text: str):
         raise EngineError("the output nests too deeply to read") from None
 
 
+def _one_document(text: str) -> bool:
+    """Whether text is exactly one JSON value, read leniently so that a value
+    the answer rules refuse (NaN, a huge integer) still counts as one. Nesting
+    too deep to read cannot be told apart, and is treated as one: refused."""
+    lenient = json.JSONDecoder(parse_constant=float, parse_int=lambda _: 0)
+    try:
+        _, end = lenient.raw_decode(text)
+    except ValueError:
+        return False
+    except RecursionError:
+        return True
+    return end == len(text)
+
+
 def _check_finite(obj) -> None:
     """Non-JSON numbers are invalid even under an unconstrained subschema."""
     if isinstance(obj, float) and not math.isfinite(obj):
@@ -366,7 +380,13 @@ def _parse(engine: str, body: str) -> dict:
     except ValueError:
         pass
     except EngineError as e:
-        refused = EngineError(f"{engine}: {e}")   # unless a line holds the answer
+        refused = EngineError(f"{engine}: {e}")
+        # One whole document the rules refuse is refused: its inner lines are
+        # fragments of it, and `{"refuted": false}` nested inside an answer
+        # carrying NaN is not the answer. Only output with more than that
+        # document in it (a log, then the answer) is searched line by line.
+        if _one_document(stripped):
+            raise refused from None
     else:
         if isinstance(got, dict):
             return got

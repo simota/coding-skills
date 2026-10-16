@@ -191,6 +191,7 @@ class InstallCommands(Fixture):
 
     def test_hooks_upgrade_an_earlier_copy_but_not_a_foreign_hook(self):
         source = self.repo / "coding-tools/githooks/pre-commit"
+        self.git("config", "log.showRoot", "false")   # the root commit's version still counts
         self.git("add", ".")
         self.commit()
         result = self.make("hooks")
