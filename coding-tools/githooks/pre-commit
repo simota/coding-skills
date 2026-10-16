@@ -71,7 +71,12 @@ PY
 # Git supplies variable names here, not values or shell code.
 unset $git_vars
 # TMPDIR may itself be inside this repository. Prevent discovery from walking
-# up from the snapshot and finding the original .git again.
+# up from the snapshot and finding the original .git again. The ceiling is a
+# colon-separated list with no escape, so a path holding `:` cannot be fenced.
+case "$tmp" in *:*)
+	echo "the snapshot path $tmp contains ':', which Git cannot fence off; set TMPDIR to a path without one" >&2
+	exit 1;;
+esac
 GIT_CEILING_DIRECTORIES="$tmp"
 export GIT_CEILING_DIRECTORIES
 cd "$tmp/tree"

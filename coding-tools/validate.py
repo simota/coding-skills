@@ -1134,6 +1134,23 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
          v38_enumerations_declared]
 
 
+def _earlier_hook(installed: Path) -> bool:
+    """A copy of a version of this repo's hook that history has since changed."""
+    import subprocess
+    if installed.is_symlink() or not installed.is_file():
+        return False
+    try:
+        blob = subprocess.run(["git", "hash-object", str(installed)], cwd=ROOT,
+                              capture_output=True, text=True).stdout.strip()
+        log = subprocess.run(["git", "log", "--format=", "--raw", "--no-abbrev", "--",
+                              "coding-tools/githooks/pre-commit"],
+                             cwd=ROOT, capture_output=True, text=True).stdout
+    except OSError:
+        return False
+    return bool(blob) and blob in {line.split()[3] for line in log.splitlines()
+                                   if len(line.split()) > 3}
+
+
 def main() -> int:
     for rule in RULES:
         rule()
@@ -1149,7 +1166,8 @@ def main() -> int:
         installed = ROOT / got.stdout.strip()
         ours = (ROOT / "coding-tools" / "githooks" / "pre-commit").read_bytes()
         state = ("off — run: make hooks" if not installed.exists() else "on"
-                 if installed.read_bytes() == ours else "foreign — not this repo's pre-commit")
+                 if installed.read_bytes() == ours else "stale — run: make hooks"
+                 if _earlier_hook(installed) else "foreign — not this repo's pre-commit")
         hooks = f" · hooks {state}"
     print(f"{len(RULES)} rules · {len(SKILLS)} skills{hooks}")
     if FAILURES:

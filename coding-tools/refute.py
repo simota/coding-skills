@@ -141,8 +141,8 @@ def main() -> int:
     try:
         claims = load_claims(a.claims)
         pool = refuters(a.running)
-    except (OSError, ValueError, engine.EngineError) as e:
-        print(e, file=sys.stderr)
+    except (OSError, ValueError, RecursionError, engine.EngineError) as e:
+        print(f"{a.claims}: {e}" if isinstance(e, RecursionError) else e, file=sys.stderr)
         return 1
 
     results = []

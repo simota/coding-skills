@@ -225,7 +225,9 @@ test module. A missing Git executable is a failed verification.
 The pre-commit hook validates the actual commit tree in an isolated snapshot,
 including sparse-checkout files and excluding intent-to-add placeholders. It
 reads raw Git blobs, so checkout filters, replacement objects and unstaged
-repairs cannot hide a staged violation. The original index is preserved.
+repairs cannot hide a staged violation. The original index is preserved. Git runs
+`pre-merge-commit`, not `pre-commit`, for a merge that commits without conflicts, so
+such a merge is checked by CI rather than by this hook.
 
 Rendering checks every skill before writing any updates. Missing or duplicate
 destination sections, overlapping delivery blocks, and markers that cross a
@@ -248,7 +250,7 @@ can route through.
 
 ```sh
 make link                       # into every installed host: claude, codex, agy
-make link CLAUDE_DIR=.claude/skills
+make link CLAUDE_DIR=/path/to/project/.claude/skills
 ```
 
 Each `coding-*` directory is linked individually, so a skills directory keeps
@@ -258,7 +260,9 @@ is skipped rather than overwritten.
 Installation and removal stop with a nonzero status if a filesystem operation
 fails. Existing links to another checkout stay in place; `FORCE=1` permits
 replacing or removing dangling links, while live foreign links and real paths
-remain protected. Host-directory overrides are treated as literal paths.
+remain protected. Host-directory overrides are treated as literal paths, so give an
+absolute one: a relative path is read from this checkout. A host is linked only if the
+parent of its directory exists, and overriding one host still links the others.
 
 ## What this does not guarantee
 

@@ -189,6 +189,26 @@ class InstallCommands(Fixture):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual((shared / "pre-commit").read_bytes(), HOOK.read_bytes())
 
+    def test_hooks_upgrade_an_earlier_copy_but_not_a_foreign_hook(self):
+        source = self.repo / "coding-tools/githooks/pre-commit"
+        self.git("add", ".")
+        self.commit()
+        result = self.make("hooks")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        installed = Path(self.git("rev-parse", "--path-format=absolute", "--git-path",
+                                  "hooks/pre-commit"))
+        source.write_text(source.read_text(encoding="utf-8") + "# changed upstream\n",
+                          encoding="utf-8")
+        self.git("add", ".")
+        self.commit()
+        result = self.make("hooks")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(installed.read_bytes(), source.read_bytes())
+        installed.write_text("#!/bin/sh\necho someone else's\n", encoding="utf-8")
+        result = self.make("hooks")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("someone else's", installed.read_text(encoding="utf-8"))
+
     def test_hooks_activate_the_source_when_hooks_path_already_points_to_it(self):
         source = self.repo / "coding-tools/githooks/pre-commit"
         source.chmod(0o644)
@@ -341,6 +361,13 @@ assert result.returncode != 0, "the snapshot discovered the original repository"
         result = self.run_hook({**self.env, "TMPDIR": str(scratch)})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(list(scratch.iterdir()), [])
+        # A ':' splits the ceiling list, so the hook refuses rather than run unfenced.
+        colon = self.repo / "scratch:with-colon"
+        colon.mkdir()
+        result = self.run_hook({**self.env, "TMPDIR": str(colon)})
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("contains ':'", result.stderr)
+        self.assertEqual(list(colon.iterdir()), [])
 
     def test_an_alternate_index_is_honoured_and_repository_environment_is_cleared(self):
         validator = self.repo / "coding-tools/validate.py"

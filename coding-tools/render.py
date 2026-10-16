@@ -102,6 +102,9 @@ def prepared(path: Path) -> tuple[str, bool]:
                 while i > 0 and not lines[i - 1].strip():
                     i -= 1
                     del lines[i]
+                if 0 < i < len(lines) and lines[i].strip():
+                    # Text written after the block stays its own paragraph.
+                    lines.insert(i, "")
                 text = "\n".join(lines)
             continue
         block = read_text(ROOT / "coding-registry" / "delivered" / f"{key}.md").rstrip("\n")
