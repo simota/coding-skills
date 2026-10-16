@@ -36,7 +36,7 @@ not a dangling object, nothing.
 | `git checkout <sha>` (detached work) | nothing, until GC | **yes** | `git reflog`, `git fsck --lost-found` |
 | `git stash drop` / `stash clear` | the stash commit | **yes, until GC** | `git fsck --lost-found`, then `git show` each dangling commit |
 | `git restore .` / `git checkout -- .` | **unstaged** worktree edits (restored from the index; staged content is untouched) | **no** | nothing recorded them |
-| `git checkout -f` / `git switch --discard-changes` | uncommitted edits to **tracked** files; with a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten — it carries non-conflicting edits across; `-f` removes the refusal. Other untracked files survive |
+| `git checkout -f` / `git switch --discard-changes <branch>` | uncommitted edits to **tracked** files; with a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten — it carries non-conflicting edits across; `-f` removes the refusal. Other untracked files survive |
 | `git clean -fd` | untracked files | **no** | git never had them |
 | `rm -rf` on the worktree | everything uncommitted | **no** | — |
 
@@ -80,7 +80,7 @@ So the rule before any destructive operation is one of:
    the object store, findable via `fsck`
 2. `git stash -u` — **`-u` is required**; plain `git stash` leaves untracked
    files in the worktree, where the next `clean -fd` takes them. Restore it with
-   `git stash pop --index`: a plain `pop` brings staged changes back unstaged
+   `git stash pop --index`: a plain `pop` brings staged edits to tracked files back unstaged
 3. `git commit` on a scratch branch — the strongest, and the reflog indexes it
 
 A verified fixture run: with untracked `untracked.txt` present, `git stash`

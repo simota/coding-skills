@@ -275,7 +275,8 @@ def check_recovery(tmp: pathlib.Path) -> int:
     """recovery.md: committed work is recoverable, uncommitted work is not, and
     `git add` alone puts content where fsck can still reach it."""
     states(RECOVERY, "reset --hard", "restore .", "fsck --lost-found", "stash -u",
-           "checkout -f", "gc --prune=now", "branch -D")
+           "checkout -f", "gc --prune=now", "branch -D", "a plain `pop` brings staged edits",
+           "switch --discard-changes <branch>")
     n = 0
     r = Repo(tmp / "reset")
     r.write("f.txt", "v1\n"); r.commit("c1")
@@ -359,6 +360,24 @@ def check_recovery(tmp: pathlib.Path) -> int:
     r8.git("branch", "-D", "doomed")
     if (r8.d / ".git" / "logs" / "refs" / "heads" / "doomed").exists():
         fail(RECOVERY, "`branch -D` left the branch's own reflog; the page says it goes too")
+    n += 1
+
+    r9 = Repo(tmp / "plain-pop")
+    r9.write("f.txt", "v1\n"); r9.commit("c1")
+    r9.write("f.txt", "v2\n"); r9.write("new.txt", "new\n")
+    r9.must("add", "f.txt", "new.txt")
+    r9.must("stash", "-q", "-u")
+    r9.must("stash", "pop", "-q")
+    if r9.git("show", ":f.txt") != "v1" or r9.git("show", ":new.txt") != "new":
+        fail(RECOVERY, "a plain `pop` did not drop the staging of the tracked edit while "
+                       "keeping the new file staged; the page says only tracked edits lose it")
+    n += 1
+
+    r10 = Repo(tmp / "discard")
+    r10.write("f.txt", "v1\n"); r10.commit("c1")
+    r10.write("f.txt", "edit\n")
+    if "missing branch" not in r10.git("switch", "--discard-changes"):
+        fail(RECOVERY, "`switch --discard-changes` ran without a branch; the page names one")
     n += 1
     return n
 
@@ -444,7 +463,7 @@ def main() -> int:
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="coding-figures-"))
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
-                  "staged", "untracked", "force", "gc", "switch", "branchd",
+                  "staged", "untracked", "force", "gc", "switch", "branchd", "plain-pop", "discard",
                   "revert-staged", "revert-unstaged", "stash-staged", "stash-unstaged",
                   "stash-test-staged"):
             (tmp / d).mkdir()

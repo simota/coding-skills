@@ -53,7 +53,7 @@ branches; it does not fix code to make a commit tidy.
 | Writing the PR or the release notes | [pr](playbooks/pr.md) |
 | A commit does not build or test green on its own | It is not a commit. Reorder or squash until each one stands alone |
 | The diff contains something you did not intend | Remove it before anything else. Do not explain it in the description |
-| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u` restored with `git stash pop --index` (a plain `pop` unstages everything). Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
+| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u` restored with `git stash pop --index` (a plain `pop` drops the staging of tracked edits). Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
 | A generated file is in the diff | Separate commit, and say why it changed |
 | A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
 | The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
