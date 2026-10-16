@@ -126,6 +126,37 @@ def _finite_number(raw: str) -> float:
     return value
 
 
+def _integer(raw: str) -> int:
+    try:
+        return int(raw)
+    except ValueError:    # Python refuses to convert more than 4300 digits
+        raise EngineError(f"a {len(raw)}-digit integer is too long to read as an answer") from None
+
+
+def _loads(text: str):
+    """json.loads with the answer rules: finite numbers, readable integers, and
+    a nesting too deep to read reported as such rather than as a traceback."""
+    try:
+        return json.loads(text, parse_float=_finite_number, parse_constant=_finite_number,
+                          parse_int=_integer)
+    except RecursionError:
+        raise EngineError("the output nests too deeply to read") from None
+
+
+def _one_document(text: str) -> bool:
+    """Whether text is exactly one JSON value, read leniently so that a value
+    the answer rules refuse (NaN, a huge integer) still counts as one. Nesting
+    too deep to read cannot be told apart, and is treated as one: refused."""
+    lenient = json.JSONDecoder(parse_constant=float, parse_int=lambda _: 0)
+    try:
+        _, end = lenient.raw_decode(text)
+    except ValueError:
+        return False
+    except RecursionError:
+        return True
+    return end == len(text)
+
+
 def _check_finite(obj) -> None:
     """Non-JSON numbers are invalid even under an unconstrained subschema."""
     if isinstance(obj, float) and not math.isfinite(obj):
@@ -259,13 +290,19 @@ def _conforms(obj, schema, where: str) -> None:
 
 def run(engine: str, prompt: str, schema: dict) -> dict:
     """Ask `engine` for one object matching `schema`. Raises rather than guessing."""
-    _check_schema(schema)
+    try:
+        _check_schema(schema)
+    except RecursionError:
+        raise Unchecked("the schema nests too deeply to check") from None
     try:
         got = _ask(engine, prompt, schema)
     except (OSError, UnicodeError) as e:
         raise EngineError(f"{engine} could not complete its run: {e}") from None
-    _check_finite(got)
-    _conforms(got, schema, f"{engine}'s answer")
+    try:
+        _check_finite(got)
+        _conforms(got, schema, f"{engine}'s answer")
+    except RecursionError:
+        raise EngineError(f"{engine}'s answer nests too deeply to check") from None
     return got
 
 
@@ -337,21 +374,34 @@ def _as_argument(prompt: str) -> str:
 
 def _parse(engine: str, body: str) -> dict:
     stripped = body.strip()
+    refused = None
     try:
-        got = json.loads(stripped, parse_float=_finite_number, parse_constant=_finite_number)
+        got = _loads(stripped)
     except ValueError:
         pass
+    except EngineError as e:
+        refused = EngineError(f"{engine}: {e}")
+        # One whole document the rules refuse is refused: its inner lines are
+        # fragments of it, and `{"refuted": false}` nested inside an answer
+        # carrying NaN is not the answer. Only output with more than that
+        # document in it (a log, then the answer) is searched line by line.
+        if _one_document(stripped):
+            raise refused from None
     else:
         if isinstance(got, dict):
             return got
         raise EngineError(f"{engine} returned {type(got).__name__}, not an object")
+    # A log line after the answer is skipped, whatever it holds: `NaN` alone
+    # on a line is not the answer, and must not stop the search for it.
     for line in reversed(stripped.splitlines()):
         try:
-            got = json.loads(line, parse_float=_finite_number, parse_constant=_finite_number)
-        except ValueError:
+            got = _loads(line)
+        except (ValueError, EngineError):
             continue
         if isinstance(got, dict):
             return got
+    if refused:
+        raise refused
     raise EngineError(f"{engine} printed nothing that parses as an object:\n{body[:400]}")
 
 
@@ -422,8 +472,12 @@ def main() -> int:
         got = run(engine,
                   pathlib.Path(a.prompt_file).read_text(encoding="utf-8"),
                   json.loads(pathlib.Path(a.schema).read_text(encoding="utf-8")))
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError, RecursionError) as e:
         print(f"could not read the prompt or schema: {e}", file=sys.stderr)
+        return 2
+    except Unchecked as e:
+        # The caller's schema, not the engine: no engine was asked.
+        print(f"schema: {e}", file=sys.stderr)
         return 2
     except EngineError as e:
         print(f"{a.engine or 'checker'}: {e}", file=sys.stderr)

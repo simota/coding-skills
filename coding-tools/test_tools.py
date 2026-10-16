@@ -112,6 +112,60 @@ class Engine(unittest.TestCase):
         self.assertEqual(engine._parse("fixture", '{"number": ' + str(10 ** 400) + '}'),
                          {"number": 10 ** 400})
 
+    def test_a_line_after_the_answer_does_not_stop_the_search(self):
+        for tail in ("NaN", "1e400", "[" * 100000):
+            with self.subTest(tail=tail[:8]):
+                self.assertEqual(engine._parse("x", '{"ok": true}\n' + tail), {"ok": True})
+        for log in ("NaN", "1e400"):
+            with self.subTest(log=log):
+                self.assertEqual(engine._parse("x", log + '\n{"ok": true}'), {"ok": True})
+
+    def test_a_refused_answer_is_not_mined_for_a_nested_object(self):
+        for body in ('{\n  "score": NaN,\n  "detail":\n    {"refuted": false}\n}',
+                     '[\n  NaN,\n  {"refuted": true}\n]',
+                     '{\n  "n": 1' + "0" * 5000 + ',\n  "d":\n    {"refuted": false}\n}'):
+            with self.subTest(body=body[:20]), self.assertRaises(engine.EngineError):
+                engine._parse("x", body)
+
+    def test_unreadable_answers_are_engine_errors_with_their_reason(self):
+        cases = {"too long to read": '{"n": 1' + "0" * 5000 + "}",
+                 "nests too deeply": '{"x": ' + "[" * 100000 + "]" * 100000 + "}",
+                 "non-finite": '{"n": NaN}'}
+        for reason, body in cases.items():
+            with self.subTest(reason=reason), self.assertRaisesRegex(engine.EngineError, reason):
+                engine._parse("x", body)
+
+    def test_a_deep_answer_is_an_engine_error_not_a_traceback(self):
+        deep: list = []
+        for _ in range(sys.getrecursionlimit() + 10):
+            deep = [deep]
+        with mock.patch.object(engine, "_ask", return_value={"ok": True, "x": deep}):
+            with self.assertRaisesRegex(engine.EngineError, "nests too deeply"):
+                engine.run("claude", "fixture", {"type": "object"})
+
+    def test_a_schema_the_runner_cannot_check_is_the_callers_input(self):
+        unsupported = json.dumps({"type": "object", "minProperties": 1})
+        too_deep_to_load = '{"not": ' * 100000 + "{}" + "}" * 100000
+        for text in (unsupported, too_deep_to_load):
+            with tempfile.TemporaryDirectory() as tmp, self.subTest(schema=text[:30]):
+                prompt, path = pathlib.Path(tmp) / "p.txt", pathlib.Path(tmp) / "s.json"
+                prompt.write_text("fixture", encoding="utf-8")
+                path.write_text(text, encoding="utf-8")
+                argv = ["engine.py", "codex", "--running", "claude",
+                        "--prompt-file", str(prompt), "--schema", str(path)]
+                err = io.StringIO()
+                with mock.patch.object(sys, "argv", argv), \
+                        mock.patch.object(engine, "_ask") as ask, \
+                        contextlib.redirect_stderr(err):
+                    self.assertEqual(engine.main(), 2, err.getvalue())
+                ask.assert_not_called()
+        deep: dict = {"type": "object"}
+        for _ in range(sys.getrecursionlimit() + 10):
+            deep = {"not": deep}
+        with mock.patch.object(engine, "_ask") as ask, self.assertRaises(engine.Unchecked):
+            engine.run("claude", "fixture", deep)
+        ask.assert_not_called()
+
     def test_a_failed_process_cannot_supply_a_verdict(self):
         with self.assertRaisesRegex(engine.EngineError, "exited with status 7") as failure:
             engine._spawn("fixture", [sys.executable, "-c",
@@ -206,6 +260,17 @@ class Refute(unittest.TestCase):
         self.assertEqual(result["verdict"], "UNCHECKED")
         self.assertEqual(result["independent_readings"], 0)
 
+    def test_claims_too_deep_to_read_are_refused_without_a_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            claims = pathlib.Path(tmp) / "claims.json"
+            claims.write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
+            err = io.StringIO()
+            with mock.patch.object(sys, "argv", ["refute.py", str(claims), "--running", "claude"]), \
+                    mock.patch.object(refute, "ask") as ask, contextlib.redirect_stderr(err):
+                self.assertEqual(refute.main(), 1)
+            ask.assert_not_called()
+            self.assertIn("claims.json", err.getvalue())
+
     def test_verdicts(self):
         yes, no = {"refuted": True}, {"refuted": False}
         self.assertEqual(refute.verdict({}), "UNCHECKED")
@@ -257,6 +322,23 @@ class Render(unittest.TestCase):
             self.assertEqual(p.read_text(encoding="utf-8"), once)
             for key in render.H["delivered"]:
                 self.assertEqual(once.count(f"<!-- deliver:{key} -->"), 1)
+
+    def test_removing_a_block_keeps_the_text_after_it_a_paragraph(self):
+        self.assertFalse(render.delivered_to(render.H["delivered"]["predict"], "coding-review"))
+        stale = "<!-- deliver:predict -->\nold\n<!-- /deliver:predict -->"
+        for after in ("Second para.", "---\nMore."):
+            with tempfile.TemporaryDirectory() as tmp, self.subTest(after=after):
+                d = pathlib.Path(tmp) / "coding-review"
+                d.mkdir()
+                p = d / "SKILL.md"
+                p.write_text(self.SECTIONS.replace(
+                    "## Before starting\n\nown words\n\n",
+                    f"## Before starting\n\nFirst para.\n\n{stale}\n{after}\n\n", 1),
+                    encoding="utf-8")
+                render.render(p)
+                text = p.read_text(encoding="utf-8")
+                self.assertNotIn("deliver:predict", text)
+                self.assertIn("First para.\n\n" + after, text)
 
     def test_a_fenced_heading_is_not_the_section(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -463,6 +545,37 @@ class Validator(unittest.TestCase):
         m = validate.ENUM_RE.search(line)
         self.assertTrue(m is None or not validate._is_enumeration(
             [w.strip() for w in m.group(1).split("|")]))
+
+    def test_an_earlier_copy_of_the_hook_is_not_foreign(self):
+        import validate
+        env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp) / "repo"
+            hook = repo / "coding-tools/githooks/pre-commit"
+            hook.parent.mkdir(parents=True)
+
+            def git(*args):
+                subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                                "-c", "log.showRoot=false", *args],
+                               cwd=repo, env=env, check=True, capture_output=True)
+            git("init", "-q")
+            hook.write_text("#!/bin/sh\necho v1\n", encoding="utf-8")
+            git("add", "."); git("commit", "-qm", "v1")
+            hook.write_text("#!/bin/sh\necho v2\n", encoding="utf-8")
+            git("add", "."); git("commit", "-qm", "v2")
+            git("config", "log.showRoot", "false")   # the root commit still counts
+            installed = pathlib.Path(tmp) / "installed"
+            with mock.patch.object(validate, "ROOT", repo), mock.patch.dict(os.environ, env, clear=True):
+                for content, earlier in (("#!/bin/sh\necho v1\n", True),
+                                         ("#!/bin/sh\necho v2\n", True),
+                                         ("#!/bin/sh\necho someone else's\n", False)):
+                    installed.write_text(content, encoding="utf-8")
+                    with self.subTest(content=content):
+                        self.assertEqual(validate._earlier_hook(installed), earlier)
+                installed.unlink()
+                installed.symlink_to(hook)
+                self.assertFalse(validate._earlier_hook(installed))
 
     def test_a_class_spelled_with_references_classifies_its_marker(self):
         import validate

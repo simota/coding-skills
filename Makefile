@@ -36,7 +36,7 @@ help:
 	@echo "make figures   re-run the git behaviour the reference layer states"
 	@echo "make refute CLAIMS=claims.json RUNNING=claude   put each claim to the engines that did not make it"
 	@echo "make engines   ask each checker engine for one object; reports what is unreachable"
-	@echo "make drift     re-render the delivered blocks; fail if any were stale"
+	@echo "make drift     check the delivered blocks are current; writes nothing"
 	@echo "make render    write the delivered blocks back into every SKILL.md"
 	@echo "make hooks     install the pre-commit hook (FORCE=1 over a shared or foreign one)"
 	@echo "make link      symlink the skills into claude / codex / agy"
@@ -77,7 +77,8 @@ render:
 # directory inside the git directory or the worktree (a local `.githooks`) is
 # this repository's; one outside both is shared with every other repository
 # on the machine, and a different pre-commit already there is someone's: both
-# are left alone unless FORCE=1.
+# are left alone unless FORCE=1. A copy of an earlier version of this repo's
+# hook is not someone's: it is replaced, so pulling a hook change can land.
 hooks:
 	@hooks=$$(git rev-parse --path-format=absolute --git-path hooks) && \
 	common=$$(git rev-parse --path-format=absolute --git-common-dir) && \
@@ -88,8 +89,12 @@ hooks:
 		chmod +x "$$hooks/pre-commit" || exit 1; \
 		echo "pre-commit active: the installed hook is this repo's source"; exit 0; fi; \
 	if { [ -e "$$hooks/pre-commit" ] || [ -L "$$hooks/pre-commit" ]; } && \
-			! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" 2>/dev/null && [ "$$FORCE" != 1 ]; then \
-		echo "refusing: $$hooks/pre-commit exists and is not this repo's; FORCE=1 replaces it"; exit 1; fi; \
+			! cmp -s coding-tools/githooks/pre-commit "$$hooks/pre-commit" 2>/dev/null && \
+			! { [ -f "$$hooks/pre-commit" ] && [ ! -L "$$hooks/pre-commit" ] && \
+				blob=$$(git hash-object "$$hooks/pre-commit" 2>/dev/null) && [ -n "$$blob" ] && \
+				git log --root --format= --raw --no-abbrev -- coding-tools/githooks/pre-commit | \
+				awk 'NF > 3 { print $$4 }' | grep -qxF "$$blob"; } && [ "$$FORCE" != 1 ]; then \
+		echo "refusing: $$hooks/pre-commit exists and is not a version of this repo's hook in this clone's history; FORCE=1 replaces it"; exit 1; fi; \
 	mkdir -p "$$hooks" && rm -f "$$hooks/pre-commit" && cp coding-tools/githooks/pre-commit "$$hooks/pre-commit" && \
 	chmod +x "$$hooks/pre-commit" && echo "pre-commit installed in $$hooks"
 
