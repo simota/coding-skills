@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import functools
 import html
-import re
 from bisect import bisect_right
 from html.parser import HTMLParser
 
@@ -124,28 +123,58 @@ def h2_lines(lines: list[str]) -> dict[int, str]:
 _WORD_BREAKS = {*block_names, "br"}
 
 
+class _Words(HTMLParser):
+    """The words an inline run of HTML shows: data outside script and style,
+    with a space where a block element or <br> stands. Comments show nothing."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.words: list[str] = []
+        self.hidden = 0
+
+    def handle_starttag(self, tag, attrs) -> None:
+        if tag in _WORD_BREAKS:
+            self.words.append(" ")
+        if tag in ("script", "style"):
+            self.hidden += 1
+
+    def handle_endtag(self, tag) -> None:
+        if tag in _WORD_BREAKS:
+            self.words.append(" ")
+        if tag in ("script", "style") and self.hidden:
+            self.hidden -= 1
+
+    def handle_startendtag(self, tag, attrs) -> None:
+        if tag in _WORD_BREAKS:
+            self.words.append(" ")
+
+    def handle_data(self, data) -> None:
+        if not self.hidden:
+            self.words.append(data)
+
+
 def _title(inline) -> str:
     """The words a heading shows: `## *Decide* \\`first\\`` and a setext heading
-    over two lines both read "Decide first". Emphasis marks, escapes and
-    references are the source's spelling, not the title."""
-    words = []
+    over two lines both read "Decide first". The heading is read as the HTML it
+    renders to, so emphasis marks, escapes, references, comments and the text
+    of an inline <script> are not part of its title."""
+    parts = []
 
     def collect(children) -> None:
         for child in children or []:
             if child.type in ("text", "code_inline"):
-                words.append(child.content)
+                parts.append(html.escape(child.content))
             elif child.type in ("softbreak", "hardbreak"):
-                words.append(" ")
+                parts.append(" ")
             elif child.type == "html_inline":
-                # `<br>` separates words; `<em>` does not: `Decide<em>first</em>`
-                # shows as one word.
-                tag = re.match(r"</?\s*([A-Za-z][\w-]*)", child.content)
-                if tag and tag.group(1).lower() in _WORD_BREAKS:
-                    words.append(" ")
+                parts.append(_empty_comments(child.content))
             elif child.type == "image":
                 collect(child.children)   # its alt text is what is shown in its place
     collect(inline.children)
-    return " ".join("".join(words).split())
+    words = _Words()
+    words.feed("".join(parts))
+    words.close()
+    return " ".join("".join(words.words).split())
 
 
 def marker_lines(lines: list[str], marker: str) -> list[int]:
