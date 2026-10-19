@@ -72,7 +72,9 @@ class RegistryLoading(unittest.TestCase):
             "harness.yaml": [("forms: [ascii, mermaid]", "forms: ascii"),
                              ("checkers: [other-engine]", "checkers: other-engine"),
                              ('verified_markers:\n', 'verified_markers: "no automated check"\nunused:\n'),
-                             ("skills_dir: skills", "skills_dir: 3")],
+                             ("skills_dir: skills", "skills_dir: 3"),
+                             ("refute.py: all", "refute.py: coding-review"),
+                             ("  vocabulary: prediction_outcomes", "  vocabulary: nosuch")],
         }
         for name, edits in mutations.items():
             path = self.registry(name)
@@ -81,7 +83,7 @@ class RegistryLoading(unittest.TestCase):
                 self.assertIn(old, original)
                 try:
                     path.write_text(original.replace(old, new, 1), encoding="utf-8")
-                    self.assert_load_failure(name, "must be")
+                    self.assert_load_failure(name, "must ")
                 finally:
                     path.write_text(original, encoding="utf-8")
         for name in ("harness.yaml", "capabilities.yaml", "routes.yaml"):
@@ -92,6 +94,43 @@ class RegistryLoading(unittest.TestCase):
                 self.assert_load_failure(name, "must be a mapping")
             finally:
                 path.write_bytes(original)
+
+    def test_the_gate_leaves_presence_and_emptiness_to_the_rules(self):
+        # Forms the rules document as valid, or judge in their own words.
+        harness = self.registry("harness.yaml")
+        original = harness.read_text(encoding="utf-8")
+        edits = [("checkers: [other-engine]", "checkers: []", "V32"),
+                 ("verified_markers:\n", "verified_markers: []\nunused:\n", "V31"),
+                 ("forms: [ascii, mermaid]", "forms: []", "V36")]
+        for old, new, rule in edits:
+            self.assertIn(old, original)
+            try:
+                harness.write_text(original.replace(old, new, 1), encoding="utf-8")
+                result = self.run_validator()
+                self.assertNotIn("V0:", result.stderr, (old, result.stderr))
+                self.assertIn(f"{rule}:", result.stdout + result.stderr, old)
+            finally:
+                harness.write_text(original, encoding="utf-8")
+        listed = original.replace("refute.py: all", "refute.py: [coding-review]", 1)
+        try:
+            harness.write_text(listed, encoding="utf-8")
+            self.assertNotIn("V0:", self.run_validator().stderr)
+        finally:
+            harness.write_text(original, encoding="utf-8")
+
+    def test_a_crash_is_located_in_the_rule_not_the_library_it_called(self):
+        harness = self.registry("harness.yaml")
+        original = harness.read_text(encoding="utf-8")
+        try:
+            harness.write_text(original.replace("rot_patterns:\n", "rot_patterns:\n  - '('\n", 1),
+                               encoding="utf-8")
+            result = self.run_validator()
+            out = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 1, out)
+            self.assertNotIn("Traceback", out)
+            self.assertRegex(out, rf"V25: {validate.CRASHED}: .*\(validate\.py:\d+\)")
+        finally:
+            harness.write_text(original, encoding="utf-8")
 
     def test_a_rule_that_crashes_is_reported_and_the_others_still_run(self):
         def broken():

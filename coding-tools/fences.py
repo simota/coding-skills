@@ -123,11 +123,16 @@ def _title(inline) -> str:
     over two lines both read "Decide first". Emphasis marks, escapes and
     references are the source's spelling, not the title."""
     words = []
-    for child in inline.children or []:
-        if child.type in ("text", "code_inline"):
-            words.append(child.content)
-        elif child.type in ("softbreak", "hardbreak"):
-            words.append(" ")
+
+    def collect(children) -> None:
+        for child in children or []:
+            if child.type in ("text", "code_inline"):
+                words.append(child.content)
+            elif child.type in ("softbreak", "hardbreak", "html_inline"):
+                words.append(" ")         # `<br>` or a tag never joins two words
+            elif child.type == "image":
+                collect(child.children)   # its alt text is what is shown in its place
+    collect(inline.children)
     return " ".join("".join(words).split())
 
 

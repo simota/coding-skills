@@ -75,60 +75,77 @@ def load(name: str):
         raise RegistryLoadError(f"{label}: cannot read registry: {error.strerror or error}") from error
 
 
-# The shape each rule assumes. Valid YAML of another shape crashed a rule with
-# a traceback, or worse passed it: a scalar where a list belongs is iterated
-# letter by letter, and an empty chain gives a rule nothing to check.
-# `[x]` is a non-empty list of x; `{"*": x}` a mapping whose every value is x;
-# a key ending in `?` may be absent. A key not named here is either unread or
-# judged by its own rule, which says more than "wrong shape" can.
+# The shape the rules read. Valid YAML of another shape crashed a rule with a
+# traceback, or passed it silently: a scalar where a list belongs is iterated
+# letter by letter. The gate judges only that, and what no rule judges (a
+# positive limit, a non-empty chain); whether a list may be empty or a key
+# absent is the rule's to say, in its own words, so lists here may be empty
+# and only keys read unconditionally are required.
+# `[x]` is a list of x; `{"*": x}` a mapping whose every value is x; a tuple is
+# any one of its shapes; a plain string other than TEXT/COUNT is that literal;
+# a key ending in `?` may be absent. Keys not named here are not read.
 COUNT = "a positive integer"
 TEXT = "a non-empty string"
+NONEMPTY = "non-empty"
+STRINGS = [str]
 SHAPES = {
     "harness.yaml": {
-        "set": TEXT, "prefix": TEXT, "shared_dir": TEXT, "skills_dir?": TEXT,
-        "platform_dirs": [TEXT], "limits": {"*": COUNT},
-        "permission_classes": {"*": {"tools": str, "writes": bool}},
-        "forbidden_description_terms": [TEXT], "engines?": dict,
-        "refutation?": dict,                       # its fields are V33's
-        "linked_tools?": {"*": TEXT},
-        "finding_visuals?": {"playbook": TEXT, "contract": TEXT, "required_of": [TEXT],
-                             "forms": [TEXT], "triggers": [TEXT], "floor": [TEXT]},
-        "vocabulary": {"*": [TEXT]}, "document_labels": [TEXT],
-        "label_by_path": {"*": TEXT}, "reference_headers": [TEXT],
-        "source_authorities?": dict, "source_none_marker?": TEXT,
-        "verified_markers?": [TEXT], "external_paths?": [TEXT], "rot_patterns": [TEXT],
-        "signature": {"name": TEXT, "contract": TEXT, "vocabulary": TEXT,
-                      "required_of": [TEXT], "own_word": TEXT},
-        "delivered": {"*": {"section": TEXT, "only?": TEXT}},
+        "set": TEXT, "prefix": TEXT, "shared_dir": TEXT, "skills_dir": str,
+        "platform_dirs": STRINGS, "limits": {"*": COUNT},
+        "permission_classes": {"*": {"tools?": str, "writes?": bool}},
+        "forbidden_description_terms": STRINGS, "engines?": dict, "refutation?": dict,
+        "linked_tools?": {"*": ("all", STRINGS)},
+        "finding_visuals?": {"playbook?": str, "contract?": str, "why?": str,
+                             "required_of?": STRINGS, "forms?": STRINGS,
+                             "triggers?": STRINGS, "floor?": STRINGS},
+        "vocabulary": {"*": STRINGS}, "document_labels": STRINGS,
+        "label_by_path": {"*": str}, "reference_headers": STRINGS,
+        "source_authorities?": dict, "source_none_marker?": str,
+        "verified_markers?": STRINGS, "external_paths?": STRINGS, "rot_patterns": STRINGS,
+        "signature": {"name?": str, "contract?": str, "vocabulary?": str,
+                      "required_of?": STRINGS, "own_word?": str},
+        "delivered": {"*": {"section": str, "only?": str}},
     },
-    "capabilities.yaml": {"*": {"class": TEXT, "does?": [TEXT], "signals?": [TEXT],
-                                "not?": [{"what": TEXT, "go": TEXT}]}},
-    # A loop's oracle, checker, max_cycles and stops_at are V14's to judge.
-    "routes.yaml": {"*": {"pattern": TEXT, "chain": [TEXT]}},
+    "capabilities.yaml": {"*": {"class?": str, "does?": STRINGS, "signals?": STRINGS,
+                                "not?": [{"what?": str, "go?": str}]}},
+    # Nothing else judges an empty chain: V7 and V13 would iterate nothing.
+    "routes.yaml": {"*": {"pattern?": str, "chain": (NONEMPTY, STRINGS)}},
 }
 
 
 def misshapen(value, shape, where: str) -> list[str]:
     """Every place `value` departs from `shape`, by its path in the file."""
+    at = where or "the file"
     if shape is TEXT:
-        return [] if isinstance(value, str) and value.strip() else [f"{where or 'the file'} must be {TEXT}"]
+        return [] if isinstance(value, str) and value.strip() else [f"{at} must be {TEXT}"]
     if shape is COUNT:
-        ok = type(value) is int and value > 0
-        return [] if ok else [f"{where or 'the file'} must be {COUNT}"]
+        return [] if type(value) is int and value > 0 else [f"{at} must be {COUNT}"]
+    if isinstance(shape, str):
+        return [] if value == shape else [f"{at} must be {shape!r}"]
+    if isinstance(shape, tuple) and shape[0] is NONEMPTY:
+        if isinstance(value, list) and not value:
+            return [f"{at} must not be empty"]
+        return misshapen(value, shape[1], where)
+    if isinstance(shape, tuple):
+        tried = [misshapen(value, option, where) for option in shape]
+        if all(tried):
+            return [f"{at} must be one of: " + "; or ".join(
+                p[0].removeprefix(at + " must be ") for p in tried)]
+        return []
     if isinstance(shape, type):
         ok = isinstance(value, shape) and not (shape is int and isinstance(value, bool))
-        return [] if ok else [f"{where or 'the file'} must be a {shape.__name__}"]
+        return [] if ok else [f"{at} must be a {shape.__name__}"]
     if isinstance(shape, list):
-        if not isinstance(value, list) or not value:
-            return [f"{where or 'the file'} must be a non-empty list"]
+        if not isinstance(value, list):
+            return [f"{at} must be a list"]
         return [p for i, item in enumerate(value) for p in misshapen(item, shape[0], f"{where}[{i}]")]
     if not isinstance(value, dict):
-        return [f"{where or 'the file'} must be a mapping"]
+        return [f"{at} must be a mapping"]
     problems = []
     if "*" in shape:
         for key, item in value.items():
             if not isinstance(key, str):
-                problems.append(f"{where or 'the file'}: key {key!r} must be a string")
+                problems.append(f"{at}: key {key!r} must be a string")
             problems += misshapen(item, shape["*"], f"{where}.{key}" if where else str(key))
         return problems
     for key, sub in shape.items():
@@ -155,6 +172,11 @@ except RegistryLoadError as error:
 _SHAPE_PROBLEMS = [f"coding-registry/{name}: {p}" for name, data in (("harness.yaml", H), ("capabilities.yaml", CAP),
                                         ("routes.yaml", ROUTES))
                    for p in misshapen(data, SHAPES[name], "")]
+if not _SHAPE_PROBLEMS:
+    _named = H["signature"].get("vocabulary")
+    if _named is not None and _named not in H["vocabulary"]:
+        _SHAPE_PROBLEMS.append(f"coding-registry/harness.yaml: signature.vocabulary must "
+                               f"name a vocabulary list, not {_named!r}")
 if _SHAPE_PROBLEMS:
     for problem in _SHAPE_PROBLEMS:
         print(f"V0: {problem}", file=sys.stderr)
@@ -1237,15 +1259,21 @@ def _earlier_hook(installed: Path) -> bool:
                                    if len(line.split()) > 3}
 
 
+CRASHED = "the rule could not run"   # test_validate.py: a crash is not a rule firing
+
+
 def main() -> int:
     for rule in RULES:
         try:
             rule()
         except Exception as e:   # one rule's crash must not hide the others' findings
             import traceback
-            frame = traceback.extract_tb(e.__traceback__)[-1]
+            frames = traceback.extract_tb(e.__traceback__)
+            here = Path(__file__).resolve()
+            frame = next((f for f in reversed(frames) if Path(f.filename).resolve() == here),
+                         frames[-1])   # the rule's own line, not the library it called
             fail(rule.__name__.split("_")[0].upper(),
-                 f"the rule could not run: {type(e).__name__}: {e} "
+                 f"{CRASHED}: {type(e).__name__}: {e} "
                  f"({Path(frame.filename).name}:{frame.lineno})")
     import subprocess
     try:

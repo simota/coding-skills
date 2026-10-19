@@ -534,7 +534,10 @@ def main() -> int:
             result = run(copy)
             out = result.stdout + result.stderr
             expect = rule.split("-")[0]
+            # A rule that crashed is reported as failing, but it did not fire:
+            # its check never ran.
             if result.returncode != 1 or "Traceback (most recent call last):" in out \
+                    or validate.CRASHED in out \
                     or not re.search(rf"^\s*{expect}: ", out, re.M):
                 bad.append(rule)
                 print(f"  {rule} did not report a clean validation failure (exit {result.returncode})\n{out}")

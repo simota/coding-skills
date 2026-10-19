@@ -532,7 +532,8 @@ class Markdown(unittest.TestCase):
 
     def test_a_heading_title_is_the_words_it_shows(self):
         for heading in ("## *Decide first*", "## Decide `first`", "## Decide&#32;first",
-                        "Decide\nfirst\n---", "## Decide  first ##"):
+                        "Decide\nfirst\n---", "## Decide  first ##", "## Decide<br>first",
+                        "## ![Decide first](i.png)", "## [Decide](x.md) first"):
             with self.subTest(heading=heading):
                 text = heading + "\n\n[x](y.md)\n"
                 self.assertEqual(list(fences.h2_lines(text.split("\n")).values()), ["Decide first"])
