@@ -75,8 +75,92 @@ def load(name: str):
         raise RegistryLoadError(f"{label}: cannot read registry: {error.strerror or error}") from error
 
 
+# The shape the rules read. Valid YAML of another shape crashed a rule with a
+# traceback, or passed it silently: a scalar where a list belongs is iterated
+# letter by letter. The gate judges only that, and what no rule judges (a
+# positive limit, a non-empty chain); whether a list may be empty or a key
+# absent is the rule's to say, in its own words, so lists here may be empty
+# and only keys read unconditionally are required.
+# `[x]` is a list of x; `{"*": x}` a mapping whose every value is x; a tuple is
+# any one of its shapes; a plain string other than TEXT/COUNT is that literal;
+# a key ending in `?` may be absent. Keys not named here are not read.
+COUNT = "a positive integer"
+TEXT = "a non-empty string"
+NONEMPTY = "non-empty"
+STRINGS = [str]
+SHAPES = {
+    "harness.yaml": {
+        "set": TEXT, "prefix": TEXT, "shared_dir": TEXT, "skills_dir": str,
+        "platform_dirs": STRINGS, "limits": {"*": COUNT},
+        "permission_classes": {"*": {"tools?": str, "writes?": bool}},
+        "forbidden_description_terms": STRINGS, "engines?": dict, "refutation?": dict,
+        "linked_tools?": {"*": ("all", STRINGS)},
+        "finding_visuals?": {"playbook?": str, "contract?": str, "why?": str,
+                             "required_of?": STRINGS, "forms?": STRINGS,
+                             "triggers?": STRINGS, "floor?": STRINGS},
+        "vocabulary": {"*": STRINGS}, "document_labels": STRINGS,
+        "label_by_path": {"*": str}, "reference_headers": STRINGS,
+        "source_authorities?": dict, "source_none_marker?": str,
+        "verified_markers?": STRINGS, "external_paths?": STRINGS, "rot_patterns": STRINGS,
+        "signature": {"name?": str, "contract?": str, "vocabulary?": str,
+                      "required_of?": STRINGS, "own_word?": str},
+        "delivered": {"*": {"section": str, "only?": str}},
+    },
+    "capabilities.yaml": {"*": {"class?": str, "does?": STRINGS, "signals?": STRINGS,
+                                "not?": [{"what?": str, "go?": str}]}},
+    # Nothing else judges an empty chain: V7 and V13 would iterate nothing.
+    "routes.yaml": {"*": {"pattern?": str, "chain": (NONEMPTY, STRINGS)}},
+}
+
+
+def misshapen(value, shape, where: str) -> list[str]:
+    """Every place `value` departs from `shape`, by its path in the file."""
+    at = where or "the file"
+    if shape is TEXT:
+        return [] if isinstance(value, str) and value.strip() else [f"{at} must be {TEXT}"]
+    if shape is COUNT:
+        return [] if type(value) is int and value > 0 else [f"{at} must be {COUNT}"]
+    if isinstance(shape, str):
+        return [] if value == shape else [f"{at} must be {shape!r}"]
+    if isinstance(shape, tuple) and shape[0] is NONEMPTY:
+        if isinstance(value, list) and not value:
+            return [f"{at} must not be empty"]
+        return misshapen(value, shape[1], where)
+    if isinstance(shape, tuple):
+        tried = [misshapen(value, option, where) for option in shape]
+        if all(tried):
+            return [f"{at} must be one of: " + "; or ".join(
+                p[0].removeprefix(at + " must be ") for p in tried)]
+        return []
+    if isinstance(shape, type):
+        ok = isinstance(value, shape) and not (shape is int and isinstance(value, bool))
+        return [] if ok else [f"{at} must be a {shape.__name__}"]
+    if isinstance(shape, list):
+        if not isinstance(value, list):
+            return [f"{at} must be a list"]
+        return [p for i, item in enumerate(value) for p in misshapen(item, shape[0], f"{where}[{i}]")]
+    if not isinstance(value, dict):
+        return [f"{at} must be a mapping"]
+    problems = []
+    if "*" in shape:
+        for key, item in value.items():
+            if not isinstance(key, str):
+                problems.append(f"{at}: key {key!r} must be a string")
+            problems += misshapen(item, shape["*"], f"{where}.{key}" if where else str(key))
+        return problems
+    for key, sub in shape.items():
+        name = key.rstrip("?")
+        path = f"{where}.{name}" if where else name
+        if name in value:
+            problems += misshapen(value[name], sub, path)
+        elif not key.endswith("?"):
+            problems.append(f"{path} is missing")
+    return problems
+
+
 # V0 is the input gate. Keep valid imports available to the other tools, but
-# stop before deriving any corpus state from a registry that did not load.
+# stop before deriving any corpus state from a registry that did not load, or
+# that loaded in a shape the rules do not read.
 try:
     H = load("harness.yaml")
     CAP = load("capabilities.yaml")
@@ -85,6 +169,18 @@ try:
 except RegistryLoadError as error:
     print(f"V0: {error}", file=sys.stderr)
     raise SystemExit(1) from None
+_SHAPE_PROBLEMS = [f"coding-registry/{name}: {p}" for name, data in (("harness.yaml", H), ("capabilities.yaml", CAP),
+                                        ("routes.yaml", ROUTES))
+                   for p in misshapen(data, SHAPES[name], "")]
+if not _SHAPE_PROBLEMS:
+    _named = H["signature"].get("vocabulary")
+    if _named is not None and _named not in H["vocabulary"]:
+        _SHAPE_PROBLEMS.append(f"coding-registry/harness.yaml: signature.vocabulary must "
+                               f"name a vocabulary list, not {_named!r}")
+if _SHAPE_PROBLEMS:
+    for problem in _SHAPE_PROBLEMS:
+        print(f"V0: {problem}", file=sys.stderr)
+    raise SystemExit(1)
 
 LIM = H["limits"]
 VOCAB = H["vocabulary"]
@@ -175,10 +271,16 @@ def walk(d: Path):
             yield from walk(entry)
 
 
+def _commonmark_lines(text: str) -> list[str]:
+    """Lines as CommonMark counts them: split at \\n, \\r\\n and a bare \\r, but
+    not at \\f, \\x85 or \\u2028, where splitlines() also splits."""
+    return re.sub(r"\r\n?", "\n", text).removesuffix("\n").split("\n")
+
+
 def sections(text: str) -> dict[str, str]:
     """Level-2 headings as rendered — one inside code is text, not a section."""
     out, cur, buf = {}, None, []
-    lines = text.splitlines()
+    lines = _commonmark_lines(text)
     heads = h2_lines(lines)
     for i, line in enumerate(lines):
         title = heads.get(i)
@@ -195,7 +297,7 @@ def sections(text: str) -> dict[str, str]:
 
 def section_links(text: str, title: str) -> list[str]:
     """Parse the whole page so a link may use a definition in another section."""
-    lines = text.splitlines()
+    lines = _commonmark_lines(text)   # numbered as links() numbers them
     heads = list(h2_lines(lines).items())
     targets = []
     for index, (start, name) in enumerate(heads):
@@ -283,6 +385,17 @@ def v4_playbook_orphans():
         for pb in sorted(pb_dir.glob("*.md")):
             if pb not in linked:
                 fail("V4", f"{d.name}/playbooks/{pb.name} is not linked from Decide first")
+    _flat("V4", "playbooks")
+
+
+def _flat(rule: str, kind: str) -> None:
+    """Pages of a kind sit directly in its directory. The budget, label, link
+    and orphan rules read one level, so a page one directory down was checked
+    by none of them."""
+    for d in SKILL_DIRS:
+        for sub in sorted(p for p in (d / kind).glob("*") if p.is_dir()):
+            fail(rule, f"{d.name}/{kind}/{sub.name}/ is a directory; {kind} pages sit directly "
+                       f"in {kind}/, where the rules read them")
 
 
 def v5_playbook_budget():
@@ -747,6 +860,7 @@ def v29_reference_headers():
 
 def v30_reference_orphans():
     """A reference nothing points at is never read and never noticed as stale."""
+    _flat("V30", "reference")
     for d in SKILL_DIRS:
         ref_dir = d / "reference"
         if not ref_dir.exists():
@@ -1151,9 +1265,22 @@ def _earlier_hook(installed: Path) -> bool:
                                    if len(line.split()) > 3}
 
 
+CRASHED = "the rule could not run"   # test_validate.py: a crash is not a rule firing
+
+
 def main() -> int:
     for rule in RULES:
-        rule()
+        try:
+            rule()
+        except Exception as e:   # one rule's crash must not hide the others' findings
+            import traceback
+            frames = traceback.extract_tb(e.__traceback__)
+            here = Path(__file__).resolve()
+            frame = next((f for f in reversed(frames) if Path(f.filename).resolve() == here),
+                         frames[-1])   # the rule's own line, not the library it called
+            fail(rule.__name__.split("_")[0].upper(),
+                 f"{CRASHED}: {type(e).__name__}: {e} "
+                 f"({Path(frame.filename).name}:{frame.lineno})")
     import subprocess
     try:
         got = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"],

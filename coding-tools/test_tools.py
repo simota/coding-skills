@@ -530,6 +530,42 @@ class Markdown(unittest.TestCase):
                          [True, True, True, True, False, False, False])
         self.assertEqual(fences.blocks(["a", "```", "x", "```", "```py", "y"]), [["x"], ["y"]])
 
+    def test_a_heading_title_is_the_words_it_shows(self):
+        for heading in ("## *Decide first*", "## Decide `first`", "## Decide&#32;first",
+                        "Decide\nfirst\n---", "## Decide  first ##", "## Decide<br>first",
+                        "## ![Decide first](i.png)", "## [Decide](x.md) first",
+                        "## Decide <em>first</em>"):
+            with self.subTest(heading=heading):
+                text = heading + "\n\n[x](y.md)\n"
+                self.assertEqual(list(fences.h2_lines(text.split("\n")).values()), ["Decide first"])
+                import validate
+                self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
+
+    def test_inline_markup_does_not_split_a_word_in_a_title(self):
+        for heading in ("## Decide<em>first</em>", "## Decide<code>first</code>"):
+            with self.subTest(heading=heading):
+                self.assertEqual(list(fences.h2_lines([heading]).values()), ["Decidefirst"])
+
+    def test_sections_number_lines_as_commonmark_does(self):
+        import validate
+        for odd in ("\x0c", "\x85", "\x1c", "\u2028"):
+            with self.subTest(odd=repr(odd)):
+                text = f"a{odd}b\n## Decide first\n[x](y.md)\n## Next\n"
+                self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
+                self.assertEqual(validate.sections(text)["Decide first"], "[x](y.md)")
+        for ending in ("\r", "\r\n"):
+            with self.subTest(ending=repr(ending)):
+                text = ending.join(["a", "## Decide first", "[x](y.md)", "## Next", ""])
+                self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
+                self.assertEqual(set(validate.sections(text)), {"Decide first", "Next"})
+
+    def test_an_empty_comment_closes_where_a_browser_closes_it(self):
+        for comment in ("<!-->", "<!--->"):
+            with self.subTest(comment=comment):
+                text = comment + "\n" + self.M + "\n\n<!-- c -->\n"
+                self.assertTrue(self.live(text))
+                self.assertTrue(self.live("a " + comment + " " + self.M + " <!-- c -->"))
+
     def test_sections_after_a_nested_lookalike_are_found(self):
         import validate
         text = "## Owns\n```text\n```example\n```\n## Done when\nyes\n"

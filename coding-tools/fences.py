@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 import html
+import re
 from bisect import bisect_right
 from html.parser import HTMLParser
 
@@ -112,10 +113,39 @@ def h2_lines(lines: list[str]) -> dict[int, str]:
     as it renders — closing hashes and surrounding spaces gone. A heading in a
     quote or a list item is part of an example, not a section of the page."""
     toks = _tokens("\n".join(lines))
-    return {tok.map[0]: toks[i + 1].content.strip()
+    return {tok.map[0]: _title(toks[i + 1])
             for i, tok in enumerate(toks)
             if tok.type == "heading_open" and tok.tag == "h2" and tok.level == 0
             and tok.map}
+
+
+# Elements that end a run of words where they stand: block elements and <br>.
+# Inline ones (<em>, <code>, <img>) sit inside a word as written.
+_WORD_BREAKS = {*block_names, "br"}
+
+
+def _title(inline) -> str:
+    """The words a heading shows: `## *Decide* \\`first\\`` and a setext heading
+    over two lines both read "Decide first". Emphasis marks, escapes and
+    references are the source's spelling, not the title."""
+    words = []
+
+    def collect(children) -> None:
+        for child in children or []:
+            if child.type in ("text", "code_inline"):
+                words.append(child.content)
+            elif child.type in ("softbreak", "hardbreak"):
+                words.append(" ")
+            elif child.type == "html_inline":
+                # `<br>` separates words; `<em>` does not: `Decide<em>first</em>`
+                # shows as one word.
+                tag = re.match(r"</?\s*([A-Za-z][\w-]*)", child.content)
+                if tag and tag.group(1).lower() in _WORD_BREAKS:
+                    words.append(" ")
+            elif child.type == "image":
+                collect(child.children)   # its alt text is what is shown in its place
+    collect(inline.children)
+    return " ".join("".join(words).split())
 
 
 def marker_lines(lines: list[str], marker: str) -> list[int]:
@@ -225,6 +255,13 @@ class _Visible(HTMLParser):
         self._flush(len(self.src))
 
 
+def _empty_comments(raw: str) -> str:
+    """`<!-->` and `<!--->` are complete, empty comments to a browser (and to
+    CommonMark). Python 3.11's parser reads on to the next `-->` and hides the
+    page in between, so spell them the way every parser closes."""
+    return raw.replace("<!--->", "<!---->").replace("<!-->", "<!---->")
+
+
 def _escape(text: str) -> str:
     # A decoded character reference can contain a newline without occupying a
     # source line. Keep it encoded until _Visible assigns its source location.
@@ -258,7 +295,7 @@ def _visible(text: str) -> _Visible:
     for tok in _tokens(text):
         start = tok.map[0] if tok.map else None
         if tok.type == "html_block" and tok.map:
-            emit(tok.content, start)
+            emit(_empty_comments(tok.content), start)
         elif tok.type in ("fence", "code_block"):
             emit(" ", start)
         elif tok.type == "inline" and tok.map:
@@ -267,7 +304,7 @@ def _visible(text: str) -> _Visible:
                 if child.type == "text":
                     emit(_escape(child.content), at)
                 elif child.type == "html_inline":
-                    emit(child.content, at)
+                    emit(_empty_comments(child.content), at)
                 elif child.type == "code_inline":
                     offset = emit("<!-- --> ", at)
                     code[offset] = (at, child.content, child.meta["source_lines"])
