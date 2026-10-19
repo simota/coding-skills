@@ -178,7 +178,7 @@ def walk(d: Path):
 def sections(text: str) -> dict[str, str]:
     """Level-2 headings as rendered — one inside code is text, not a section."""
     out, cur, buf = {}, None, []
-    lines = text.splitlines()
+    lines = text.removesuffix("\n").split("\n")   # CommonMark's line endings, not \f or \x85
     heads = h2_lines(lines)
     for i, line in enumerate(lines):
         title = heads.get(i)
@@ -195,7 +195,7 @@ def sections(text: str) -> dict[str, str]:
 
 def section_links(text: str, title: str) -> list[str]:
     """Parse the whole page so a link may use a definition in another section."""
-    lines = text.splitlines()
+    lines = text.removesuffix("\n").split("\n")   # numbered as links() numbers them
     heads = list(h2_lines(lines).items())
     targets = []
     for index, (start, name) in enumerate(heads):
