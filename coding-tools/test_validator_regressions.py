@@ -60,6 +60,51 @@ class RegistryLoading(unittest.TestCase):
             finally:
                 path.write_bytes(original)
 
+    def test_valid_yaml_of_the_wrong_shape_stops_at_the_gate(self):
+        # Each crashed a rule with a traceback, or let it pass on a value it
+        # read letter by letter or not at all.
+        mutations = {
+            "capabilities.yaml": [("coding-explore:\n", "coding-explore: null\nunused:\n"),
+                                  ("class: read-only", "class: [read-only]"),
+                                  ("signals: [where,", "signals: [123, where,")],
+            "routes.yaml": [("chain: [coding-debug, coding-ship]", "chain: []"),
+                            ("chain: [coding-debug, coding-ship]", "chain: coding-debug")],
+            "harness.yaml": [("forms: [ascii, mermaid]", "forms: ascii"),
+                             ("checkers: [other-engine]", "checkers: other-engine"),
+                             ('verified_markers:\n', 'verified_markers: "no automated check"\nunused:\n'),
+                             ("skills_dir: skills", "skills_dir: 3")],
+        }
+        for name, edits in mutations.items():
+            path = self.registry(name)
+            original = path.read_text(encoding="utf-8")
+            for old, new in edits:
+                self.assertIn(old, original)
+                try:
+                    path.write_text(original.replace(old, new, 1), encoding="utf-8")
+                    self.assert_load_failure(name, "must be")
+                finally:
+                    path.write_text(original, encoding="utf-8")
+        for name in ("harness.yaml", "capabilities.yaml", "routes.yaml"):
+            path = self.registry(name)
+            original = path.read_bytes()
+            try:
+                path.write_text("[]\n", encoding="utf-8")
+                self.assert_load_failure(name, "must be a mapping")
+            finally:
+                path.write_bytes(original)
+
+    def test_a_rule_that_crashes_is_reported_and_the_others_still_run(self):
+        def broken():
+            raise KeyError("playbook_lines")
+        ran = []
+        rules = [broken, lambda: ran.append(True)]
+        with mock.patch.object(validate, "RULES", rules), \
+                mock.patch.object(validate, "FAILURES", []) as failures, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(validate.main(), 1)
+        self.assertEqual(ran, [True])
+        self.assertTrue(any(f.startswith("BROKEN:") and "KeyError" in f for f in failures), failures)
+
     def test_invalid_registry_syntax_has_a_controlled_diagnostic(self):
         self.registry("routes.yaml").write_text("routes: [\n", encoding="utf-8")
         self.assert_load_failure("routes.yaml", "YAML")

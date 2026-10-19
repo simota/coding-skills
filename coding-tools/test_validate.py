@@ -502,6 +502,20 @@ def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when",
               "## Done when\n\n#TODO(agent): fix <!-- UNVERIFIED -->\n")
 
 
+@case("V4-nested")
+def _(r):
+    nested = r / f"{S}coding-review/playbooks/extra"
+    nested.mkdir()
+    (nested / "orphan.md").write_text("<!-- coding:guidance -->\n# Orphan\n", encoding="utf-8")
+
+
+@case("V30-nested")
+def _(r):
+    nested = r / f"{S}coding-review/reference/old"
+    nested.mkdir()
+    (nested / "stale.md").write_text("<!-- coding:deferred -->\nno headers\n", encoding="utf-8")
+
+
 def main() -> int:
     # The exit code, not the word "green": a failing tree once printed both, and
     # every case then "fired" on a failure that was already there.

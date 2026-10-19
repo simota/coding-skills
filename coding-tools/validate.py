@@ -75,8 +75,75 @@ def load(name: str):
         raise RegistryLoadError(f"{label}: cannot read registry: {error.strerror or error}") from error
 
 
+# The shape each rule assumes. Valid YAML of another shape crashed a rule with
+# a traceback, or worse passed it: a scalar where a list belongs is iterated
+# letter by letter, and an empty chain gives a rule nothing to check.
+# `[x]` is a non-empty list of x; `{"*": x}` a mapping whose every value is x;
+# a key ending in `?` may be absent. A key not named here is either unread or
+# judged by its own rule, which says more than "wrong shape" can.
+COUNT = "a positive integer"
+TEXT = "a non-empty string"
+SHAPES = {
+    "harness.yaml": {
+        "set": TEXT, "prefix": TEXT, "shared_dir": TEXT, "skills_dir?": TEXT,
+        "platform_dirs": [TEXT], "limits": {"*": COUNT},
+        "permission_classes": {"*": {"tools": str, "writes": bool}},
+        "forbidden_description_terms": [TEXT], "engines?": dict,
+        "refutation?": dict,                       # its fields are V33's
+        "linked_tools?": {"*": TEXT},
+        "finding_visuals?": {"playbook": TEXT, "contract": TEXT, "required_of": [TEXT],
+                             "forms": [TEXT], "triggers": [TEXT], "floor": [TEXT]},
+        "vocabulary": {"*": [TEXT]}, "document_labels": [TEXT],
+        "label_by_path": {"*": TEXT}, "reference_headers": [TEXT],
+        "source_authorities?": dict, "source_none_marker?": TEXT,
+        "verified_markers?": [TEXT], "external_paths?": [TEXT], "rot_patterns": [TEXT],
+        "signature": {"name": TEXT, "contract": TEXT, "vocabulary": TEXT,
+                      "required_of": [TEXT], "own_word": TEXT},
+        "delivered": {"*": {"section": TEXT, "only?": TEXT}},
+    },
+    "capabilities.yaml": {"*": {"class": TEXT, "does?": [TEXT], "signals?": [TEXT],
+                                "not?": [{"what": TEXT, "go": TEXT}]}},
+    # A loop's oracle, checker, max_cycles and stops_at are V14's to judge.
+    "routes.yaml": {"*": {"pattern": TEXT, "chain": [TEXT]}},
+}
+
+
+def misshapen(value, shape, where: str) -> list[str]:
+    """Every place `value` departs from `shape`, by its path in the file."""
+    if shape is TEXT:
+        return [] if isinstance(value, str) and value.strip() else [f"{where or 'the file'} must be {TEXT}"]
+    if shape is COUNT:
+        ok = type(value) is int and value > 0
+        return [] if ok else [f"{where or 'the file'} must be {COUNT}"]
+    if isinstance(shape, type):
+        ok = isinstance(value, shape) and not (shape is int and isinstance(value, bool))
+        return [] if ok else [f"{where or 'the file'} must be a {shape.__name__}"]
+    if isinstance(shape, list):
+        if not isinstance(value, list) or not value:
+            return [f"{where or 'the file'} must be a non-empty list"]
+        return [p for i, item in enumerate(value) for p in misshapen(item, shape[0], f"{where}[{i}]")]
+    if not isinstance(value, dict):
+        return [f"{where or 'the file'} must be a mapping"]
+    problems = []
+    if "*" in shape:
+        for key, item in value.items():
+            if not isinstance(key, str):
+                problems.append(f"{where or 'the file'}: key {key!r} must be a string")
+            problems += misshapen(item, shape["*"], f"{where}.{key}" if where else str(key))
+        return problems
+    for key, sub in shape.items():
+        name = key.rstrip("?")
+        path = f"{where}.{name}" if where else name
+        if name in value:
+            problems += misshapen(value[name], sub, path)
+        elif not key.endswith("?"):
+            problems.append(f"{path} is missing")
+    return problems
+
+
 # V0 is the input gate. Keep valid imports available to the other tools, but
-# stop before deriving any corpus state from a registry that did not load.
+# stop before deriving any corpus state from a registry that did not load, or
+# that loaded in a shape the rules do not read.
 try:
     H = load("harness.yaml")
     CAP = load("capabilities.yaml")
@@ -85,6 +152,13 @@ try:
 except RegistryLoadError as error:
     print(f"V0: {error}", file=sys.stderr)
     raise SystemExit(1) from None
+_SHAPE_PROBLEMS = [f"coding-registry/{name}: {p}" for name, data in (("harness.yaml", H), ("capabilities.yaml", CAP),
+                                        ("routes.yaml", ROUTES))
+                   for p in misshapen(data, SHAPES[name], "")]
+if _SHAPE_PROBLEMS:
+    for problem in _SHAPE_PROBLEMS:
+        print(f"V0: {problem}", file=sys.stderr)
+    raise SystemExit(1)
 
 LIM = H["limits"]
 VOCAB = H["vocabulary"]
@@ -283,6 +357,17 @@ def v4_playbook_orphans():
         for pb in sorted(pb_dir.glob("*.md")):
             if pb not in linked:
                 fail("V4", f"{d.name}/playbooks/{pb.name} is not linked from Decide first")
+    _flat("V4", "playbooks")
+
+
+def _flat(rule: str, kind: str) -> None:
+    """Pages of a kind sit directly in its directory. The budget, label, link
+    and orphan rules read one level, so a page one directory down was checked
+    by none of them."""
+    for d in SKILL_DIRS:
+        for sub in sorted(p for p in (d / kind).glob("*") if p.is_dir()):
+            fail(rule, f"{d.name}/{kind}/{sub.name}/ is a directory; {kind} pages sit directly "
+                       f"in {kind}/, where the rules read them")
 
 
 def v5_playbook_budget():
@@ -747,6 +832,7 @@ def v29_reference_headers():
 
 def v30_reference_orphans():
     """A reference nothing points at is never read and never noticed as stale."""
+    _flat("V30", "reference")
     for d in SKILL_DIRS:
         ref_dir = d / "reference"
         if not ref_dir.exists():
@@ -1153,7 +1239,14 @@ def _earlier_hook(installed: Path) -> bool:
 
 def main() -> int:
     for rule in RULES:
-        rule()
+        try:
+            rule()
+        except Exception as e:   # one rule's crash must not hide the others' findings
+            import traceback
+            frame = traceback.extract_tb(e.__traceback__)[-1]
+            fail(rule.__name__.split("_")[0].upper(),
+                 f"the rule could not run: {type(e).__name__}: {e} "
+                 f"({Path(frame.filename).name}:{frame.lineno})")
     import subprocess
     try:
         got = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"],
