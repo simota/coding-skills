@@ -546,6 +546,14 @@ class Markdown(unittest.TestCase):
             with self.subTest(heading=heading):
                 self.assertEqual(list(fences.h2_lines([heading]).values()), ["Decidefirst"])
 
+    def test_hidden_html_is_not_part_of_a_title(self):
+        for heading in ("## <script>Decide first</script>", "## <style>Decide first</style>",
+                        "## <!-- Decide first -->"):
+            with self.subTest(heading=heading):
+                self.assertEqual(list(fences.h2_lines([heading]).values()), [""])
+        self.assertEqual(list(fences.h2_lines(["## <b>Decide</b> &amp; <i>first</i>"]).values()),
+                         ["Decide & first"])
+
     def test_sections_number_lines_as_commonmark_does(self):
         import validate
         for odd in ("\x0c", "\x85", "\x1c", "\u2028"):
