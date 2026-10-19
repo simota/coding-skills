@@ -144,9 +144,9 @@ class _Words(HTMLParser):
         if tag in ("script", "style") and self.hidden:
             self.hidden -= 1
 
-    def handle_startendtag(self, tag, attrs) -> None:
-        if tag in _WORD_BREAKS:
-            self.words.append(" ")
+    # A browser ignores the slash on a non-void element: `<script/>` opens a
+    # script like `<script>` does, and `<br/>` is `<br>`. _Visible does the same.
+    handle_startendtag = handle_starttag
 
     def handle_data(self, data) -> None:
         if not self.hidden:
