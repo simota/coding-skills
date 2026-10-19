@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 import html
+import re
 from bisect import bisect_right
 from html.parser import HTMLParser
 
@@ -118,6 +119,11 @@ def h2_lines(lines: list[str]) -> dict[int, str]:
             and tok.map}
 
 
+# Elements that end a run of words where they stand: block elements and <br>.
+# Inline ones (<em>, <code>, <img>) sit inside a word as written.
+_WORD_BREAKS = {*block_names, "br"}
+
+
 def _title(inline) -> str:
     """The words a heading shows: `## *Decide* \\`first\\`` and a setext heading
     over two lines both read "Decide first". Emphasis marks, escapes and
@@ -128,8 +134,14 @@ def _title(inline) -> str:
         for child in children or []:
             if child.type in ("text", "code_inline"):
                 words.append(child.content)
-            elif child.type in ("softbreak", "hardbreak", "html_inline"):
-                words.append(" ")         # `<br>` or a tag never joins two words
+            elif child.type in ("softbreak", "hardbreak"):
+                words.append(" ")
+            elif child.type == "html_inline":
+                # `<br>` separates words; `<em>` does not: `Decide<em>first</em>`
+                # shows as one word.
+                tag = re.match(r"</?\s*([A-Za-z][\w-]*)", child.content)
+                if tag and tag.group(1).lower() in _WORD_BREAKS:
+                    words.append(" ")
             elif child.type == "image":
                 collect(child.children)   # its alt text is what is shown in its place
     collect(inline.children)

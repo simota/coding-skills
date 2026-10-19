@@ -533,12 +533,18 @@ class Markdown(unittest.TestCase):
     def test_a_heading_title_is_the_words_it_shows(self):
         for heading in ("## *Decide first*", "## Decide `first`", "## Decide&#32;first",
                         "Decide\nfirst\n---", "## Decide  first ##", "## Decide<br>first",
-                        "## ![Decide first](i.png)", "## [Decide](x.md) first"):
+                        "## ![Decide first](i.png)", "## [Decide](x.md) first",
+                        "## Decide <em>first</em>"):
             with self.subTest(heading=heading):
                 text = heading + "\n\n[x](y.md)\n"
                 self.assertEqual(list(fences.h2_lines(text.split("\n")).values()), ["Decide first"])
                 import validate
                 self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
+
+    def test_inline_markup_does_not_split_a_word_in_a_title(self):
+        for heading in ("## Decide<em>first</em>", "## Decide<code>first</code>"):
+            with self.subTest(heading=heading):
+                self.assertEqual(list(fences.h2_lines([heading]).values()), ["Decidefirst"])
 
     def test_sections_number_lines_as_commonmark_does(self):
         import validate
@@ -547,6 +553,11 @@ class Markdown(unittest.TestCase):
                 text = f"a{odd}b\n## Decide first\n[x](y.md)\n## Next\n"
                 self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
                 self.assertEqual(validate.sections(text)["Decide first"], "[x](y.md)")
+        for ending in ("\r", "\r\n"):
+            with self.subTest(ending=repr(ending)):
+                text = ending.join(["a", "## Decide first", "[x](y.md)", "## Next", ""])
+                self.assertEqual(validate.section_links(text, "Decide first"), ["y.md"])
+                self.assertEqual(set(validate.sections(text)), {"Decide first", "Next"})
 
     def test_an_empty_comment_closes_where_a_browser_closes_it(self):
         for comment in ("<!-->", "<!--->"):

@@ -271,10 +271,16 @@ def walk(d: Path):
             yield from walk(entry)
 
 
+def _commonmark_lines(text: str) -> list[str]:
+    """Lines as CommonMark counts them: split at \\n, \\r\\n and a bare \\r, but
+    not at \\f, \\x85 or \\u2028, where splitlines() also splits."""
+    return re.sub(r"\r\n?", "\n", text).removesuffix("\n").split("\n")
+
+
 def sections(text: str) -> dict[str, str]:
     """Level-2 headings as rendered — one inside code is text, not a section."""
     out, cur, buf = {}, None, []
-    lines = text.removesuffix("\n").split("\n")   # CommonMark's line endings, not \f or \x85
+    lines = _commonmark_lines(text)
     heads = h2_lines(lines)
     for i, line in enumerate(lines):
         title = heads.get(i)
@@ -291,7 +297,7 @@ def sections(text: str) -> dict[str, str]:
 
 def section_links(text: str, title: str) -> list[str]:
     """Parse the whole page so a link may use a definition in another section."""
-    lines = text.removesuffix("\n").split("\n")   # numbered as links() numbers them
+    lines = _commonmark_lines(text)   # numbered as links() numbers them
     heads = list(h2_lines(lines).items())
     targets = []
     for index, (start, name) in enumerate(heads):
