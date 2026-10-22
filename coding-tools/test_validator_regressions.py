@@ -95,6 +95,27 @@ class RegistryLoading(unittest.TestCase):
             finally:
                 path.write_bytes(original)
 
+    def test_a_key_a_rule_reads_by_name_is_required_at_the_gate(self):
+        # Each crashed its rule rather than naming the key; the class without
+        # `tools` also made V34 report a grant of no Bash. An empty own_word let
+        # V35 pass every skill.
+        harness = self.registry("harness.yaml")
+        original = harness.read_text(encoding="utf-8")
+        edits = [("  skill_md_lines: 156\n", "", "limits.skill_md_lines is missing"),
+                 ("  route_stages_max: 6 ", "  unused_max: 6 ", "limits.route_stages_max is missing"),
+                 ("  residual_classes: [", "  unused_classes: [", "vocabulary.residual_classes is missing"),
+                 ('    tools: "Read, Grep, Glob, Bash"\n', "", "permission_classes.read-only.tools is missing"),
+                 ("  own_word: redict", '  own_word: ""', "signature.own_word must be a non-empty string"),
+                 ("  contract: PREDICTION.md\n", "", "signature.contract is missing")]
+        for old, new, detail in edits:
+            self.assertIn(old, original)
+            try:
+                harness.write_text(original.replace(old, new, 1), encoding="utf-8")
+                self.assert_load_failure("harness.yaml", detail)
+                self.assertNotIn(validate.CRASHED, self.run_validator().stdout)
+            finally:
+                harness.write_text(original, encoding="utf-8")
+
     def test_the_gate_leaves_presence_and_emptiness_to_the_rules(self):
         # Forms the rules document as valid, or judge in their own words.
         harness = self.registry("harness.yaml")

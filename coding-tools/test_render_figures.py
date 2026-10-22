@@ -123,6 +123,40 @@ class FigureFailures(unittest.TestCase):
             self.assertTrue(any("no longer mentions `git stash pop --index`" in f
                                 for f in failures), failures)
 
+    def mutated(self, attribute: str, old: str, new: str, check, dirs: tuple[str, ...]) -> list[str]:
+        """The failures a check reports on a copy of its page with one edit."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            for name in dirs:
+                (root / name).mkdir()
+            original = getattr(figures_check, attribute).read_text(encoding="utf-8")
+            self.assertIn(old, original)
+            page = root / "page.md"
+            page.write_text(original.replace(old, new, 1), encoding="utf-8")
+            failures = []
+            with mock.patch.object(figures_check, attribute, page), \
+                    mock.patch.object(figures_check, "failures", failures):
+                check(root)
+            return failures
+
+    def test_a_false_scoping_listing_fails(self):
+        # The listing was never read: these edits, and deleting it, passed.
+        dirs = ("scope", "empty")
+        for old, new in (("$ git diff HEAD         -> f.txt s.txt ",
+                          "$ git diff HEAD         -> f.txt s.txt u.txt"),
+                         ("?? u.txt ", "")):
+            with self.subTest(old=old):
+                self.assertTrue(self.mutated("SCOPING", old, new, figures_check.check_scoping, dirs))
+        self.assertTrue(any("no fenced block" in f for f in self.mutated(
+            "SCOPING", "$ git status --porcelain\n", "$ git status\n",
+            figures_check.check_scoping, dirs)))
+
+    def test_a_listing_line_the_check_cannot_read_fails(self):
+        failures = self.mutated("HISTORY", "4ea7bd7 c3                     # added a line\n",
+                                "4ea7bd7 c3\n5c894bd2 c2\n", figures_check.check_pickaxe,
+                                ("pickaxe",))
+        self.assertTrue(failures)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -34,7 +34,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import pathlib
+import signal
 import subprocess
 import sys
 import tempfile
@@ -141,6 +143,43 @@ def _loads(text: str):
                           parse_int=_integer)
     except RecursionError:
         raise EngineError("the output nests too deeply to read") from None
+
+
+def _loads_lines(text: str):
+    """The value text opens with, by the answer rules, if it ends at the end of
+    a line; the lines after it are not read."""
+    decoder = json.JSONDecoder(parse_float=_finite_number, parse_constant=_finite_number,
+                               parse_int=_integer)
+    try:
+        got, end = decoder.raw_decode(text)
+    except RecursionError:
+        raise EngineError("the output nests too deeply to read") from None
+    if text[end:].split("\n", 1)[0].strip():
+        raise ValueError("the value does not end its line")
+    return got
+
+
+def _depths(lines: list[str]) -> list[int]:
+    """How many brackets are open where each line starts, outside strings. A
+    JSON string cannot cross a line, so a stray quote in a log misleads only
+    its own line; a stray bracket makes what follows it read as nested, which
+    refuses an answer rather than inventing one."""
+    out, depth = [], 0
+    for line in lines:
+        out.append(depth)
+        quoted = escaped = False
+        for c in line:
+            if escaped:
+                escaped = False
+            elif quoted:
+                escaped, quoted = c == "\\", c != '"'
+            elif c == '"':
+                quoted = True
+            elif c in "{[":
+                depth += 1
+            elif c in "}]":
+                depth = max(depth - 1, 0)
+    return out
 
 
 def _one_document(text: str) -> bool:
@@ -352,16 +391,38 @@ def _ask(engine: str, prompt: str, schema: dict) -> dict:
 
 def _spawn(engine: str, argv: list[str]) -> subprocess.CompletedProcess:
     """Every way the engine can fail to start or answer is an EngineError — a
-    caller asking several engines keeps the verdicts the others gave."""
+    caller asking several engines keeps the verdicts the others gave.
+
+    stdin is closed: `claude -p` appends what it reads there to the prompt, so a
+    hook's ref list or a CI pipe reached the engine as part of its question.
+
+    The engine runs in a session of its own, and a timeout kills all of it:
+    killing only the CLI left the tools and servers it started running on, an
+    agent still acting after its caller had given up on it."""
     try:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT,
-                                encoding="utf-8", errors="replace")
+        proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                                errors="replace", start_new_session=True)
     except FileNotFoundError:
         raise EngineError(f"{engine} is not on PATH") from None
-    except subprocess.TimeoutExpired:
-        raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
     except (OSError, ValueError) as e:     # E2BIG, or a NUL in a prompt argument
         raise EngineError(f"{engine} could not be started: {e}") from None
+    try:
+        stdout, stderr = proc.communicate(timeout=TIMEOUT)
+    except BaseException as e:             # a timeout, or the caller interrupted
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        # Wait for the process, not the pipes: anything that left the group
+        # and still holds them would make that wait endless.
+        proc.wait()
+        proc.stdout.close()
+        proc.stderr.close()
+        if isinstance(e, subprocess.TimeoutExpired):
+            raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
+        raise
+    result = subprocess.CompletedProcess(argv, proc.returncode, stdout, stderr)
     if result.returncode:
         raise EngineError(f"{engine} exited with status {result.returncode}.\n{_tail(result)}")
     return result
@@ -393,9 +454,16 @@ def _parse(engine: str, body: str) -> dict:
         raise EngineError(f"{engine} returned {type(got).__name__}, not an object")
     # A log line after the answer is skipped, whatever it holds: `NaN` alone
     # on a line is not the answer, and must not stop the search for it.
-    for line in reversed(stripped.splitlines()):
+    # The answer opens a line outside any bracket and may run over several:
+    # read one line at a time, a pretty-printed answer followed by a log, or
+    # cut off, gave up its `{"ok": true}` as the answer it was nested in.
+    lines = stripped.split("\n")
+    depth = _depths(lines)
+    for i in reversed(range(len(lines))):
+        if lines[i][:1] != "{" or depth[i]:
+            continue
         try:
-            got = _loads(line)
+            got = _loads_lines("\n".join(lines[i:]))
         except (ValueError, EngineError):
             continue
         if isinstance(got, dict):

@@ -81,29 +81,39 @@ def load(name: str):
 # positive limit, a non-empty chain); whether a list may be empty or a key
 # absent is the rule's to say, in its own words, so lists here may be empty
 # and only keys read unconditionally are required.
-# `[x]` is a list of x; `{"*": x}` a mapping whose every value is x; a tuple is
-# any one of its shapes; a plain string other than TEXT/COUNT is that literal;
-# a key ending in `?` may be absent. Keys not named here are not read.
+# `[x]` is a list of x; `{"*": x}` a mapping whose every value is x, and whose
+# other named keys are also required; a tuple is any one of its shapes; a plain
+# string other than TEXT/COUNT is that literal; a key ending in `?` may be
+# absent. Keys not named here are not read.
 COUNT = "a positive integer"
 TEXT = "a non-empty string"
 NONEMPTY = "non-empty"
 STRINGS = [str]
+# Read by a rule by name, on every run: absent, the rule crashed instead of the
+# gate naming the key, and an absent class `tools` read as "grants no Bash".
+LIMITS = ("skill_md_lines", "description_chars", "playbook_lines", "playbooks_per_skill",
+          "shared_file_lines", "shared_lines_total", "skills_max", "routes_max",
+          "route_stages_max", "repo_md_lines_total")
 SHAPES = {
     "harness.yaml": {
         "set": TEXT, "prefix": TEXT, "shared_dir": TEXT, "skills_dir": str,
-        "platform_dirs": STRINGS, "limits": {"*": COUNT},
-        "permission_classes": {"*": {"tools?": str, "writes?": bool}},
+        "platform_dirs": STRINGS, "limits": {"*": COUNT, **dict.fromkeys(LIMITS, COUNT)},
+        "permission_classes": {"*": {"tools": str, "writes?": bool}},
         "forbidden_description_terms": STRINGS, "engines?": dict, "refutation?": dict,
         "linked_tools?": {"*": ("all", STRINGS)},
         "finding_visuals?": {"playbook?": str, "contract?": str, "why?": str,
                              "required_of?": STRINGS, "forms?": STRINGS,
                              "triggers?": STRINGS, "floor?": STRINGS},
-        "vocabulary": {"*": STRINGS}, "document_labels": STRINGS,
+        "vocabulary": {"*": STRINGS, "patterns": STRINGS, "evidence_levels": STRINGS,
+                       "residual_classes": STRINGS},
+        "document_labels": STRINGS,
         "label_by_path": {"*": str}, "reference_headers": STRINGS,
         "source_authorities?": dict, "source_none_marker?": str,
         "verified_markers?": STRINGS, "external_paths?": STRINGS, "rot_patterns": STRINGS,
-        "signature": {"name?": str, "contract?": str, "vocabulary?": str,
-                      "required_of?": STRINGS, "own_word?": str},
+        # V35 reads every key. An empty own_word is in every body, so the rule
+        # could not fail; an empty contract names the shared directory itself.
+        "signature": {"name": TEXT, "contract": TEXT, "vocabulary": TEXT,
+                      "required_of": STRINGS, "own_word": TEXT},
         "delivered": {"*": {"section": str, "only?": str}},
     },
     "capabilities.yaml": {"*": {"class?": str, "does?": STRINGS, "signals?": STRINGS,
@@ -146,7 +156,11 @@ def misshapen(value, shape, where: str) -> list[str]:
         for key, item in value.items():
             if not isinstance(key, str):
                 problems.append(f"{at}: key {key!r} must be a string")
-            problems += misshapen(item, shape["*"], f"{where}.{key}" if where else str(key))
+            problems += misshapen(item, shape.get(key, shape["*"]),
+                                  f"{where}.{key}" if where else str(key))
+        for key in shape:
+            if key != "*" and key not in value:
+                problems.append(f"{where}.{key} is missing" if where else f"{key} is missing")
         return problems
     for key, sub in shape.items():
         name = key.rstrip("?")
@@ -1249,14 +1263,15 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
 
 
 def _earlier_hook(installed: Path) -> bool:
-    """A copy of a version of this repo's hook that history has since changed."""
+    """A copy of a version of this repo's hook that history has since changed —
+    on any branch: one installed from a newer branch is still this repo's."""
     import subprocess
     if installed.is_symlink() or not installed.is_file():
         return False
     try:
         blob = subprocess.run(["git", "hash-object", str(installed)], cwd=ROOT,
                               capture_output=True, text=True).stdout.strip()
-        log = subprocess.run(["git", "log", "--root", "--format=", "--raw", "--no-abbrev", "--",
+        log = subprocess.run(["git", "log", "--all", "--root", "--format=", "--raw", "--no-abbrev", "--",
                               "coding-tools/githooks/pre-commit"],
                              cwd=ROOT, capture_output=True, text=True).stdout
     except OSError:

@@ -210,6 +210,26 @@ class InstallCommands(Fixture):
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("someone else's", installed.read_text(encoding="utf-8"))
 
+    def test_hooks_installed_from_a_newer_branch_are_this_repos_on_an_older_one(self):
+        # HEAD's history alone does not hold the newer version, so checking out
+        # an older branch refused the hook as someone else's.
+        source = self.repo / "coding-tools/githooks/pre-commit"
+        self.git("add", ".")
+        self.commit()
+        self.git("branch", "old")
+        source.write_text(source.read_text(encoding="utf-8") + "# changed upstream\n",
+                          encoding="utf-8")
+        self.git("add", ".")
+        self.commit()
+        result = self.make("hooks")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.git("checkout", "-q", "old")
+        result = self.make("hooks")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        installed = Path(self.git("rev-parse", "--path-format=absolute", "--git-path",
+                                  "hooks/pre-commit"))
+        self.assertEqual(installed.read_bytes(), source.read_bytes())
+
     def test_hooks_activate_the_source_when_hooks_path_already_points_to_it(self):
         source = self.repo / "coding-tools/githooks/pre-commit"
         source.chmod(0o644)
