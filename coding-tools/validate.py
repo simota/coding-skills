@@ -20,7 +20,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import code_spans, fence_mask, h2_lines, links, live_text, marker_lines  # noqa: E402
+from fences import code_spans, h2_lines, leading_code, links, live_text, marker_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -675,7 +675,7 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
 # A definition, as against a mention: a table row or a heading that opens with
 # the word. `patterns` and `checkers` are route vocabulary and live in
 # routes.yaml, so no page is asked to define them.
-DEFINITION_FORMS = ("| `{w}` |", "| `[{w}]` |", "## `{w}`")
+DEFINITION_FORMS = (("row", "{w}"), ("row", "[{w}]"), ("heading", "{w}"))
 ROUTE_VOCAB = {"patterns", "checkers"}
 
 
@@ -685,20 +685,19 @@ def v20_contract_vocabulary():
     The earlier form asked whether the word appeared anywhere in CONTRACT.md,
     and a word used in a sentence passed as defined — so a definition that was
     replaced by a mere mention did not trip it. A definition is a row or a
-    heading, and every vocabulary key is held to it, not three. Both open a line
-    outside any code block: the same characters inside a sentence or an
-    example are a mention of the form, not the form.
+    heading, and every vocabulary key is held to it, not three. Both are read
+    as rendered: the same characters inside a sentence, a later cell, a code
+    block or a comment are a mention of the form, not the form.
     """
-    lines = []
+    defined = set()
     for p in (SKILLS_ROOT / SHARED).glob("*.md"):
-        page = read(p).splitlines()
-        lines += [l for l, fenced in zip(page, fence_mask(page)) if not fenced]
+        defined |= leading_code(read(p))
     for key, words in VOCAB.items():
         if key in ROUTE_VOCAB:
             continue
         for word in words:
-            forms = [f.format(w=word) for f in DEFINITION_FORMS]
-            if not any(l.startswith(f) for l in lines for f in forms):
+            forms = {(kind, code.format(w=word)) for kind, code in DEFINITION_FORMS}
+            if not forms & defined:
                 fail("V20", f"no page under {SHARED}/ defines {word!r} ({key}) — "
                             "a table row or a heading, not a mention")
 

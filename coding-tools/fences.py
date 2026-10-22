@@ -101,6 +101,26 @@ def fence_mask(lines: list[str]) -> list[bool]:
     return mask
 
 
+def leading_code(text: str) -> set[tuple[str, str]]:
+    """`("heading", code)` for each heading, and `("row", code)` for each table
+    row, whose rendered text opens with that code span — read as rendered, so
+    a quote, a list or indentation does not hide one, and a code block or an
+    HTML comment does not make one."""
+    found = set()
+    tokens = _tokens(text)
+    for i, tok in enumerate(tokens):
+        if tok.type == "heading_open":
+            kind = "heading"
+        elif tok.type in ("th_open", "td_open") and tokens[i - 1].type == "tr_open":
+            kind = "row"
+        else:
+            continue
+        children = tokens[i + 1].children or []
+        if children and children[0].type == "code_inline":
+            found.add((kind, children[0].content))
+    return found
+
+
 def blocks(lines: list[str]) -> list[list[str]]:
     """The content lines of each fenced block, in order."""
     return [tok.content.removesuffix("\n").split("\n")

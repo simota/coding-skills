@@ -433,12 +433,16 @@ class ValidatorBoundaries(unittest.TestCase):
         self.harness["vocabulary"].clear()
         self.harness["vocabulary"]["statuses"] = ["DONE"]
         for text in ("Ends as the | `DONE` | row says.\n", "```\n## `DONE`\n```\n",
-                     "| status | `DONE` |\n|---|---|\n"):
+                     "| status | `DONE` |\n|---|---|\n",
+                     "<!--\n| `DONE` | all met |\n-->\n"):
             with self.subTest(text=text):
                 validate.FAILURES.clear()
                 (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
                 self.assert_fails(validate.v20_contract_vocabulary, "V20")
-        for text in ("| `DONE` | all met |\n|---|---|\n", "## `DONE`\n\nAll met.\n"):
+        # Read as rendered: indentation, a quote or a list does not unmake one.
+        for text in ("| `DONE` | all met |\n|---|---|\n", "## `DONE`\n\nAll met.\n",
+                     "### `DONE`\n\nAll met.\n", "  | `DONE` | all met |\n|---|---|\n",
+                     "> | `[DONE]` | all met |\n> |---|---|\n", "- ## `DONE`\n"):
             with self.subTest(text=text):
                 validate.FAILURES.clear()
                 (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
