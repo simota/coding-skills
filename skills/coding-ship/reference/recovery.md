@@ -11,7 +11,8 @@ Verified: 2026-10-09 — every row except `git checkout <sha>` and `rm -rf` was 
 the operation in a fixture repository and attempting the recovery. `make figures` re-runs, on every
 commit and against the git actually installed: `reset --hard` and the reflog, `gc --prune=now`
 leaving fresh reflog entries alone, `restore .`, the staged blob found by `fsck`, `stash` leaving untracked
-files, `checkout -f` with and without a target branch, and `branch -D` taking its own reflog. A
+files, `checkout -f` with and without a target branch, `switch --discard-changes` stopping at an
+untracked file, and `branch -D` taking its own reflog. A
 release that changed one of those fails the build; the other rows have no automated check.
 
 One line decides everything on this page:
@@ -36,7 +37,7 @@ not a dangling object, nothing.
 | `git checkout <sha>` (detached work) | nothing, until GC | **yes** | `git reflog`, `git fsck --lost-found` |
 | `git stash drop` / `stash clear` | the stash commit | **yes, until GC** | `git fsck --lost-found`, then `git show` each dangling commit |
 | `git restore .` / `git checkout -- .` | **unstaged** worktree edits (restored from the index; staged content is untouched) | **no** | nothing recorded them |
-| `git checkout -f` / `git switch --discard-changes <branch>` | uncommitted edits to **tracked** files; with a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten — it carries non-conflicting edits across; `-f` removes the refusal. Other untracked files survive |
+| `git checkout -f` / `git switch --discard-changes <branch>` | uncommitted edits to **tracked** files; with `-f` and a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten — it carries non-conflicting edits across; `-f` removes the refusal. `--discard-changes` removes it for tracked edits only: an untracked file in the way still stops the switch, and the edits stay. Other untracked files survive |
 | `git clean -fd` | untracked files | **no** | git never had them |
 | `rm -rf` on the worktree | everything uncommitted | **no** | — |
 

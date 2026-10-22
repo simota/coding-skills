@@ -129,6 +129,10 @@ def printed_subjects(block: list[str], command: str) -> list[str]:
     The listing ends at the next prompt, and a trailing `# …` note is the page's
     commentary, not output. Reading the whole block instead once took one
     command's expectation from the other's listing, and passed by coincidence.
+
+    A line under the command that reads as neither is a claim the check would
+    not see — an eight-digit sha was skipped, and a commit added to the
+    listing passed — so it fails rather than being dropped.
     """
     out, inside = [], False
     for line in block:
@@ -136,8 +140,13 @@ def printed_subjects(block: list[str], command: str) -> list[str]:
             inside = command in line
             continue
         bare = line.split("#", 1)[0].strip()
-        if inside and re.fullmatch(r"[0-9a-f]{7} c\d", bare):
+        if not inside or not bare:
+            continue
+        if re.fullmatch(r"[0-9a-f]{7,40} c\d", bare):
             out.append(bare.split()[-1])
+        else:
+            fail(HISTORY, f"`{command}` lists {bare!r}, which the check cannot read as "
+                          "`<sha> <subject>`")
     return out
 
 
@@ -241,24 +250,38 @@ def check_scoping(tmp: pathlib.Path) -> int:
     r.write("f.txt", "base\nwork-tree-edit\n")
     r.write("s.txt", "staged\n"); r.must("add", "s.txt")
     r.write("u.txt", "never-added\n")
-    got = {
-        "git diff": r.git("diff", "--name-only").split(),
-        "git diff --staged": r.git("diff", "--staged", "--name-only").split(),
-        "git diff HEAD": r.git("diff", "HEAD", "--name-only").split(),
-    }
-    want = {"git diff": ["f.txt"], "git diff --staged": ["s.txt"],
-            "git diff HEAD": ["f.txt", "s.txt"]}
+    # The page's listing is the expectation: `$ git <cmd> -> <files>`, then the
+    # porcelain lines under `$ git status --porcelain`, each before any `#`.
+    want: dict[str, list[str]] = {}
+    porcelain_want: list[str] = []
+    inside = False
+    for line in fenced(SCOPING, "$ git status --porcelain"):
+        bare = line.split("#", 1)[0].rstrip()
+        if bare.startswith("$ "):
+            inside = bare == "$ git status --porcelain"
+            if "->" in bare:
+                command, files = bare[2:].split("->", 1)
+                want[command.strip()] = files.split()
+        elif inside and bare.strip():
+            porcelain_want.append(bare)
+    expected = {"git diff", "git diff --staged", "git diff HEAD"}
+    if set(want) != expected:
+        fail(SCOPING, f"the listing prints {sorted(want)}, not {sorted(expected)}; "
+                      "the check compares those three")
     n = 0
-    for cmd, expect in want.items():
+    for cmd in sorted(expected & set(want)):
+        got = r.git(*cmd.split()[1:], "--name-only").split()
         n += 1
-        if sorted(got[cmd]) != sorted(expect):
-            fail(SCOPING, f"`{cmd}` showed {got[cmd]}, the page says {expect}")
-    if "u.txt" in sum(got.values(), []):
-        fail(SCOPING, "an untracked file appeared in a diff; the page says none of them show it")
-    porcelain = r.git("status", "--porcelain")
-    if "?? u.txt" not in porcelain:
-        fail(SCOPING, f"`status --porcelain` did not list the untracked file: {porcelain!r}")
-    n += 2
+        if sorted(got) != sorted(want[cmd]):
+            fail(SCOPING, f"`{cmd}` showed {got}, the page says {want[cmd]}")
+        if "u.txt" in got:
+            fail(SCOPING, f"`{cmd}` showed the untracked file; the page says no diff shows it")
+    # Not r.git: stripping the output would drop the leading space of ` M`.
+    porcelain = subprocess.run(("git", "status", "--porcelain"), cwd=r.d, capture_output=True,
+                               text=True, env=GIT_ENV).stdout.splitlines()
+    if sorted(porcelain) != sorted(porcelain_want):
+        fail(SCOPING, f"`status --porcelain` printed {porcelain}, the page says {porcelain_want}")
+    n += 2                               # no diff shows u.txt; porcelain does
     empty = Repo(tmp / "empty")
     empty.write("a.txt", "x\n")
     if "fatal" not in empty.git("rev-parse", "HEAD").lower():
@@ -278,7 +301,8 @@ def check_recovery(tmp: pathlib.Path) -> int:
     states(RECOVERY, "reset --hard", "restore .", "fsck --lost-found", "stash -u",
            "checkout -f", "gc --prune=now", "branch -D",
            "a plain `pop` brings staged edits to tracked files back unstaged",
-           "switch --discard-changes <branch>")
+           "switch --discard-changes <branch>",
+           "an untracked file in the way still stops the switch")
     states(SHIP, "a plain `pop` drops the staging of tracked edits")
     n = 0
     r = Repo(tmp / "reset")
@@ -381,7 +405,17 @@ def check_recovery(tmp: pathlib.Path) -> int:
     r10.write("f.txt", "edit\n")
     if "missing branch" not in r10.git("switch", "--discard-changes"):
         fail(RECOVERY, "`switch --discard-changes` ran without a branch; the page names one")
-    n += 1
+    r10.must("switch", "-q", "-c", "other")
+    r10.write("f.txt", "v1\n"); r10.write("n.txt", "theirs\n"); r10.commit("o")
+    r10.must("switch", "-q", "-")
+    r10.write("f.txt", "edit\n"); r10.write("n.txt", "MINE-UNTRACKED\n")
+    r10.git("switch", "--discard-changes", "other")
+    if (r10.git("branch", "--show-current") == "other"
+            or (r10.d / "n.txt").read_text() != "MINE-UNTRACKED\n"
+            or (r10.d / "f.txt").read_text() != "edit\n"):
+        fail(RECOVERY, "`switch --discard-changes <branch>` went past an untracked file the "
+                       "branch tracks; the page says only `-f` removes that refusal")
+    n += 2
     return n
 
 
@@ -456,7 +490,24 @@ def check_revert(tmp: pathlib.Path) -> int:
                           f"{'staged' if staged else 'unstaged'} test edit; the page says "
                           f"it {'discards' if staged else 'keeps'} it")
         n += 1
-    return n
+
+    # A fix committed with its test: the revert takes the test as well, and
+    # `checkout HEAD -- <test paths>` puts it back without blocking the abort.
+    states(ORACLES, "git checkout HEAD -- <test paths>")
+    r = Repo(tmp / "revert-with-test")
+    r.write("fix.txt", "bug\n"); r.commit("c1")
+    r.write("fix.txt", "fixed\n"); r.write("test.txt", "TEST\n"); r.commit("fix")
+    r.must("revert", "--no-commit", "HEAD")
+    if (r.d / "test.txt").exists():
+        fail(ORACLES, "`revert --no-commit` of a fix committed with its test kept the test; "
+                      "the page says it removes it too")
+    r.must("checkout", "HEAD", "--", "test.txt")
+    if (r.d / "fix.txt").read_text() != "bug\n" or (r.d / "test.txt").read_text() != "TEST\n":
+        fail(ORACLES, "`checkout HEAD -- <test paths>` did not leave the test over pre-fix code")
+    r.must("revert", "--abort")
+    if (r.d / "fix.txt").read_text() != "fixed\n" or r.git("status", "--porcelain"):
+        fail(ORACLES, "`revert --abort` did not restore the fix after the test was put back")
+    return n + 1
 
 
 def main() -> int:
@@ -467,7 +518,7 @@ def main() -> int:
     try:
         for d in ("pickaxe", "dots", "scope", "empty", "reset", "restore",
                   "staged", "untracked", "force", "gc", "switch", "branchd", "plain-pop", "discard",
-                  "revert-staged", "revert-unstaged", "stash-staged", "stash-unstaged",
+                  "revert-staged", "revert-unstaged", "revert-with-test", "stash-staged", "stash-unstaged",
                   "stash-test-staged"):
             (tmp / d).mkdir()
         checks = (check_pickaxe(tmp) + check_dots(tmp)

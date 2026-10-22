@@ -117,7 +117,10 @@ Remove only the fix, and only recoverably:
   failure the stash is kept; do not drop it before recovering the fix
 - **Committed**: `git revert --no-commit <sha>`, run, `git revert --abort`, with
   the test edits committed or left unstaged — `--abort` resets the index, so a
-  staged test edit is discarded with it
+  staged test edit is discarded with it. When `<sha>` also holds the test, as a
+  fix and its test committed together do, the revert removes it too: put it back
+  with `git checkout HEAD -- <test paths>` before running, or the red run is a
+  missing test, not the bug
 
 Both observations are `executed` evidence and both belong in the report. A
 regression test that was never observed red is a guess with a filename — it may
