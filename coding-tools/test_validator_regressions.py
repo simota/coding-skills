@@ -429,6 +429,60 @@ class ValidatorBoundaries(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(validate.unclassified_markers(text), [])
 
+    def test_a_definition_is_a_row_or_heading_that_opens_with_the_word(self):
+        self.harness["vocabulary"].clear()
+        self.harness["vocabulary"]["statuses"] = ["DONE"]
+        for text in ("Ends as the | `DONE` | row says.\n", "```\n## `DONE`\n```\n",
+                     "| status | `DONE` |\n|---|---|\n"):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
+                self.assert_fails(validate.v20_contract_vocabulary, "V20")
+        for text in ("| `DONE` | all met |\n|---|---|\n", "## `DONE`\n\nAll met.\n"):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
+                self.assert_passes(validate.v20_contract_vocabulary)
+
+    def test_a_verified_date_is_not_vouched_for_by_the_next_header(self):
+        self.write("reference/r.md", "Verified: 2026-08-21\nSource: git — quoted from its help.\n")
+        self.assert_fails(validate.v31_verified_names_a_check, "V31")
+
+    def test_a_pinned_version_is_not_a_prefix_of_another(self):
+        self.harness["source_authorities"] = {"git": "2.4"}
+        self.write("reference/r.md", "Source: git 2.45\n\nVerified: no automated check\n\n"
+                                     "Tested with git 2.45.\n")
+        self.assert_fails(validate.v37_source_pins_the_rot, "V37")
+        validate.FAILURES.clear()
+        self.write("reference/r.md", "Source: git 2.4\n\nVerified: no automated check\n\n"
+                                     "Tested with git 2.4.\n")
+        self.assert_passes(validate.v37_source_pins_the_rot)
+
+    def test_a_refutation_that_is_not_text_is_reported_not_crashed_on(self):
+        self.harness["refutation"] = {"lens": ["the citation"], "refuted_when": "it is wrong"}
+        self.assert_fails(validate.v33_refutation_lens, "V33")
+
+    def finding_visuals(self) -> dict:
+        self.write("playbooks/visualise.md", "`hops` and `labelled`, drawn in ASCII or Mermaid.\n")
+        self.write("reference/diagram-forms.md")
+        self.decide("[visualise](playbooks/visualise.md)")
+        fv = {"playbook": "visualise.md", "contract": "diagram-forms.md",
+              "required_of": [self.skill.name], "forms": ["ascii", "mermaid"],
+              "triggers": ["hops"], "floor": ["labelled"]}
+        self.harness["finding_visuals"] = fv
+        return fv
+
+    def test_a_form_is_named_whatever_its_case(self):
+        self.finding_visuals()["forms"] = ["ASCII", "Mermaid"]
+        self.assert_passes(validate.v36_finding_visuals)
+
+    def test_finding_visuals_without_its_files_is_reported_not_crashed_on(self):
+        for key in ("playbook", "contract"):
+            with self.subTest(key=key):
+                validate.FAILURES.clear()
+                del self.finding_visuals()[key]
+                self.assert_fails(validate.v36_finding_visuals, "V36")
+
 
 class MutationHarness(unittest.TestCase):
     def run_fixture(self, script: str, *, nested_tmp: bool = False) -> int:
