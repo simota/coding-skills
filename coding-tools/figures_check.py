@@ -384,8 +384,13 @@ def check_recovery(tmp: pathlib.Path) -> int:
     r8 = Repo(tmp / "branchd")
     r8.write("f.txt", "v1\n"); r8.commit("c1")
     r8.must("branch", "doomed")
+    # Asked of git, not of `.git/logs/`: under the reftable format that path
+    # never exists, and the check could not fail.
+    r8.must("reflog", "exists", "refs/heads/doomed")
     r8.git("branch", "-D", "doomed")
-    if (r8.d / ".git" / "logs" / "refs" / "heads" / "doomed").exists():
+    gone = subprocess.run(("git", "reflog", "exists", "refs/heads/doomed"), cwd=r8.d,
+                          capture_output=True, env=GIT_ENV).returncode != 0
+    if not gone:
         fail(RECOVERY, "`branch -D` left the branch's own reflog; the page says it goes too")
     n += 1
 
