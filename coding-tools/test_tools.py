@@ -162,7 +162,11 @@ class Engine(unittest.TestCase):
     def test_a_schema_the_runner_cannot_check_is_the_callers_input(self):
         unsupported = json.dumps({"type": "object", "minProperties": 1})
         too_deep_to_load = '{"not": ' * 100000 + "{}" + "}" * 100000
-        for text in (unsupported, too_deep_to_load):
+        # An open map cannot be closed for codex: the schema's limit, whichever
+        # engine was named, and found before any of them is asked.
+        open_map = json.dumps({"type": "object", "properties": {
+            "m": {"type": "object", "additionalProperties": {"type": "integer"}}}})
+        for text in (unsupported, too_deep_to_load, open_map):
             with tempfile.TemporaryDirectory() as tmp, self.subTest(schema=text[:30]):
                 prompt, path = pathlib.Path(tmp) / "p.txt", pathlib.Path(tmp) / "s.json"
                 prompt.write_text("fixture", encoding="utf-8")
