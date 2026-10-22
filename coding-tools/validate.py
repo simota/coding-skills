@@ -1167,6 +1167,11 @@ def v37_source_pins_the_rot():
     def names(text: str, name: str) -> bool:
         return re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", text) is not None
 
+    def pinned(text: str, pin: str) -> bool:
+        """A version ends where no digit, letter or `.<more>` continues it:
+        `git 2.4` is neither `git 2.45` nor `git 2.4.1`, and ends a sentence."""
+        return re.search(rf"(?<![\w-]){re.escape(pin)}(?![\w-]|\.\w)", text) is not None
+
     declared = H.get("source_authorities")
     none_marker = H.get("source_none_marker")
     if declared is None or not none_marker:
@@ -1206,11 +1211,11 @@ def v37_source_pins_the_rot():
                                 "uses it; a source the page does not depend on pins nothing")
                 if version and names(head, name):
                     pin = f"{name} {version}"
-                    if not names(head, pin):
+                    if not pinned(head, pin):
                         fail("V37", f"{f.relative_to(ROOT)} names {name} in `Source:` without "
                                     f"the pinned version; the registry pins {version}, and a "
                                     "source without one cannot be compared with anything later")
-                    elif not names(body, pin):
+                    elif not pinned(body, pin):
                         fail("V37", f"{f.relative_to(ROOT)} pins {pin} and the page never says "
                                     f"{pin}; one of the two moved without the other")
 
