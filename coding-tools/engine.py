@@ -143,6 +143,20 @@ def _loads(text: str):
         raise EngineError("the output nests too deeply to read") from None
 
 
+def _loads_lines(text: str):
+    """The value text opens with, by the answer rules, if it ends at the end of
+    a line; the lines after it are not read."""
+    decoder = json.JSONDecoder(parse_float=_finite_number, parse_constant=_finite_number,
+                               parse_int=_integer)
+    try:
+        got, end = decoder.raw_decode(text)
+    except RecursionError:
+        raise EngineError("the output nests too deeply to read") from None
+    if text[end:].split("\n", 1)[0].strip():
+        raise ValueError("the value does not end its line")
+    return got
+
+
 def _one_document(text: str) -> bool:
     """Whether text is exactly one JSON value, read leniently so that a value
     the answer rules refuse (NaN, a huge integer) still counts as one. Nesting
@@ -393,9 +407,15 @@ def _parse(engine: str, body: str) -> dict:
         raise EngineError(f"{engine} returned {type(got).__name__}, not an object")
     # A log line after the answer is skipped, whatever it holds: `NaN` alone
     # on a line is not the answer, and must not stop the search for it.
-    for line in reversed(stripped.splitlines()):
+    # The answer opens at the start of a line and may run over several: read
+    # one line at a time, a pretty-printed answer followed by a log, or cut
+    # off, gave up its indented `{"ok": true}` as the answer it was nested in.
+    lines = stripped.split("\n")
+    for i in reversed(range(len(lines))):
+        if lines[i][:1] != "{":
+            continue
         try:
-            got = _loads(line)
+            got = _loads_lines("\n".join(lines[i:]))
         except (ValueError, EngineError):
             continue
         if isinstance(got, dict):

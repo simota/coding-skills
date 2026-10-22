@@ -120,6 +120,15 @@ class Engine(unittest.TestCase):
             with self.subTest(log=log):
                 self.assertEqual(engine._parse("x", log + '\n{"ok": true}'), {"ok": True})
 
+    def test_a_nested_line_is_not_the_answer_it_sits_in(self):
+        answer = '{\n  "ok": false,\n  "checks": [\n    {"ok": true}\n  ]\n}'
+        self.assertEqual(engine._parse("x", answer + "\ntokens used: 1234\n"),
+                         {"ok": False, "checks": [{"ok": True}]})
+        self.assertEqual(engine._parse("x", "log {\n" + answer), {"ok": False, "checks": [{"ok": True}]})
+        cut = answer.rsplit("\n", 2)[0]       # cut off after the nested line
+        with self.assertRaises(engine.EngineError):
+            engine._parse("x", cut)
+
     def test_a_refused_answer_is_not_mined_for_a_nested_object(self):
         for body in ('{\n  "score": NaN,\n  "detail":\n    {"refuted": false}\n}',
                      '[\n  NaN,\n  {"refuted": true}\n]',
