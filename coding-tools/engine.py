@@ -159,6 +159,29 @@ def _loads_lines(text: str):
     return got
 
 
+def _depths(lines: list[str]) -> list[int]:
+    """How many brackets are open where each line starts, outside strings. A
+    JSON string cannot cross a line, so a stray quote in a log misleads only
+    its own line; a stray bracket makes what follows it read as nested, which
+    refuses an answer rather than inventing one."""
+    out, depth = [], 0
+    for line in lines:
+        out.append(depth)
+        quoted = escaped = False
+        for c in line:
+            if escaped:
+                escaped = False
+            elif quoted:
+                escaped, quoted = c == "\\", c != '"'
+            elif c == '"':
+                quoted = True
+            elif c in "{[":
+                depth += 1
+            elif c in "}]":
+                depth = max(depth - 1, 0)
+    return out
+
+
 def _one_document(text: str) -> bool:
     """Whether text is exactly one JSON value, read leniently so that a value
     the answer rules refuse (NaN, a huge integer) still counts as one. Nesting
@@ -431,12 +454,13 @@ def _parse(engine: str, body: str) -> dict:
         raise EngineError(f"{engine} returned {type(got).__name__}, not an object")
     # A log line after the answer is skipped, whatever it holds: `NaN` alone
     # on a line is not the answer, and must not stop the search for it.
-    # The answer opens at the start of a line and may run over several: read
-    # one line at a time, a pretty-printed answer followed by a log, or cut
-    # off, gave up its indented `{"ok": true}` as the answer it was nested in.
+    # The answer opens a line outside any bracket and may run over several:
+    # read one line at a time, a pretty-printed answer followed by a log, or
+    # cut off, gave up its `{"ok": true}` as the answer it was nested in.
     lines = stripped.split("\n")
+    depth = _depths(lines)
     for i in reversed(range(len(lines))):
-        if lines[i][:1] != "{":
+        if lines[i][:1] != "{" or depth[i]:
             continue
         try:
             got = _loads_lines("\n".join(lines[i:]))

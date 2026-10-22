@@ -125,10 +125,16 @@ class Engine(unittest.TestCase):
         answer = '{\n  "ok": false,\n  "checks": [\n    {"ok": true}\n  ]\n}'
         self.assertEqual(engine._parse("x", answer + "\ntokens used: 1234\n"),
                          {"ok": False, "checks": [{"ok": True}]})
-        self.assertEqual(engine._parse("x", "log {\n" + answer), {"ok": False, "checks": [{"ok": True}]})
-        cut = answer.rsplit("\n", 2)[0]       # cut off after the nested line
-        with self.assertRaises(engine.EngineError):
-            engine._parse("x", cut)
+        self.assertEqual(engine._parse("x", 'log [1/3] {done} "a [quote\n' + answer),
+                         {"ok": False, "checks": [{"ok": True}]})
+        # Cut off, or broken after the nested value: no answer, not that value.
+        # A log line leaving a bracket open is refused the same way.
+        for body in (answer.rsplit("\n", 2)[0],
+                     '{"ok": false, "checks": [\n{"ok": true}\n',
+                     '{"ok": false, "checks": [\n{"ok": true}\n]} trailing junk\n',
+                     "log {\n" + answer):
+            with self.subTest(body=body), self.assertRaises(engine.EngineError):
+                engine._parse("x", body)
 
     def test_a_refused_answer_is_not_mined_for_a_nested_object(self):
         for body in ('{\n  "score": NaN,\n  "detail":\n    {"refuted": false}\n}',
