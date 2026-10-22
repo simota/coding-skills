@@ -252,7 +252,9 @@ class _Visible(HTMLParser):
     def handle_starttag(self, tag: str, attrs) -> None:
         self._boundary()
         self._separate(tag)
-        if not self.hidden and tag in ("a", "img"):
+        # A browser links inside <code> and <pre> too, and an unclosed <code>
+        # runs on over every later link; only script and style show nothing.
+        if tag in ("a", "img") and not any(t in ("script", "style") for t in self.hidden):
             attribute = "href" if tag == "a" else "src"
             target = next((value for key, value in attrs if key == attribute), None)
             if target is not None:
@@ -363,8 +365,10 @@ def live_text(text: str) -> dict[int, str]:
 
 def links(text: str, *, line_range: tuple[int, int] | None = None) -> list[str]:
     """Every link and image target the page renders, reference-style included.
-    A link written inside code is not one. An optional zero-based, half-open
-    source range filters uses, while definitions are resolved from the page."""
+    A link written in a code span or a code block is not one; one inside an
+    HTML `<code>` or `<pre>` element renders, and is. An optional zero-based,
+    half-open source range filters uses, while definitions are resolved from
+    the page."""
     return [target for line, target in _visible(text).links
             if line_range is None or line_range[0] <= line < line_range[1]]
 

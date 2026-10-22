@@ -531,6 +531,13 @@ class Markdown(unittest.TestCase):
         self.assertEqual(fences.links(text), ["a.md", "b.md?x=1&y=2", "c.png", "d.png", "e.md"])
         self.assertEqual(fences.links(text, line_range=(3, 4)), ["d.png", "e.md"])
 
+    def test_a_link_inside_html_code_is_still_a_link(self):
+        # A browser makes both an `<a>` you can click: an unclosed `<code>`
+        # carried on over every later link, and those went unchecked.
+        self.assertEqual(fences.links("Wrap it in a <code> element.\n\nSee [g](m.md).\n"), ["m.md"])
+        self.assertEqual(fences.links("Use <code>[g](m2.md)</code> or "
+                                      "<pre><a href='m3.md'>m</a></pre>.\n"), ["m2.md", "m3.md"])
+
     def test_links_are_read_as_rendered(self):
         self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])
         self.assertEqual(fences.links("`[a](x.md)`\n\n```\n[b](y.md)\n```"), [])
