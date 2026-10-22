@@ -18,6 +18,7 @@ import subprocess
 import pathlib
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -773,6 +774,17 @@ class Round4(unittest.TestCase):
             except FileNotFoundError:
                 state = "gone"
             self.assertIn(state, ("gone", "Z"), "the engine's own child outlived the timeout")
+
+    def test_a_timeout_returns_when_something_outside_the_group_holds_the_pipe(self):
+        # Waiting for the pipes to close, as communicate() does, never returned.
+        child = ("import os, time\n"
+                 "if os.fork() == 0:\n    os.setsid(); time.sleep(8); os._exit(0)\n"
+                 "time.sleep(60)")
+        start = time.monotonic()
+        with mock.patch.object(engine, "TIMEOUT", 1), \
+                self.assertRaisesRegex(engine.EngineError, "did not answer"):
+            engine._spawn("x", [sys.executable, "-c", child])
+        self.assertLess(time.monotonic() - start, 6)
 
     def test_a_page_that_lost_its_claims_fails(self):
         before = len(figures_check.failures)

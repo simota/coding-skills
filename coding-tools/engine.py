@@ -391,7 +391,11 @@ def _spawn(engine: str, argv: list[str]) -> subprocess.CompletedProcess:
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        proc.communicate()
+        # Wait for the process, not the pipes: anything that left the group
+        # and still holds them would make that wait endless.
+        proc.wait()
+        proc.stdout.close()
+        proc.stderr.close()
         if isinstance(e, subprocess.TimeoutExpired):
             raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
         raise
