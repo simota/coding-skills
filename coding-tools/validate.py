@@ -1168,8 +1168,9 @@ def v37_source_pins_the_rot():
 
     def pinned(text: str, pin: str) -> bool:
         """A version ends where no digit, letter or `.<more>` continues it:
-        `git 2.4` is neither `git 2.45` nor `git 2.4.1`, and ends a sentence."""
-        return re.search(rf"(?<![\w-]){re.escape(pin)}(?![\w-]|\.\w)", text) is not None
+        `git 2.4` is none of `git 2.45`, `git 2.4.1` or `git 2.4.*`, and ends
+        a sentence."""
+        return re.search(rf"(?<![\w-]){re.escape(pin)}(?![\w-]|\.[\w*])", text) is not None
 
     declared = H.get("source_authorities")
     none_marker = H.get("source_none_marker")

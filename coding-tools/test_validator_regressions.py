@@ -434,7 +434,9 @@ class ValidatorBoundaries(unittest.TestCase):
         self.harness["vocabulary"]["statuses"] = ["DONE"]
         for text in ("Ends as the | `DONE` | row says.\n", "```\n## `DONE`\n```\n",
                      "| status | `DONE` |\n|---|---|\n",
-                     "<!--\n| `DONE` | all met |\n-->\n"):
+                     "<!--\n| `DONE` | all met |\n-->\n",
+                     "| removed | why |\n|---|---|\n| `DONE` was dropped | merged |\n",
+                     "| status | meaning |\n|---|---|\n| `OK` | fine |\n`DONE` is never emitted.\n"):
             with self.subTest(text=text):
                 validate.FAILURES.clear()
                 (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
@@ -454,7 +456,7 @@ class ValidatorBoundaries(unittest.TestCase):
 
     def test_a_pinned_version_is_not_a_prefix_of_another(self):
         self.harness["source_authorities"] = {"git": "2.4"}
-        for other in ("2.45", "2.4.1"):
+        for other in ("2.45", "2.4.1", "2.4.*"):
             with self.subTest(other=other):
                 validate.FAILURES.clear()
                 self.write("reference/r.md", f"Source: git {other}\n\nVerified: no automated "
