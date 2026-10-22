@@ -1263,14 +1263,15 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
 
 
 def _earlier_hook(installed: Path) -> bool:
-    """A copy of a version of this repo's hook that history has since changed."""
+    """A copy of a version of this repo's hook that history has since changed —
+    on any branch: one installed from a newer branch is still this repo's."""
     import subprocess
     if installed.is_symlink() or not installed.is_file():
         return False
     try:
         blob = subprocess.run(["git", "hash-object", str(installed)], cwd=ROOT,
                               capture_output=True, text=True).stdout.strip()
-        log = subprocess.run(["git", "log", "--root", "--format=", "--raw", "--no-abbrev", "--",
+        log = subprocess.run(["git", "log", "--all", "--root", "--format=", "--raw", "--no-abbrev", "--",
                               "coding-tools/githooks/pre-commit"],
                              cwd=ROOT, capture_output=True, text=True).stdout
     except OSError:
