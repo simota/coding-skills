@@ -748,6 +748,32 @@ class Round4(unittest.TestCase):
         self.assertIn("{}", r.stdout)
         self.assertEqual(engine._as_argument("--- task"), "\n--- task")
 
+    def test_an_engine_does_not_read_the_callers_stdin(self):
+        # `claude -p` appends what it reads on stdin to the prompt, so a git
+        # hook's ref list or a CI pipe reached the refuter as instructions.
+        script = ("import sys, engine; r = engine._spawn('x', [sys.executable, '-c', "
+                  "'import sys; print(repr(sys.stdin.read()))']); print(r.stdout)")
+        r = subprocess.run([sys.executable, "-c", script], input="INJECTED", text=True,
+                           capture_output=True, cwd=pathlib.Path(engine.__file__).parent)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("INJECTED", r.stdout)
+
+    @unittest.skipUnless(pathlib.Path("/proc/self/stat").exists(), "reads /proc")
+    def test_a_timeout_stops_what_the_engine_started(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pidfile = pathlib.Path(tmp) / "pid"
+            child = ("import subprocess, sys, time; "
+                     "p = subprocess.Popen(['sleep', '60']); "
+                     f"open({str(pidfile)!r}, 'w').write(str(p.pid)); time.sleep(60)")
+            with mock.patch.object(engine, "TIMEOUT", 2), \
+                    self.assertRaisesRegex(engine.EngineError, "did not answer"):
+                engine._spawn("x", [sys.executable, "-c", child])
+            try:   # gone, or a zombie nobody has reaped yet
+                state = pathlib.Path(f"/proc/{pidfile.read_text()}/stat").read_text().split()[2]
+            except FileNotFoundError:
+                state = "gone"
+            self.assertIn(state, ("gone", "Z"), "the engine's own child outlived the timeout")
+
     def test_a_page_that_lost_its_claims_fails(self):
         before = len(figures_check.failures)
         figures_check.states(pathlib.Path("/nonexistent/recovery.md"), "reset --hard")

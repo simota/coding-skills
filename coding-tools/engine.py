@@ -34,7 +34,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import pathlib
+import signal
 import subprocess
 import sys
 import tempfile
@@ -366,16 +368,34 @@ def _ask(engine: str, prompt: str, schema: dict) -> dict:
 
 def _spawn(engine: str, argv: list[str]) -> subprocess.CompletedProcess:
     """Every way the engine can fail to start or answer is an EngineError — a
-    caller asking several engines keeps the verdicts the others gave."""
+    caller asking several engines keeps the verdicts the others gave.
+
+    stdin is closed: `claude -p` appends what it reads there to the prompt, so a
+    hook's ref list or a CI pipe reached the engine as part of its question.
+
+    The engine runs in a session of its own, and a timeout kills all of it:
+    killing only the CLI left the tools and servers it started running on, an
+    agent still acting after its caller had given up on it."""
     try:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=TIMEOUT,
-                                encoding="utf-8", errors="replace")
+        proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                                errors="replace", start_new_session=True)
     except FileNotFoundError:
         raise EngineError(f"{engine} is not on PATH") from None
-    except subprocess.TimeoutExpired:
-        raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
     except (OSError, ValueError) as e:     # E2BIG, or a NUL in a prompt argument
         raise EngineError(f"{engine} could not be started: {e}") from None
+    try:
+        stdout, stderr = proc.communicate(timeout=TIMEOUT)
+    except BaseException as e:             # a timeout, or the caller interrupted
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.communicate()
+        if isinstance(e, subprocess.TimeoutExpired):
+            raise EngineError(f"{engine} did not answer within {TIMEOUT}s") from None
+        raise
+    result = subprocess.CompletedProcess(argv, proc.returncode, stdout, stderr)
     if result.returncode:
         raise EngineError(f"{engine} exited with status {result.returncode}.\n{_tail(result)}")
     return result
