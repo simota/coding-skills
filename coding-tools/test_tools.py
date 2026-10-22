@@ -777,7 +777,7 @@ class Round4(unittest.TestCase):
                 engine._spawn("x", [sys.executable, "-c", child])
             try:   # gone, or a zombie nobody has reaped yet
                 state = pathlib.Path(f"/proc/{pidfile.read_text()}/stat").read_text().split()[2]
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):   # reaped before or while reading
                 state = "gone"
             self.assertIn(state, ("gone", "Z"), "the engine's own child outlived the timeout")
 
