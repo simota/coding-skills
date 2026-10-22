@@ -116,8 +116,11 @@ def leading_code(text: str) -> set[tuple[str, str]]:
             kind = "row"
         else:
             continue
+        # Blank text and HTML comments render as nothing; any other child is
+        # something the reader sees before or beside the span.
         children = [c for c in tokens[i + 1].children or []
-                    if c.type != "text" or c.content.strip()]
+                    if not (c.type == "text" and not c.content.strip())
+                    and not (c.type == "html_inline" and c.content.startswith("<!--"))]
         if children and children[0].type == "code_inline" and (
                 kind == "heading" or len(children) == 1):
             found.add((kind, children[0].content))

@@ -444,7 +444,9 @@ class ValidatorBoundaries(unittest.TestCase):
         # Read as rendered: indentation, a quote or a list does not unmake one.
         for text in ("| `DONE` | all met |\n|---|---|\n", "## `DONE`\n\nAll met.\n",
                      "### `DONE`\n\nAll met.\n", "  | `DONE` | all met |\n|---|---|\n",
-                     "> | `[DONE]` | all met |\n> |---|---|\n", "- ## `DONE`\n"):
+                     "> | `[DONE]` | all met |\n> |---|---|\n", "- ## `DONE`\n",
+                     "| `DONE` <!-- note --> | all met |\n|---|---|\n",
+                     "## <!-- note --> `DONE`\n"):
             with self.subTest(text=text):
                 validate.FAILURES.clear()
                 (self.shared / "CONTRACT.md").write_text(text, encoding="utf-8")
