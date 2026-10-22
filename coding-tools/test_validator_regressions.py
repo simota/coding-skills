@@ -458,7 +458,7 @@ class ValidatorBoundaries(unittest.TestCase):
 
     def test_a_pinned_version_is_not_a_prefix_of_another(self):
         self.harness["source_authorities"] = {"git": "2.4"}
-        for other in ("2.45", "2.4.1", "2.4.*"):
+        for other in ("2.45", "2.4.1", "2.4.*", "2.4+local"):
             with self.subTest(other=other):
                 validate.FAILURES.clear()
                 self.write("reference/r.md", f"Source: git {other}\n\nVerified: no automated "
@@ -466,7 +466,7 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.assert_fails(validate.v37_source_pins_the_rot, "V37")
         validate.FAILURES.clear()
         self.write("reference/r.md", "Source: git 2.4\n\nVerified: no automated check\n\n"
-                                     "Tested with git 2.4.\n")
+                                     "Tested with git 2.4, and works on git 2.4+.\n")
         self.assert_passes(validate.v37_source_pins_the_rot)
 
     def test_a_refutation_that_is_not_text_is_reported_not_crashed_on(self):
