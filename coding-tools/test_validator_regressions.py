@@ -74,7 +74,9 @@ class RegistryLoading(unittest.TestCase):
                              ('verified_markers:\n', 'verified_markers: "no automated check"\nunused:\n'),
                              ("skills_dir: skills", "skills_dir: 3"),
                              ("refute.py: all", "refute.py: coding-review"),
-                             ("  vocabulary: prediction_outcomes", "  vocabulary: nosuch")],
+                             ("  vocabulary: prediction_outcomes", "  vocabulary: nosuch"),
+                             # YAML reads 2.40 as 2.4: a pin is text or nothing.
+                             ("  git: null", "  git: 2.40")],
         }
         for name, edits in mutations.items():
             path = self.registry(name)
@@ -493,6 +495,85 @@ class ValidatorBoundaries(unittest.TestCase):
                 validate.FAILURES.clear()
                 del self.finding_visuals()[key]
                 self.assert_fails(validate.v36_finding_visuals, "V36")
+
+
+    def test_every_capability_key_is_a_skill_whatever_its_prefix(self):
+        for key in ("codng-test", "coding-ghost"):
+            with self.subTest(key=key), mock.patch.object(
+                    validate, "CAP", {"coding-test": {}, key: {"class": "full"}}):
+                validate.FAILURES.clear()
+                self.assert_fails(validate.v3_roster, "V3")
+        with mock.patch.object(validate, "CAP", {"coding-test": {}}):
+            validate.FAILURES.clear()
+            self.assert_passes(validate.v3_roster)
+
+    def test_a_delivered_block_is_placed_where_its_marker_sits(self):
+        self.harness["delivered"] = {"sizing": {"section": "Before starting"}}
+        (self.root / "coding-registry/delivered").mkdir(parents=True)
+        (self.root / "coding-registry/delivered/sizing.md").write_text("Size it.\n",
+                                                                       encoding="utf-8")
+        block = "<!-- deliver:sizing -->\nSize it.\n<!-- /deliver:sizing -->"
+        misplaced = ("## Before starting\n\nThe block (`<!-- deliver:sizing -->`) is "
+                     f"delivered.\n\n## Done when\n\n{block}\n")
+        self.write("SKILL.md", misplaced)
+        self.assert_fails(validate.v17_delivery, "V17")
+        validate.FAILURES.clear()
+        self.write("SKILL.md", f"## Before starting\n\n{block}\n\n## Done when\n\nDone.\n")
+        self.assert_passes(validate.v17_delivery)
+
+    def test_a_grade_in_verify_with_is_one_a_reader_sees_as_a_word(self):
+        for text in ("Read back. <!-- executed -->", "Never unexecuted.",
+                     '<span title="executed">Read back.</span>'):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", f"## Verify with\n\n{text}\n")
+                self.assert_fails(validate.v21_verify_names_a_grade, "V21")
+        for text in ("Run it (evidence: `executed`).", "It was executed.",
+                     "<code>inspected</code>, with the reason."):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", f"## Verify with\n\n{text}\n")
+                self.assert_passes(validate.v21_verify_names_a_grade)
+
+    def test_the_signature_word_is_one_a_reader_sees(self):
+        signature = {"name": "prediction", "contract": "PREDICTION.md",
+                     "vocabulary": "prediction_outcomes", "required_of": [self.skill.name],
+                     "own_word": "redict"}
+        words = " ".join(f"`{w}`" for w in self.harness["vocabulary"]["prediction_outcomes"])
+        (self.shared / "PREDICTION.md").write_text(words + "\n", encoding="utf-8")
+        with mock.patch.object(validate, "SIGNATURE", signature):
+            self.write("SKILL.md", "Write the observable first <!-- predict -->.\n")
+            self.assert_fails(validate.v35_signature, "V35")
+            validate.FAILURES.clear()
+            self.write("SKILL.md", "**Predict the observable** first.\n")
+            self.assert_passes(validate.v35_signature)
+
+    def test_a_source_says_none_as_a_word(self):
+        self.harness["source_authorities"] = {}
+        self.write("reference/r.md", "Source: the docs, which nonetheless move.\n\n"
+                                     "Verified: no automated check\n")
+        self.assert_fails(validate.v37_source_pins_the_rot, "V37")
+        validate.FAILURES.clear()
+        self.write("reference/r.md", "Source: none — the shapes are this set's own.\n\n"
+                                     "Verified: no automated check\n")
+        self.assert_passes(validate.v37_source_pins_the_rot)
+
+    def test_an_enumeration_is_read_wherever_a_line_lists_it(self):
+        self.harness["vocabulary"] = {"statuses": ["DONE", "PARTIAL"]}
+        for line in ("status: DONE  # DONE | PARTIAL | FAILED, see the contract",
+                     "status: DONE  # DONE | PARTIAL | FAILED.",
+                     "  DONE | PARTIAL | FAILED", "- DONE | PARTIAL | FAILED",
+                     "> DONE | PARTIAL | FAILED"):
+            with self.subTest(line=line):
+                validate.FAILURES.clear()
+                (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
+                self.assert_fails(validate.v38_enumerations_declared, "V38")
+        for line in ("status: DONE  # DONE | PARTIAL, see the contract",
+                     "Pick DONE | PARTIAL or neither and stop"):
+            with self.subTest(line=line):
+                validate.FAILURES.clear()
+                (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
+                self.assert_passes(validate.v38_enumerations_declared)
 
 
 class MutationHarness(unittest.TestCase):
