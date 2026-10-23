@@ -67,8 +67,8 @@ twenty-file one nobody agreed to.
 Before reporting, run both halves and state both results:
 
 1. **Markers introduced by this run** — scan what changed since it began:
-   `git diff HEAD` and the untracked files, less what was there at the start —
-   never the whole tree. Every marker there must appear in `open` with a matching class
+   `git diff <the commit it started on>` and the untracked files, less what was
+   dirty at the start — never the whole tree. Every marker there must be in `open`, class matching
 2. **Coverage** — diff the files actually written against the files carrying
    evidence
 

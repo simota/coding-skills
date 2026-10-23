@@ -806,6 +806,9 @@ def v23_labels():
             fail("V23", f"{rel} label is {first.strip()!r}, expected {SET}:{want}")
 
 
+OWN_DIRS = {Path(__file__).resolve().parent.name, "coding-registry"}
+
+
 def v24_rendered_tables():
     routing = read(SKILLS_ROOT / ROUTING_FILE)
     readme = read(ROOT / "README.md")
@@ -820,8 +823,10 @@ def v24_rendered_tables():
             fail("V24", f"README.md does not list {name}")
     for doc, text in ((SKILLS_ROOT / ROUTING_FILE, routing), (ROOT / "README.md", readme)):
         for found in set(re.findall(rf"`({PREFIX}[a-z][a-z-]*)`", text)):
-            # `coding-tools` carries the prefix as V28 requires; it exists and is no skill.
-            if found not in SKILLS and not (ROOT / found).is_dir():
+            # The set's own tools and registry carry the prefix as V28 requires
+            # and are no skill. Only they: a retired skill's directory left on
+            # disk is still a name that does not exist.
+            if found not in SKILLS and found not in OWN_DIRS:
                 fail("V24", f"{doc.relative_to(ROOT)} names {found}, which does not exist")
 
 

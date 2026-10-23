@@ -620,9 +620,15 @@ class ValidatorBoundaries(unittest.TestCase):
                       f"| [`{name}`](x) | tests |\n|---|---|\n\n`coding-tools` holds the checks.\n")
         self.assert_passes(validate.v24_rendered_tables)
         validate.FAILURES.clear()
-        self.listings(f"| `{name}` | tests |\n|---|---|\n\nSee `coding-ghost`.\n",
-                      f"| [`{name}`](x) | tests |\n|---|---|\n")
-        self.assert_fails(validate.v24_rendered_tables, "V24")
+        # A retired skill whose directory is still on disk is no more listed.
+        (self.root / "coding-old/playbooks").mkdir(parents=True)
+        (self.root / "skills/coding-old/playbooks").mkdir(parents=True)
+        for gone in ("coding-ghost", "coding-old"):
+            with self.subTest(gone=gone):
+                validate.FAILURES.clear()
+                self.listings(f"| `{name}` | tests |\n|---|---|\n\nSee `{gone}`.\n",
+                              f"| [`{name}`](x) | tests |\n|---|---|\n")
+                self.assert_fails(validate.v24_rendered_tables, "V24")
 
     def test_a_shared_page_one_directory_down_is_still_budgeted(self):
         (self.shared / "notes").mkdir()
