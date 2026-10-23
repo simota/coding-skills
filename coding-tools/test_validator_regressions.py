@@ -74,7 +74,9 @@ class RegistryLoading(unittest.TestCase):
                              ('verified_markers:\n', 'verified_markers: "no automated check"\nunused:\n'),
                              ("skills_dir: skills", "skills_dir: 3"),
                              ("refute.py: all", "refute.py: coding-review"),
-                             ("  vocabulary: prediction_outcomes", "  vocabulary: nosuch")],
+                             ("  vocabulary: prediction_outcomes", "  vocabulary: nosuch"),
+                             # YAML reads 2.40 as 2.4: a pin is text or nothing.
+                             ("  git: null", "  git: 2.40")],
         }
         for name, edits in mutations.items():
             path = self.registry(name)

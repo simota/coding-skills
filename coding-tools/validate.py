@@ -108,7 +108,8 @@ SHAPES = {
                        "residual_classes": STRINGS},
         "document_labels": STRINGS,
         "label_by_path": {"*": str}, "reference_headers": STRINGS,
-        "source_authorities?": dict, "source_none_marker?": str,
+        # A version is text: YAML reads `2.40` as the number 2.4.
+        "source_authorities?": {"*": (str, None)}, "source_none_marker?": str,
         "verified_markers?": STRINGS, "external_paths?": STRINGS, "rot_patterns": STRINGS,
         # V35 reads every key. An empty own_word is in every body, so the rule
         # could not fail; an empty contract names the shared directory itself.
@@ -128,6 +129,8 @@ def misshapen(value, shape, where: str) -> list[str]:
     at = where or "the file"
     if shape is TEXT:
         return [] if isinstance(value, str) and value.strip() else [f"{at} must be {TEXT}"]
+    if shape is None:
+        return [] if value is None else [f"{at} must be null"]
     if shape is COUNT:
         return [] if type(value) is int and value > 0 else [f"{at} must be {COUNT}"]
     if isinstance(shape, str):
