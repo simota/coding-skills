@@ -516,6 +516,33 @@ def _(r):
     (nested / "stale.md").write_text("<!-- coding:deferred -->\nno headers\n", encoding="utf-8")
 
 
+@case("V24-prose-only")
+def _(r):
+    """Dropped from the table, still named in prose further down."""
+    p = r / "README.md"
+    lines = p.read_text(encoding="utf-8").split("\n")
+    rows = [l for l in lines if l.startswith("| [`coding-ship`]")]
+    assert len(rows) == 1, rows
+    lines.remove(rows[0])
+    p.write_text("\n".join(lines), encoding="utf-8")
+
+
+@case("V6-nested")
+def _(r):
+    (r / f"{S}_coding/notes").mkdir()
+    (r / f"{S}_coding/notes/EXTRA.md").write_text("<!-- coding:contract -->\n" + "x\n" * 200,
+                                                  encoding="utf-8")
+
+
+@case("V29-bold")
+def _(r): sub(r / f"{S}coding-review/reference/machine-authored.md", "Verified:", "**Verified:**")
+
+
+@case("V38-second")
+def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ",
+              "status: DONE  # DONE | PARTIAL; class: BLOCKED | WONTFIX\n\n## ")
+
+
 def main() -> int:
     # The exit code, not the word "green": a failing tree once printed both, and
     # every case then "fired" on a failure that was already there.

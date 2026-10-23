@@ -563,7 +563,8 @@ class ValidatorBoundaries(unittest.TestCase):
         for line in ("status: DONE  # DONE | PARTIAL | FAILED, see the contract",
                      "status: DONE  # DONE | PARTIAL | FAILED.",
                      "  DONE | PARTIAL | FAILED", "- DONE | PARTIAL | FAILED",
-                     "> DONE | PARTIAL | FAILED"):
+                     "> DONE | PARTIAL | FAILED",
+                     "status: DONE  # DONE | PARTIAL; class: BLOCKED | WONTFIX"):
             with self.subTest(line=line):
                 validate.FAILURES.clear()
                 (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
@@ -574,6 +575,59 @@ class ValidatorBoundaries(unittest.TestCase):
                 validate.FAILURES.clear()
                 (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
                 self.assert_passes(validate.v38_enumerations_declared)
+
+
+    def test_a_reference_header_opens_its_line_as_the_rules_reading_it_require(self):
+        # V31 and V37 read the line that opens with the header and leave a
+        # missing one to V29, so V29 has to find the header the same way.
+        headers = {"Purpose:": "why", "Read when:": "always", "Source: ": "none",
+                   "Verified:": "no automated check"}
+        for header in headers:
+            with self.subTest(header=header):
+                validate.FAILURES.clear()
+                self.write("reference/r.md", "".join(
+                    f"**{h.strip()}** {v}\n\n" if h == header else f"{h.strip()} {v}\n\n"
+                    for h, v in headers.items()))
+                self.assert_fails(validate.v29_reference_headers, "V29")
+        validate.FAILURES.clear()
+        self.write("reference/r.md", "".join(f"{h.strip()} {v}\n\n" for h, v in headers.items()))
+        self.assert_passes(validate.v29_reference_headers)
+
+    def listings(self, routing: str, readme: str) -> None:
+        (self.shared / "ROUTING.md").write_text(routing, encoding="utf-8")
+        (self.root / "README.md").write_text(readme, encoding="utf-8")
+
+    def test_a_skill_is_listed_by_a_row_not_by_a_mention(self):
+        name = self.skill.name
+        row = f"| Skill | Owns |\n|---|---|\n| `{name}` | tests |\n"
+        linked = f"| Skill | Owns |\n|---|---|\n| [`{name}`]({name}/SKILL.md) | tests |\n"
+        prose = f"Hand it to `{name}` when the tests are thin.\n"
+        for routing, readme in ((prose, linked), (row, prose),
+                                (row, f"| Skill | Owns |\n|---|---|\n| `other` | x |\n\n"
+                                      f"See [`{name}`]({name}/SKILL.md).\n")):
+            with self.subTest(routing=routing, readme=readme):
+                validate.FAILURES.clear()
+                self.listings(routing, readme)
+                self.assert_fails(validate.v24_rendered_tables, "V24")
+        validate.FAILURES.clear()
+        self.listings(row, linked)
+        self.assert_passes(validate.v24_rendered_tables)
+
+    def test_a_directory_the_set_owns_is_not_a_missing_skill(self):
+        name = self.skill.name
+        (self.root / "coding-tools").mkdir()
+        self.listings(f"| `{name}` | tests |\n|---|---|\n",
+                      f"| [`{name}`](x) | tests |\n|---|---|\n\n`coding-tools` holds the checks.\n")
+        self.assert_passes(validate.v24_rendered_tables)
+        validate.FAILURES.clear()
+        self.listings(f"| `{name}` | tests |\n|---|---|\n\nSee `coding-ghost`.\n",
+                      f"| [`{name}`](x) | tests |\n|---|---|\n")
+        self.assert_fails(validate.v24_rendered_tables, "V24")
+
+    def test_a_shared_page_one_directory_down_is_still_budgeted(self):
+        (self.shared / "notes").mkdir()
+        (self.shared / "notes/EXTRA.md").write_text("<!-- coding:contract -->\n", encoding="utf-8")
+        self.assert_fails(validate.v6_budgets, "V6")
 
 
 class MutationHarness(unittest.TestCase):
