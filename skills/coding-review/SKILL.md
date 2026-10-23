@@ -110,7 +110,7 @@ was actually run (evidence: `executed`).
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report

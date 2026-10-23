@@ -45,7 +45,7 @@ next: "<the skill that should receive this, or none>"
   decided against rather than rediscovering it
 - **`written` says whether the `#TODO(agent):` marker is in the tree yet.**
   A run that may not write that file sets it `false` and names where the marker
-  belongs; the first receiver that may edit it places it and flips the flag
+  belongs; the first receiver that may write a marker there places it and flips the flag
   (`_coding/CONTRACT.md` § Residuals)
 - **Review findings travel in `done`**, each with rank and certainty; `open` is for residuals
 - Pass the change in state, not the working log. Reasoning does not travel
@@ -58,8 +58,8 @@ next: "<the skill that should receive this, or none>"
 3. Does every key of `evidence` exist on disk, and is every level above `asserted`?
 4. Do `swept` and `evidence` agree, and does every marker counted appear in
    `open`? A coverage claim that does not add up is no coverage
-5. Is any `open` entry `written: false`? If your run may edit that file, placing
-   the marker is part of your run
+5. Is any `open` entry `written: false`? If your run may write a marker there
+   (`_coding/CONTRACT.md` § Residuals), placing it is part of your run
 6. Is any `inspected` level missing its reason? That is `asserted` renamed
 7. Does the work about to start fall under the brief's `excludes`?
 

@@ -428,6 +428,11 @@ def v5_playbook_budget():
 
 
 def v6_budgets():
+    # The budgets, labels and path rules read the shared directory one level
+    # down, as _flat says of playbooks/; a page in a subdirectory escaped them all.
+    for sub in sorted(p for p in (SKILLS_ROOT / SHARED).glob("*") if p.is_dir()):
+        fail("V6", f"{SHARED}/{sub.name}/ is a directory; shared pages sit directly "
+                   f"in {SHARED}/, where the rules read them")
     total = 0
     for f in sorted((SKILLS_ROOT / SHARED).glob("*.md")):
         n = len(read(f).splitlines())
@@ -801,17 +806,27 @@ def v23_labels():
             fail("V23", f"{rel} label is {first.strip()!r}, expected {SET}:{want}")
 
 
+OWN_DIRS = {Path(__file__).resolve().parent.name, "coding-registry"}
+
+
 def v24_rendered_tables():
     routing = read(SKILLS_ROOT / ROUTING_FILE)
     readme = read(ROOT / "README.md")
+    # Listed is a row whose first cell is the name: a skill dropped from the
+    # table and still mentioned in prose is not listed. README links its rows.
+    routing_rows = leading_code(routing)
+    readme_rows = leading_code(readme, linked=True)
     for name in SKILLS:
-        if f"`{name}`" not in routing:
+        if ("row", name) not in routing_rows:
             fail("V24", f"{ROUTING_FILE} does not list {name}")
-        if name not in readme:
+        if ("row", name) not in readme_rows:
             fail("V24", f"README.md does not list {name}")
     for doc, text in ((SKILLS_ROOT / ROUTING_FILE, routing), (ROOT / "README.md", readme)):
         for found in set(re.findall(rf"`({PREFIX}[a-z][a-z-]*)`", text)):
-            if found not in SKILLS:
+            # The set's own tools and registry carry the prefix as V28 requires
+            # and are no skill. Only they: a retired skill's directory left on
+            # disk is still a name that does not exist.
+            if found not in SKILLS and found not in OWN_DIRS:
                 fail("V24", f"{doc.relative_to(ROOT)} names {found}, which does not exist")
 
 
@@ -888,9 +903,11 @@ def v29_reference_headers():
     want = H["reference_headers"]
     for d in SKILL_DIRS:
         for f in sorted((d / "reference").glob("*.md")) if (d / "reference").exists() else []:
-            head = "\n".join(read(f).splitlines()[:12])
+            # A header opens its line: V31 and V37 read it there and leave a
+            # missing one to this rule, so `**Verified:**` is missing to all three.
+            head = read(f).splitlines()[:12]
             for header in want:
-                if header not in head:
+                if not any(l.startswith(header) for l in head):
                     fail("V29", f"{f.relative_to(ROOT)} has no {header!r} in its first "
                                 "12 lines; the deferred layer states what it claims "
                                 "and when anyone last checked")
@@ -1273,16 +1290,15 @@ def v38_enumerations_declared():
         if ".git" in f.parts:
             continue
         for i, line in enumerate(read(f).splitlines(), 1):
-            m = ENUM_RE.search(line)
-            if not m:
-                continue
-            words = [w.strip() for w in m.group(1).split("|")]
-            if not _is_enumeration(words):
-                continue
-            missing = [w for w in words if w not in declared]
-            if missing:
-                fail("V38", f"{f.relative_to(ROOT)}:{i} switches on {', '.join(missing)}, "
-                            "which harness.yaml vocabulary does not declare")
+            # Every set on the line: a second one after the first is read too.
+            for m in ENUM_RE.finditer(line):
+                words = [w.strip() for w in m.group(1).split("|")]
+                if not _is_enumeration(words):
+                    continue
+                missing = [w for w in words if w not in declared]
+                if missing:
+                    fail("V38", f"{f.relative_to(ROOT)}:{i} switches on {', '.join(missing)}, "
+                                "which harness.yaml vocabulary does not declare")
 
 
 RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,

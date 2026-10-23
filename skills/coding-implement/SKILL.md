@@ -67,7 +67,7 @@ adjacent work is defined in `registry/capabilities.yaml`.
 | Nothing runs end to end yet, or progress feels fast and unverifiable | [traps](playbooks/traps.md) |
 | The change would also tidy something nearby | Do not. Behaviour change and cleanup in one diff is unreviewable — mark it and hand it to `coding-refactor` |
 | A test fails and the quickest fix is to change the test | Establish which is wrong first. Changing the test to match the code deletes the only evidence you had |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run it for the first time | **Predict the observable** — the status code, the value written, the line logged. Where the prediction cannot be written, the spec has a hole, and it is cheaper to find it here |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -116,7 +116,7 @@ where nothing can be run, with the reason stated.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report

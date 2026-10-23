@@ -101,12 +101,13 @@ def fence_mask(lines: list[str]) -> list[bool]:
     return mask
 
 
-def leading_code(text: str) -> set[tuple[str, str]]:
+def leading_code(text: str, linked: bool = False) -> set[tuple[str, str]]:
     """`("heading", code)` for each heading whose rendered text opens with that
     code span, and `("row", code)` for each table row whose first cell is that
     code span alone: a cell opening a sentence with it is a mention. Read as
     rendered, so a quote, a list or indentation does not hide one, and a code
-    block or an HTML comment does not make one."""
+    block or an HTML comment does not make one. `linked` also takes the span
+    when it is a link's whole text, as an index row links what it lists."""
     found = set()
     tokens = _tokens(text)
     for i, tok in enumerate(tokens):
@@ -120,7 +121,8 @@ def leading_code(text: str) -> set[tuple[str, str]]:
         # something the reader sees before or beside the span.
         children = [c for c in tokens[i + 1].children or []
                     if not (c.type == "text" and not c.content.strip())
-                    and not (c.type == "html_inline" and c.content.startswith("<!--"))]
+                    and not (c.type == "html_inline" and c.content.startswith("<!--"))
+                    and not (linked and c.type in ("link_open", "link_close"))]
         if children and children[0].type == "code_inline" and (
                 kind == "heading" or len(children) == 1):
             found.add((kind, children[0].content))

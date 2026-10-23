@@ -68,7 +68,7 @@ messages, ordering, and timing that anything depends on.
 | Code appears unused | Prove it: grep, dynamic dispatch check, then history. Then delete it — do not comment it out |
 | The tests break during the refactor | Distinguish changed behaviour from broken imports or names. Revert behaviour changes; update only mechanical test references for the latter |
 | Someone else is working in these files | Coordinate or defer. A large refactor across an active branch is a merge conflict with a delay on it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run the safety net | **Predict that it stays green and that nothing else moves.** A refactor whose honest prediction includes a changed output is not a refactor |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -117,7 +117,7 @@ the entry says why nothing could be run.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report

@@ -64,7 +64,7 @@ removes it, with the failing case that proves the diagnosis.
 | The stack trace points at library code | The cause is almost always in the argument you passed. Read the call site before the library |
 | The fix is not obvious after the cause is proved | Hand the shape decision to `coding-plan` rather than improvising in a hot file |
 | The same failure has been chased twice with no progress | Stop and state what is known, what was ruled out, and what would settle it |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | The fix is written and about to be run | **Predict what the reproduction does now** — which assert, what output — before running it. A fix confirmed by a run nobody predicted is a fix nobody can explain |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -114,7 +114,7 @@ cause is a hypothesis.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report

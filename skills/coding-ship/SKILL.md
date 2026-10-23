@@ -57,7 +57,7 @@ branches; it does not fix code to make a commit tidy.
 | A generated file is in the diff | Separate commit, and say why it changed |
 | A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
 | The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
@@ -106,7 +106,7 @@ passes (evidence: `executed`), and the diff was read hunk by hunk (evidence:
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report

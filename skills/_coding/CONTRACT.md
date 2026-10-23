@@ -29,8 +29,8 @@ unverified change leaves.**
 
 | Status | Condition |
 |---|---|
-| `DONE` | Every acceptance criterion met, every file evidenced, zero `UNVERIFIED` or `BLOCKED` residuals |
-| `PARTIAL` | Everything else that produced work — a single `UNVERIFIED` or `BLOCKED` residual lands here |
+| `DONE` | Every acceptance criterion met, every file evidenced, zero `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals |
+| `PARTIAL` | Everything else that produced work — a single `UNVERIFIED`, `BLOCKED` or `DEFERRED` residual lands here |
 | `BLOCKED` | Could not proceed. Say what was tried and what stopped it |
 
 Reporting `DONE` on a run with an unevidenced file is the failure this
@@ -66,9 +66,9 @@ twenty-file one nobody agreed to.
 
 Before reporting, run both halves and state both results:
 
-1. **Markers introduced by this run** — scan the working-tree diff, not the
-   whole tree, so markers left by earlier runs are not counted again. Every
-   marker in the diff must appear in `open` with a matching class
+1. **Markers introduced by this run** — scan what changed since it began:
+   `git diff <the commit it started on>` and the untracked files, less what was
+   dirty at the start — never the whole tree. Every marker there must be in `open`, class matching
 2. **Coverage** — diff the files actually written against the files carrying
    evidence
 

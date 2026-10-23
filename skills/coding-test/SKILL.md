@@ -65,7 +65,7 @@ green honestly.
 | The suite is slow | Find the few slow tests before optimising the many fast ones. Slow suites stop being run, and an unrun suite catches nothing |
 | A test fails after a change | Classify it **before** editing either. If the code may be wrong, the cause is `coding-debug`'s (`registry/capabilities.yaml`); repair only what is shown to be the test's fault |
 | Asked to raise coverage to a number | Say what the number will and will not buy, then cover the behaviour that would break silently |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
 | About to run a new test | **Predict the failure first** — which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing. For behaviour that already works, get the red by breaking the code under test on purpose, then restore it |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -120,7 +120,7 @@ best, and the entry says why it could not be made to fail.
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
 - **`status`**: `DONE` (every criterion met, every file evidenced, zero
-  `UNVERIFIED` or `BLOCKED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
+  `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
 - **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report
