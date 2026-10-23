@@ -162,7 +162,11 @@ class Engine(unittest.TestCase):
     def test_a_schema_the_runner_cannot_check_is_the_callers_input(self):
         unsupported = json.dumps({"type": "object", "minProperties": 1})
         too_deep_to_load = '{"not": ' * 100000 + "{}" + "}" * 100000
-        for text in (unsupported, too_deep_to_load):
+        # An open map cannot be closed for codex: the schema's limit, whichever
+        # engine was named, and found before any of them is asked.
+        open_map = json.dumps({"type": "object", "properties": {
+            "m": {"type": "object", "additionalProperties": {"type": "integer"}}}})
+        for text in (unsupported, too_deep_to_load, open_map):
             with tempfile.TemporaryDirectory() as tmp, self.subTest(schema=text[:30]):
                 prompt, path = pathlib.Path(tmp) / "p.txt", pathlib.Path(tmp) / "s.json"
                 prompt.write_text("fixture", encoding="utf-8")
@@ -526,6 +530,13 @@ class Markdown(unittest.TestCase):
                 "`<a href='code.md'>code</a>`\n")
         self.assertEqual(fences.links(text), ["a.md", "b.md?x=1&y=2", "c.png", "d.png", "e.md"])
         self.assertEqual(fences.links(text, line_range=(3, 4)), ["d.png", "e.md"])
+
+    def test_a_link_inside_html_code_is_still_a_link(self):
+        # A browser makes both an `<a>` you can click: an unclosed `<code>`
+        # carried on over every later link, and those went unchecked.
+        self.assertEqual(fences.links("Wrap it in a <code> element.\n\nSee [g](m.md).\n"), ["m.md"])
+        self.assertEqual(fences.links("Use <code>[g](m2.md)</code> or "
+                                      "<pre><a href='m3.md'>m</a></pre>.\n"), ["m2.md", "m3.md"])
 
     def test_links_are_read_as_rendered(self):
         self.assertEqual(fences.links("[a](x.md) and [b][r]\n\n[r]: y.md"), ["x.md", "y.md"])

@@ -94,8 +94,10 @@ def strict(schema):
     if "object" in _types(out):
         extra = schema.get("additionalProperties", False)
         if extra is not False:
-            raise EngineError("an object open to further keys (additionalProperties "
-                              f"{extra!r}) cannot be closed; codex rejects it open")
+            # The schema's limit, not an engine's failure: codex may be any
+            # run's checker, so no engine is asked a schema it cannot take.
+            raise Unchecked("an object open to further keys (additionalProperties "
+                            f"{extra!r}) cannot be closed; codex rejects it open")
         out["additionalProperties"] = False
         out.setdefault("properties", {})
     return out
@@ -331,6 +333,7 @@ def run(engine: str, prompt: str, schema: dict) -> dict:
     """Ask `engine` for one object matching `schema`. Raises rather than guessing."""
     try:
         _check_schema(schema)
+        strict(schema)
     except RecursionError:
         raise Unchecked("the schema nests too deeply to check") from None
     try:

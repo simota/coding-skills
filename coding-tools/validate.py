@@ -20,7 +20,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import code_spans, h2_lines, links, live_text, marker_lines  # noqa: E402
+from fences import code_spans, h2_lines, leading_code, links, live_text, marker_lines  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -675,7 +675,7 @@ def _check_paths(f: Path, base: Path, label: str, where: Path) -> None:
 # A definition, as against a mention: a table row or a heading that opens with
 # the word. `patterns` and `checkers` are route vocabulary and live in
 # routes.yaml, so no page is asked to define them.
-DEFINITION_FORMS = ("| `{w}` |", "| `[{w}]` |", "## `{w}`")
+DEFINITION_FORMS = (("row", "{w}"), ("row", "[{w}]"), ("heading", "{w}"))
 ROUTE_VOCAB = {"patterns", "checkers"}
 
 
@@ -685,15 +685,19 @@ def v20_contract_vocabulary():
     The earlier form asked whether the word appeared anywhere in CONTRACT.md,
     and a word used in a sentence passed as defined — so a definition that was
     replaced by a mere mention did not trip it. A definition is a row or a
-    heading, and every vocabulary key is held to it, not three.
+    heading, and every vocabulary key is held to it, not three. Both are read
+    as rendered: the same characters inside a sentence, a later cell, a code
+    block or a comment are a mention of the form, not the form.
     """
-    pages = {p.name: read(p) for p in (SKILLS_ROOT / SHARED).glob("*.md")}
+    defined = set()
+    for p in (SKILLS_ROOT / SHARED).glob("*.md"):
+        defined |= leading_code(read(p))
     for key, words in VOCAB.items():
         if key in ROUTE_VOCAB:
             continue
         for word in words:
-            forms = [f.format(w=word) for f in DEFINITION_FORMS]
-            if not any(f in t for t in pages.values() for f in forms):
+            forms = {(kind, code.format(w=word)) for kind, code in DEFINITION_FORMS}
+            if not forms & defined:
                 fail("V20", f"no page under {SHARED}/ defines {word!r} ({key}) — "
                             "a table row or a heading, not a mention")
 
@@ -907,9 +911,11 @@ def v31_verified_names_a_check():
             start = next((i for i, l in enumerate(lines) if l.startswith("Verified:")), None)
             if start is None:
                 continue                      # V29 already reports the missing header
-            block = []
-            for l in lines[start:]:
-                if not l.strip():
+            # To the next header, as V37 reads `Source:`: a `Source:` line that
+            # follows directly is not what re-checks this page's date.
+            block = [lines[start]]
+            for l in lines[start + 1:]:
+                if not l.strip() or any(l.startswith(h) for h in H["reference_headers"]):
                     break
                 block.append(l)
             text = " ".join(block)
@@ -962,8 +968,8 @@ def v33_refutation_lens():
     """
     r = H.get("refutation") or {}
     for key in ("lens", "refuted_when"):
-        if not (r.get(key) or "").strip():
-            fail("V33", f"harness.yaml declares no refutation {key}; "
+        if not isinstance(r.get(key), str) or not r[key].strip():
+            fail("V33", f"harness.yaml declares no refutation {key} as text; "
                         f"{SET}-tools/refute.py has nothing domain-specific to ask with")
 
 
@@ -1098,6 +1104,10 @@ def v36_finding_visuals():
             fail("V36", "finding_visuals.required_of is empty and says nothing "
                         "about why no skill in this set owes a diagram")
         return
+    if not (fv.get("playbook") and fv.get("contract")):
+        fail("V36", "finding_visuals names no playbook or contract; "
+                    f"{required} owe files the rule cannot find")
+        return
     words = list(fv.get("triggers") or []) + list(fv.get("floor") or [])
     if not words or not fv.get("forms"):
         fail("V36", "finding_visuals declares no triggers, floor or forms; "
@@ -1122,7 +1132,7 @@ def v36_finding_visuals():
                 fail("V36", f"{name} never defines {word!r}, which "
                             "finding_visuals declares")
         for form in fv["forms"]:
-            if form not in _norm(text):
+            if _norm(form) not in _norm(text):
                 fail("V36", f"{name} never names the {form!r} form")
         linked = link_paths(SKILLS_ROOT / name,
                             section_links(read(SKILLS_ROOT / name / "SKILL.md"), "Decide first"))
@@ -1155,6 +1165,13 @@ def v37_source_pins_the_rot():
     """
     def names(text: str, name: str) -> bool:
         return re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", text) is not None
+
+    def pinned(text: str, pin: str) -> bool:
+        """A version ends where no digit, letter or `.<more>` continues it:
+        `git 2.4` is none of `git 2.45`, `git 2.4.1`, `git 2.4.*` or
+        `git 2.4+local`, and ends a sentence. A bare `2.4+` names the pin as a
+        floor, and is the pin."""
+        return re.search(rf"(?<![\w-]){re.escape(pin)}(?![\w-]|\.[\w*]|\+\w)", text) is not None
 
     declared = H.get("source_authorities")
     none_marker = H.get("source_none_marker")
@@ -1195,11 +1212,11 @@ def v37_source_pins_the_rot():
                                 "uses it; a source the page does not depend on pins nothing")
                 if version and names(head, name):
                     pin = f"{name} {version}"
-                    if pin not in head:
+                    if not pinned(head, pin):
                         fail("V37", f"{f.relative_to(ROOT)} names {name} in `Source:` without "
                                     f"the pinned version; the registry pins {version}, and a "
                                     "source without one cannot be compared with anything later")
-                    elif pin not in body:
+                    elif not pinned(body, pin):
                         fail("V37", f"{f.relative_to(ROOT)} pins {pin} and the page never says "
                                     f"{pin}; one of the two moved without the other")
 

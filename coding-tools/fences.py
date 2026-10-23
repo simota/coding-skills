@@ -101,6 +101,32 @@ def fence_mask(lines: list[str]) -> list[bool]:
     return mask
 
 
+def leading_code(text: str) -> set[tuple[str, str]]:
+    """`("heading", code)` for each heading whose rendered text opens with that
+    code span, and `("row", code)` for each table row whose first cell is that
+    code span alone: a cell opening a sentence with it is a mention. Read as
+    rendered, so a quote, a list or indentation does not hide one, and a code
+    block or an HTML comment does not make one."""
+    found = set()
+    tokens = _tokens(text)
+    for i, tok in enumerate(tokens):
+        if tok.type == "heading_open":
+            kind = "heading"
+        elif tok.type in ("th_open", "td_open") and tokens[i - 1].type == "tr_open":
+            kind = "row"
+        else:
+            continue
+        # Blank text and HTML comments render as nothing; any other child is
+        # something the reader sees before or beside the span.
+        children = [c for c in tokens[i + 1].children or []
+                    if not (c.type == "text" and not c.content.strip())
+                    and not (c.type == "html_inline" and c.content.startswith("<!--"))]
+        if children and children[0].type == "code_inline" and (
+                kind == "heading" or len(children) == 1):
+            found.add((kind, children[0].content))
+    return found
+
+
 def blocks(lines: list[str]) -> list[list[str]]:
     """The content lines of each fenced block, in order."""
     return [tok.content.removesuffix("\n").split("\n")
@@ -252,7 +278,9 @@ class _Visible(HTMLParser):
     def handle_starttag(self, tag: str, attrs) -> None:
         self._boundary()
         self._separate(tag)
-        if not self.hidden and tag in ("a", "img"):
+        # A browser links inside <code> and <pre> too, and an unclosed <code>
+        # runs on over every later link; only script and style show nothing.
+        if tag in ("a", "img") and not any(t in ("script", "style") for t in self.hidden):
             attribute = "href" if tag == "a" else "src"
             target = next((value for key, value in attrs if key == attribute), None)
             if target is not None:
@@ -363,8 +391,10 @@ def live_text(text: str) -> dict[int, str]:
 
 def links(text: str, *, line_range: tuple[int, int] | None = None) -> list[str]:
     """Every link and image target the page renders, reference-style included.
-    A link written inside code is not one. An optional zero-based, half-open
-    source range filters uses, while definitions are resolved from the page."""
+    A link written in a code span or a code block is not one; one inside an
+    HTML `<code>` or `<pre>` element renders, and is. An optional zero-based,
+    half-open source range filters uses, while definitions are resolved from
+    the page."""
     return [target for line, target in _visible(text).links
             if line_range is None or line_range[0] <= line < line_range[1]]
 
