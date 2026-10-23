@@ -558,6 +558,24 @@ class ValidatorBoundaries(unittest.TestCase):
                                      "Verified: no automated check\n")
         self.assert_passes(validate.v37_source_pins_the_rot)
 
+    def test_an_enumeration_is_read_wherever_a_line_lists_it(self):
+        self.harness["vocabulary"] = {"statuses": ["DONE", "PARTIAL"]}
+        for line in ("status: DONE  # DONE | PARTIAL | FAILED, see the contract",
+                     "status: DONE  # DONE | PARTIAL | FAILED.",
+                     "  DONE | PARTIAL | FAILED", "- DONE | PARTIAL | FAILED",
+                     "> DONE | PARTIAL | FAILED"):
+            with self.subTest(line=line):
+                validate.FAILURES.clear()
+                (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
+                self.assert_fails(validate.v38_enumerations_declared, "V38")
+        for line in ("status: DONE  # DONE | PARTIAL, see the contract",
+                     "Pick DONE | PARTIAL or neither and stop"):
+            with self.subTest(line=line):
+                validate.FAILURES.clear()
+                (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
+                self.assert_passes(validate.v38_enumerations_declared)
+
+
 class MutationHarness(unittest.TestCase):
     def run_fixture(self, script: str, *, nested_tmp: bool = False) -> int:
         import test_validate
