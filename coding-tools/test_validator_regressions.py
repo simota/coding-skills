@@ -495,6 +495,33 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.assert_fails(validate.v36_finding_visuals, "V36")
 
 
+    def test_a_grade_in_verify_with_is_one_a_reader_sees_as_a_word(self):
+        for text in ("Read back. <!-- executed -->", "Never unexecuted.",
+                     '<span title="executed">Read back.</span>'):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", f"## Verify with\n\n{text}\n")
+                self.assert_fails(validate.v21_verify_names_a_grade, "V21")
+        for text in ("Run it (evidence: `executed`).", "It was executed.",
+                     "<code>inspected</code>, with the reason."):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", f"## Verify with\n\n{text}\n")
+                self.assert_passes(validate.v21_verify_names_a_grade)
+
+    def test_the_signature_word_is_one_a_reader_sees(self):
+        signature = {"name": "prediction", "contract": "PREDICTION.md",
+                     "vocabulary": "prediction_outcomes", "required_of": [self.skill.name],
+                     "own_word": "redict"}
+        words = " ".join(f"`{w}`" for w in self.harness["vocabulary"]["prediction_outcomes"])
+        (self.shared / "PREDICTION.md").write_text(words + "\n", encoding="utf-8")
+        with mock.patch.object(validate, "SIGNATURE", signature):
+            self.write("SKILL.md", "Write the observable first <!-- predict -->.\n")
+            self.assert_fails(validate.v35_signature, "V35")
+            validate.FAILURES.clear()
+            self.write("SKILL.md", "**Predict the observable** first.\n")
+            self.assert_passes(validate.v35_signature)
+
 class MutationHarness(unittest.TestCase):
     def run_fixture(self, script: str, *, nested_tmp: bool = False) -> int:
         import test_validate

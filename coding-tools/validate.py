@@ -722,10 +722,21 @@ def strip_delivered(text: str) -> str:
     return text
 
 
+def shows(text: str, word: str, *, whole_word: bool = False) -> bool:
+    """Whether a reader sees `word` — in rendered prose or in code — rather than
+    only in a comment, an attribute or a script. With `whole_word`, `executed`
+    is not found inside `unexecuted`."""
+    pattern = (rf"(?<![\w-]){re.escape(word)}(?![\w-])" if whole_word
+               else re.escape(word))
+    return any(re.search(pattern, fragment)
+               for fragment in (*live_text(text).values(),
+                                *code_spans(text, include_html=True)))
+
+
 def v21_verify_names_a_grade():
     for d in SKILL_DIRS:
         body = strip_delivered(sections(read(d / "SKILL.md")).get("Verify with", ""))
-        if not any(g in body for g in VOCAB["evidence_levels"]):
+        if not any(shows(body, g, whole_word=True) for g in VOCAB["evidence_levels"]):
             fail("V21", f"{d.name} Verify with names no evidence grade of its own; "
                         "the delivered block does not count")
 
@@ -1072,7 +1083,7 @@ def v35_signature():
             fail("V35", f"signature.required_of names {name!r}, which is not a skill")
             continue
         body = strip_delivered(read(SKILLS_ROOT / name / "SKILL.md"))
-        if SIGNATURE["own_word"] not in body:
+        if not shows(body, SIGNATURE["own_word"]):
             fail("V35", f"{name} owes the {SIGNATURE['name']} mechanism and never names "
                         f"it in its own words; the delivered block does not count")
 
