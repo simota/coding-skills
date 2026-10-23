@@ -20,7 +20,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True                     # no __pycache__ in the tools dir
-from fences import code_spans, h2_lines, leading_code, links, live_text, marker_lines  # noqa: E402
+from fences import (code_spans, fence_mask, h2_lines, leading_code, links,  # noqa: E402
+                    live_text, marker_lines)
 
 ROOT = Path(__file__).resolve().parent.parent
 FAILURES: list[str] = []
@@ -580,7 +581,7 @@ def v17_delivery():
         owners = set(SIGNATURE["required_of"]) if spec.get("only") == "signature" else set(SKILLS)
         for d in SKILL_DIRS:
             text = read(d / "SKILL.md")
-            lines = text.splitlines()
+            lines = _commonmark_lines(text)   # as delivered_block and h2_lines number them
             present = marker_lines(lines, open_m) or marker_lines(lines, close_m)
             if d.name not in owners:
                 if present:
@@ -714,7 +715,7 @@ def v20_contract_vocabulary():
 def delivered_block(text: str, key: str) -> tuple[int, int] | None:
     """Line indices of a delivered block's two markers — whole lines outside any
     fence, exactly one of each, in order — or None."""
-    lines = text.splitlines()
+    lines = _commonmark_lines(text)
     opens = marker_lines(lines, f"<!-- deliver:{key} -->")
     closes = marker_lines(lines, f"<!-- /deliver:{key} -->")
     if len(opens) == len(closes) == 1 and opens[0] < closes[0]:
@@ -726,20 +727,22 @@ def strip_delivered(text: str) -> str:
     for key in H["delivered"]:
         span = delivered_block(text, key)
         if span:
-            lines = text.splitlines()
+            lines = _commonmark_lines(text)
             text = "\n".join(lines[:span[0]] + lines[span[1] + 1:])
     return text
 
 
 def shows(text: str, word: str, *, whole_word: bool = False) -> bool:
-    """Whether a reader sees `word` — in rendered prose or in code — rather than
-    only in a comment, an attribute or a script. With `whole_word`, `executed`
-    is not found inside `unexecuted`."""
+    """Whether a reader sees `word` — in rendered prose, a code span or a code
+    block — rather than only in a comment, an attribute or a script. With
+    `whole_word`, `executed` is not found inside `unexecuted`."""
     pattern = (rf"(?<![\w-]){re.escape(word)}(?![\w-])" if whole_word
                else re.escape(word))
+    lines = _commonmark_lines(text)
+    in_code = [line for line, code in zip(lines, fence_mask(lines)) if code]
     return any(re.search(pattern, fragment)
                for fragment in (*live_text(text).values(),
-                                *code_spans(text, include_html=True)))
+                                *code_spans(text, include_html=True), *in_code))
 
 
 def v21_verify_names_a_grade():
@@ -1245,13 +1248,17 @@ def v37_source_pins_the_rot():
 # upper-case words joined by pipes. Underscored and parenthesised forms are not
 # matched, so this is a floor.
 # A value may follow a colon or a `#` (a schema comment), or open a line (after
-# indentation, a quote or a list bullet); it may end the line or be followed by
-# punctuation, but not by another word. One opened by a backtick is not read:
-# in code, `ENV | sort` is a pipe. A value may carry digits (`T0`). Lower-case
+# indentation, a quote or a list marker, outside a code block); it may end the
+# line or be followed by punctuation, but not by another word. One opened by a
+# backtick is not read, and neither is an indented line in a code block: in
+# code, `ENV | sort` is a pipe. A value may carry digits (`T0`). Lower-case
 # values are matched too, then reported as undeclared: one lower-case value used
-# to hide the whole line from the rule.
-_ENUM_T = r"[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*"
-ENUM_RE = re.compile(rf"(?:^[\s>*+-]*|[:#]\s*)({_ENUM_T}(?:\s*\|\s*{_ENUM_T})+)"
+# to hide the whole line from the rule. A value is one word, or several only
+# when all are upper case: `Choose DONE | PARTIAL.` is prose leading into the
+# list, not a value `Choose DONE`.
+_ENUM_T = r"(?:[A-Z][A-Z0-9-]*(?: [A-Z][A-Z0-9-]*)+|[A-Za-z][A-Za-z0-9-]*)"
+ENUM_RE = re.compile(rf"(?:^[\s>*+-]*(?:\d+[.)]\s+)?|[:#]\s*)"
+                     rf"({_ENUM_T}(?:\s*\|\s*{_ENUM_T})+)"
                      r"(?=\s*(?:[^\w\s|]|$))")
 
 
@@ -1272,17 +1279,19 @@ def v38_enumerations_declared():
     for f in sorted(SKILLS_ROOT.rglob("*.md")):
         if ".git" in f.parts:
             continue
-        for i, line in enumerate(read(f).splitlines(), 1):
-            m = ENUM_RE.search(line)
-            if not m:
-                continue
-            words = [w.strip() for w in m.group(1).split("|")]
-            if not _is_enumeration(words):
-                continue
-            missing = [w for w in words if w not in declared]
-            if missing:
-                fail("V38", f"{f.relative_to(ROOT)}:{i} switches on {', '.join(missing)}, "
-                            "which harness.yaml vocabulary does not declare")
+        lines = _commonmark_lines(read(f))
+        for i, (line, code) in enumerate(zip(lines, fence_mask(lines)), 1):
+            for m in ENUM_RE.finditer(line):
+                lead = line[m.start():m.start(1)]
+                if code and lead and lead[0] not in ":#":
+                    continue
+                words = [w.strip() for w in m.group(1).split("|")]
+                if not _is_enumeration(words):
+                    continue
+                missing = [w for w in words if w not in declared]
+                if missing:
+                    fail("V38", f"{f.relative_to(ROOT)}:{i} switches on {', '.join(missing)}, "
+                                "which harness.yaml vocabulary does not declare")
 
 
 RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,

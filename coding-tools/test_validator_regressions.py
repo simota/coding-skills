@@ -518,8 +518,13 @@ class ValidatorBoundaries(unittest.TestCase):
         self.write("SKILL.md", misplaced)
         self.assert_fails(validate.v17_delivery, "V17")
         validate.FAILURES.clear()
-        self.write("SKILL.md", f"## Before starting\n\n{block}\n\n## Done when\n\nDone.\n")
-        self.assert_passes(validate.v17_delivery)
+        # U+2028 does not end a line in Markdown: the heading after it is text.
+        for before in ("", "Note\u2028## Done when\n\n"):
+            with self.subTest(before=before):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", f"## Before starting\n\n{before}{block}\n\n"
+                                       "## Done when\n\nDone.\n")
+                self.assert_passes(validate.v17_delivery)
 
     def test_a_grade_in_verify_with_is_one_a_reader_sees_as_a_word(self):
         for text in ("Read back. <!-- executed -->", "Never unexecuted.",
@@ -529,7 +534,9 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.write("SKILL.md", f"## Verify with\n\n{text}\n")
                 self.assert_fails(validate.v21_verify_names_a_grade, "V21")
         for text in ("Run it (evidence: `executed`).", "It was executed.",
-                     "<code>inspected</code>, with the reason."):
+                     "<code>inspected</code>, with the reason.",
+                     "Record each check:\n\n```\nsrc/app.py:12  evidence: executed\n```",
+                     "Record each check:\n\n    src/app.py:12  evidence: executed"):
             with self.subTest(text=text):
                 validate.FAILURES.clear()
                 self.write("SKILL.md", f"## Verify with\n\n{text}\n")
@@ -545,8 +552,11 @@ class ValidatorBoundaries(unittest.TestCase):
             self.write("SKILL.md", "Write the observable first <!-- predict -->.\n")
             self.assert_fails(validate.v35_signature, "V35")
             validate.FAILURES.clear()
-            self.write("SKILL.md", "**Predict the observable** first.\n")
-            self.assert_passes(validate.v35_signature)
+            for text in ("**Predict the observable** first.\n",
+                         "Write it down:\n\n```\npredicted: exit 0\n```\n"):
+                validate.FAILURES.clear()
+                self.write("SKILL.md", text)
+                self.assert_passes(validate.v35_signature)
 
     def test_a_source_says_none_as_a_word(self):
         self.harness["source_authorities"] = {}
@@ -563,13 +573,19 @@ class ValidatorBoundaries(unittest.TestCase):
         for line in ("status: DONE  # DONE | PARTIAL | FAILED, see the contract",
                      "status: DONE  # DONE | PARTIAL | FAILED.",
                      "  DONE | PARTIAL | FAILED", "- DONE | PARTIAL | FAILED",
-                     "> DONE | PARTIAL | FAILED"):
+                     "> DONE | PARTIAL | FAILED", "1. DONE | PARTIAL | FAILED",
+                     "- Mode | Note: DONE | PARTIAL | FAILED",
+                     "```yaml\nstatus: DONE  # DONE | PARTIAL | FAILED\n```"):
             with self.subTest(line=line):
                 validate.FAILURES.clear()
                 (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
                 self.assert_fails(validate.v38_enumerations_declared, "V38")
         for line in ("status: DONE  # DONE | PARTIAL, see the contract",
-                     "Pick DONE | PARTIAL or neither and stop"):
+                     "Pick DONE | PARTIAL or neither and stop",
+                     "Choose DONE | PARTIAL.", "Choose DONE | PARTIAL",
+                     "Note: choose DONE | PARTIAL.",
+                     "status: DONE  # DONE | PARTIAL per the contract.",
+                     "- Dump the environment:\n\n  ```sh\n  ENV | sort\n  ```"):
             with self.subTest(line=line):
                 validate.FAILURES.clear()
                 (self.shared / "HANDOFF.md").write_text(line + "\n", encoding="utf-8")
