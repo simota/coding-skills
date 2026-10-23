@@ -495,6 +495,20 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.assert_fails(validate.v36_finding_visuals, "V36")
 
 
+    def test_a_delivered_block_is_placed_where_its_marker_sits(self):
+        self.harness["delivered"] = {"sizing": {"section": "Before starting"}}
+        (self.root / "coding-registry/delivered").mkdir(parents=True)
+        (self.root / "coding-registry/delivered/sizing.md").write_text("Size it.\n",
+                                                                       encoding="utf-8")
+        block = "<!-- deliver:sizing -->\nSize it.\n<!-- /deliver:sizing -->"
+        misplaced = ("## Before starting\n\nThe block (`<!-- deliver:sizing -->`) is "
+                     f"delivered.\n\n## Done when\n\n{block}\n")
+        self.write("SKILL.md", misplaced)
+        self.assert_fails(validate.v17_delivery, "V17")
+        validate.FAILURES.clear()
+        self.write("SKILL.md", f"## Before starting\n\n{block}\n\n## Done when\n\nDone.\n")
+        self.assert_passes(validate.v17_delivery)
+
     def test_a_grade_in_verify_with_is_one_a_reader_sees_as_a_word(self):
         for text in ("Read back. <!-- executed -->", "Never unexecuted.",
                      '<span title="executed">Read back.</span>'):

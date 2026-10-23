@@ -592,8 +592,13 @@ def v17_delivery():
             if got != want:
                 fail("V17", f"{d.name}/SKILL.md {key} block differs from "
                             f"coding-registry/delivered/{key}.md (run: make render)")
-            body = sections(text).get(spec["section"], "")
-            if open_m not in body:
+            # Placement is where the marker line sits, not whether the section
+            # quotes the marker: a sentence naming it there is not the block.
+            heads = sorted(h2_lines(lines).items())
+            starts = [i for i, title in heads if title == spec["section"]]
+            if not any(start < span[0] < min((i for i, _ in heads if i > start),
+                                             default=len(lines))
+                       for start in starts):
                 fail("V17", f"{d.name}/SKILL.md {key} block is not under {spec['section']!r}")
 
 
@@ -1210,7 +1215,7 @@ def v37_source_pins_the_rot():
             head = " ".join(lines[start:end + 1])
             body = "\n".join(lines[:start] + lines[end + 1:])
             named = [a for a in declared if names(head, a)]
-            if not named and none_marker not in head:
+            if not named and not names(head, none_marker):
                 fail("V37", f"{f.relative_to(ROOT)} names no source and does not say "
                             f"{none_marker!r}; a page that depends on nothing says so, "
                             "because silence reads the same from a page that rots")
@@ -1235,11 +1240,15 @@ def v37_source_pins_the_rot():
 # `KEY: A | B | C` in a schema, or a bare `A | B | C` on a line of its own —
 # upper-case words joined by pipes. Underscored and parenthesised forms are not
 # matched, so this is a floor.
-# A value may follow a colon, a `#` (a schema comment) or a backtick, and may
-# carry digits (`T0`). Lower-case values are matched too, then reported as
-# undeclared: one lower-case value used to hide the whole line from the rule.
+# A value may follow a colon or a `#` (a schema comment), or open a line (after
+# indentation, a quote or a list bullet); it may end the line or be followed by
+# punctuation, but not by another word. One opened by a backtick is not read:
+# in code, `ENV | sort` is a pipe. A value may carry digits (`T0`). Lower-case
+# values are matched too, then reported as undeclared: one lower-case value used
+# to hide the whole line from the rule.
 _ENUM_T = r"[A-Za-z][A-Za-z0-9-]*(?: [A-Za-z][A-Za-z0-9-]*)*"
-ENUM_RE = re.compile(rf"(?:^|[:#]\s*)({_ENUM_T}(?:\s*\|\s*{_ENUM_T})+)(?=\s*(?:[#`(]|$))")
+ENUM_RE = re.compile(rf"(?:^[\s>*+-]*|[:#]\s*)({_ENUM_T}(?:\s*\|\s*{_ENUM_T})+)"
+                     r"(?=\s*(?:[^\w\s|]|$))")
 
 
 def _is_enumeration(words: list[str]) -> bool:
