@@ -497,6 +497,16 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.assert_fails(validate.v36_finding_visuals, "V36")
 
 
+    def test_every_capability_key_is_a_skill_whatever_its_prefix(self):
+        for key in ("codng-test", "coding-ghost"):
+            with self.subTest(key=key), mock.patch.object(
+                    validate, "CAP", {"coding-test": {}, key: {"class": "full"}}):
+                validate.FAILURES.clear()
+                self.assert_fails(validate.v3_roster, "V3")
+        with mock.patch.object(validate, "CAP", {"coding-test": {}}):
+            validate.FAILURES.clear()
+            self.assert_passes(validate.v3_roster)
+
     def test_a_delivered_block_is_placed_where_its_marker_sits(self):
         self.harness["delivered"] = {"sizing": {"section": "Before starting"}}
         (self.root / "coding-registry/delivered").mkdir(parents=True)
@@ -537,6 +547,16 @@ class ValidatorBoundaries(unittest.TestCase):
             validate.FAILURES.clear()
             self.write("SKILL.md", "**Predict the observable** first.\n")
             self.assert_passes(validate.v35_signature)
+
+    def test_a_source_says_none_as_a_word(self):
+        self.harness["source_authorities"] = {}
+        self.write("reference/r.md", "Source: the docs, which nonetheless move.\n\n"
+                                     "Verified: no automated check\n")
+        self.assert_fails(validate.v37_source_pins_the_rot, "V37")
+        validate.FAILURES.clear()
+        self.write("reference/r.md", "Source: none — the shapes are this set's own.\n\n"
+                                     "Verified: no automated check\n")
+        self.assert_passes(validate.v37_source_pins_the_rot)
 
 class MutationHarness(unittest.TestCase):
     def run_fixture(self, script: str, *, nested_tmp: bool = False) -> int:

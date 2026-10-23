@@ -387,7 +387,8 @@ def v2_description_terms():
 
 
 def v3_roster():
-    declared = set(k for k in CAP if k.startswith(PREFIX))
+    # Every key, prefixed or not: a misspelt one is still read by V9 and V10.
+    declared = set(CAP)
     if declared != set(SKILLS):
         fail("V3", f"capabilities.yaml vs disk: only in yaml={sorted(declared - set(SKILLS))} "
                    f"only on disk={sorted(set(SKILLS) - declared)}")
