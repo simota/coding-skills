@@ -538,6 +538,30 @@ def _(r):
 def _(r): sub(r / f"{S}coding-review/reference/machine-authored.md", "Verified:", "**Verified:**")
 
 
+@case("V35-mention")
+def _(r):
+    """The definition row becomes a sentence; another page's heading keeps V20 quiet."""
+    sub(r / f"{S}_coding/PREDICTION.md", "| `void` |", "| void |")
+    sub(r / f"{S}_coding/SIZING.md", "\n\n## ", "\n### `void`\n## ")
+
+
+@case("V36-comment")
+def _(r): sub(r / f"{S}coding-review/playbooks/visualise.md", "- **`labelled`** —",
+              "- <!-- `labelled` -->")
+
+
+@case("V19-anchor")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "`_coding/ROUTING.md`", "`ROUTING.md#owners`")
+
+
+@case("V29-comment")
+def _(r):
+    f = r / f"{S}coding-review/reference/machine-authored.md"
+    sub(f, "Purpose:", "<!--\nPurpose:")
+    sub(f, "deliberately absent — no automated check.",
+        "deliberately absent — no automated check.\n-->")
+
+
 @case("V38-second")
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ",
               "status: DONE  # DONE | PARTIAL; class: BLOCKED | WONTFIX\n\n## ")

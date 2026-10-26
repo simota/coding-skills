@@ -346,7 +346,14 @@ def link_paths(base: Path, targets: list[str]) -> set[Path]:
 
 
 def inline_paths(text: str) -> list[str]:
-    return [value for value in code_spans(text) if PATH_TOKEN_RE.fullmatch(value)]
+    """Backticked paths, each without an `#anchor` or a `:line` after it: those
+    point into the file, and the file is what has to resolve."""
+    found = []
+    for value in code_spans(text):
+        path = re.sub(r":\d+(?::\d+)?$", "", value.split("#", 1)[0])
+        if PATH_TOKEN_RE.fullmatch(path):
+            found.append(path)
+    return found
 
 
 FIXED_SECTIONS = ["Owns", "Before starting", "Decide first",
@@ -894,6 +901,23 @@ def v28_namespace_agrees():
                         "skills directory cannot collide")
 
 
+def stated_lines(text: str) -> list[str]:
+    """The page's lines as written, with each one a reader does not see — inside
+    an HTML comment or a code block — left blank. A header is read where it
+    opens its line, so the positions are kept; one only a comment holds is
+    missing, as one never written is."""
+    live = live_text(text)
+    return [line if i in live or code_spans(text, line_range=(i, i + 1), include_html=True)
+            else "" for i, line in enumerate(source_lines(text))]
+
+
+def source_lines(text: str) -> list[str]:
+    """Lines as CommonMark numbers them, which is how `live_text` keys them:
+    `splitlines` also breaks at a form feed or U+2028, and every line after one
+    would be judged by its neighbour's visibility."""
+    return re.split(r"\r\n?|\n", text.removesuffix("\n"))
+
+
 def v29_reference_headers():
     """reference/ carries no line budget, so it carries headers instead.
 
@@ -905,7 +929,7 @@ def v29_reference_headers():
         for f in sorted((d / "reference").glob("*.md")) if (d / "reference").exists() else []:
             # A header opens its line: V31 and V37 read it there and leave a
             # missing one to this rule, so `**Verified:**` is missing to all three.
-            head = read(f).splitlines()[:12]
+            head = stated_lines(read(f))[:12]
             for header in want:
                 if not any(l.startswith(header) for l in head):
                     fail("V29", f"{f.relative_to(ROOT)} has no {header!r} in its first "
@@ -944,7 +968,7 @@ def v31_verified_names_a_check():
         return
     for d in SKILL_DIRS:
         for f in sorted((d / "reference").glob("*.md")) if (d / "reference").exists() else []:
-            lines = read(f).splitlines()
+            lines = stated_lines(read(f))
             start = next((i for i, l in enumerate(lines) if l.startswith("Verified:")), None)
             if start is None:
                 continue                      # V29 already reports the missing header
@@ -1099,11 +1123,14 @@ def v35_signature():
     if not path.exists():
         fail("V35", f"signature names {contract}, which does not exist")
         return
-    text = read(path)
+    # A definition is a row or a heading, as V20 reads one: a sentence that
+    # mentions the word, or a comment holding a row, defines nothing.
+    defined = leading_code(read(path))
     for word in VOCAB[SIGNATURE["vocabulary"]]:
-        if f"`{word}`" not in text:
+        if not {("row", word), ("heading", word)} & defined:
             fail("V35", f"{contract} never defines {word!r}, which "
-                        f"{SIGNATURE['vocabulary']} declares")
+                        f"{SIGNATURE['vocabulary']} declares — a table row or a "
+                        "heading, not a mention")
     for name in SIGNATURE["required_of"]:
         if name not in SKILLS:
             fail("V35", f"signature.required_of names {name!r}, which is not a skill")
@@ -1163,13 +1190,18 @@ def v36_finding_visuals():
                             "which does not exist")
         if not (pb.exists() and ref.exists()):
             continue
-        text = read(pb) + read(ref)
+        # What a reader sees, page by page: a word or a form held only by a
+        # comment, or by a code block's example, is not stated.
+        pages = (read(pb), read(ref))
+        spans = {span for page in pages for span in code_spans(page, include_html=True)}
+        prose = [_norm(fragment) for page in pages
+                 for fragment in (*live_text(page).values(), *code_spans(page, include_html=True))]
         for word in words:
-            if f"`{word}`" not in text:
+            if word not in spans:
                 fail("V36", f"{name} never defines {word!r}, which "
                             "finding_visuals declares")
         for form in fv["forms"]:
-            if _norm(form) not in _norm(text):
+            if not any(_norm(form) in fragment for fragment in prose):
                 fail("V36", f"{name} never names the {form!r} form")
         linked = link_paths(SKILLS_ROOT / name,
                             section_links(read(SKILLS_ROOT / name / "SKILL.md"), "Decide first"))
@@ -1220,7 +1252,8 @@ def v37_source_pins_the_rot():
         return
     for d in SKILL_DIRS:
         for f in sorted((d / "reference").glob("*.md")) if (d / "reference").exists() else []:
-            lines = read(f).splitlines()
+            raw = source_lines(read(f))
+            lines = stated_lines(read(f))
             start = next((i for i, l in enumerate(lines) if l.startswith("Source:")), None)
             if start is None:
                 continue                      # V29 already reports the missing header
@@ -1234,7 +1267,9 @@ def v37_source_pins_the_rot():
                    and not any(lines[end + 1].startswith(h) for h in H["reference_headers"])):
                 end += 1
             head = " ".join(lines[start:end + 1])
-            body = "\n".join(lines[:start] + lines[end + 1:])
+            # The body is everything else as written: a command in a code
+            # block is the page leaning on its tool.
+            body = "\n".join(raw[:start] + raw[end + 1:])
             named = [a for a in declared if names(head, a)]
             if not named and not names(head, none_marker):
                 fail("V37", f"{f.relative_to(ROOT)} names no source and does not say "
