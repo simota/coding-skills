@@ -534,18 +534,25 @@ def main() -> int:
     if not (a.prompt_file and a.schema):
         print("need --prompt-file and --schema", file=sys.stderr)
         return 2
+    # Each input is read on its own, so the message names the one that failed:
+    # a parser's words say what is wrong, not in which file.
+    try:
+        prompt = pathlib.Path(a.prompt_file).read_text(encoding="utf-8")
+    except (OSError, ValueError) as e:
+        print(f"could not read the prompt {a.prompt_file}: {e}", file=sys.stderr)
+        return 2
+    try:
+        schema = json.loads(pathlib.Path(a.schema).read_text(encoding="utf-8"))
+    except (OSError, ValueError, RecursionError) as e:
+        print(f"could not read the schema {a.schema}: {e}", file=sys.stderr)
+        return 2
     try:
         default_checker = other_than(a.running)  # validate even with an explicit checker
         engine = a.engine or default_checker
         if engine == a.running:
             raise EngineError(f"{engine} is the engine running this; "
                               "a verdict from it is not a check")
-        got = run(engine,
-                  pathlib.Path(a.prompt_file).read_text(encoding="utf-8"),
-                  json.loads(pathlib.Path(a.schema).read_text(encoding="utf-8")))
-    except (OSError, ValueError, RecursionError) as e:
-        print(f"could not read the prompt or schema: {e}", file=sys.stderr)
-        return 2
+        got = run(engine, prompt, schema)
     except Unchecked as e:
         # The caller's schema, not the engine: no engine was asked.
         print(f"schema: {e}", file=sys.stderr)

@@ -92,8 +92,12 @@ def ask(engine_name: str, claim: dict) -> dict:
 
 
 def load_claims(path: str) -> list[dict]:
-    """A list of objects each carrying a non-empty `claim`. Anything else stops."""
-    claims = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    """A list of objects each carrying a non-empty `claim`. Anything else stops,
+    naming the file: the parser's own words say what is wrong, not with which input."""
+    try:
+        claims = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    except (ValueError, RecursionError) as e:     # malformed, not UTF-8, too deep
+        raise ValueError(f"{path}: {e}") from None
     if isinstance(claims, dict):
         claims = [claims]
     if not isinstance(claims, list) or not claims:
@@ -141,8 +145,8 @@ def main() -> int:
     try:
         claims = load_claims(a.claims)
         pool = refuters(a.running)
-    except (OSError, ValueError, RecursionError, engine.EngineError) as e:
-        print(f"{a.claims}: {e}" if isinstance(e, RecursionError) else e, file=sys.stderr)
+    except (OSError, ValueError, engine.EngineError) as e:
+        print(e, file=sys.stderr)
         return 1
 
     results = []

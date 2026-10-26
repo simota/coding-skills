@@ -250,6 +250,31 @@ class Engine(unittest.TestCase):
         finally:
             sys.argv = argv
 
+    def test_an_unreadable_prompt_or_schema_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            good_prompt = pathlib.Path(tmp) / "prompt.txt"
+            good_prompt.write_text("fixture", encoding="utf-8")
+            good_schema = pathlib.Path(tmp) / "schema.json"
+            good_schema.write_text('{"type": "object"}', encoding="utf-8")
+            bad_prompt = pathlib.Path(tmp) / "bad-prompt.txt"
+            bad_prompt.write_bytes(b"\xff")
+            bad_schema = pathlib.Path(tmp) / "bad-schema.json"
+            bad_schema.write_text('{"type": "object",}', encoding="utf-8")
+            deep_schema = pathlib.Path(tmp) / "deep-schema.json"
+            deep_schema.write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
+            for prompt, schema, named in ((bad_prompt, good_schema, bad_prompt),
+                                          (good_prompt, bad_schema, bad_schema),
+                                          (good_prompt, deep_schema, deep_schema),
+                                          (tmp + "/missing.txt", good_schema, "missing.txt")):
+                err = io.StringIO()
+                with mock.patch.object(sys, "argv", ["engine.py", "--running", "claude",
+                                                     "--prompt-file", str(prompt),
+                                                     "--schema", str(schema)]), \
+                        mock.patch.object(engine, "_ask") as ask, contextlib.redirect_stderr(err):
+                    self.assertEqual(engine.main(), 2, named)
+                ask.assert_not_called()
+                self.assertIn(pathlib.Path(named).name, err.getvalue())
+
 
 class Refute(unittest.TestCase):
     def test_an_unavailable_checker_does_not_erase_other_readings(self):
@@ -280,16 +305,22 @@ class Refute(unittest.TestCase):
         self.assertEqual(result["verdict"], "UNCHECKED")
         self.assertEqual(result["independent_readings"], 0)
 
-    def test_claims_too_deep_to_read_are_refused_without_a_traceback(self):
+    def test_unreadable_claims_are_refused_naming_the_file(self):
+        # Too deep, malformed, or not UTF-8: each is the input's fault, and
+        # stderr has to say which input, not only what the parser tripped on.
+        bodies = {"deep": ("[" * 100000 + "]" * 100000).encode(),
+                  "comma": b'[{"claim": "x",}]', "bytes": b"\xff"}
         with tempfile.TemporaryDirectory() as tmp:
-            claims = pathlib.Path(tmp) / "claims.json"
-            claims.write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
-            err = io.StringIO()
-            with mock.patch.object(sys, "argv", ["refute.py", str(claims), "--running", "claude"]), \
-                    mock.patch.object(refute, "ask") as ask, contextlib.redirect_stderr(err):
-                self.assertEqual(refute.main(), 1)
-            ask.assert_not_called()
-            self.assertIn("claims.json", err.getvalue())
+            for kind, body in bodies.items():
+                claims = pathlib.Path(tmp) / f"claims-{kind}.json"
+                claims.write_bytes(body)
+                err = io.StringIO()
+                with mock.patch.object(sys, "argv", ["refute.py", str(claims), "--running", "claude"]), \
+                        mock.patch.object(refute, "ask") as ask, contextlib.redirect_stderr(err):
+                    self.assertEqual(refute.main(), 1, kind)
+                ask.assert_not_called()
+                self.assertIn(claims.name, err.getvalue(), kind)
+                self.assertNotIn("Traceback", err.getvalue(), kind)
 
     def test_verdicts(self):
         yes, no = {"refuted": True}, {"refuted": False}
