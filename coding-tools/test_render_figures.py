@@ -207,7 +207,16 @@ class FigureFailures(unittest.TestCase):
                 ("PRECIOUS-STAGED-WORK                 # recovered",
                  "fatal: Not a valid object name      # unrecoverable"),
                 ("**left `untracked.txt` in place**", "**took `untracked.txt` with it**"),
-                ("leaves untracked files where they are", "deletes untracked files too")):
+                ("leaves untracked files where they are", "deletes untracked files too"),
+                # Reading the page's own content back into the fixture made any
+                # printed line recover itself, and a qualifier kept a phrase present.
+                ("PRECIOUS-STAGED-WORK                 # recovered",
+                 "(no output - the blob is gone)"),
+                ("dangling blob fd6d6213...", "dangling blob 0000000..."),
+                ("$ git cat-file -p fd6d6213", "$ git cat-file -p 0000000"),
+                ("leaves untracked files where they are", "never leaves untracked files where they are"),
+                ("stashed the tracked edit and **left", "stashed the tracked edit and deleted what it had **left"),
+                ("reset back restores it\n", "reset back restores it only before any gc\n")):
             with self.subTest(old=old):
                 self.assertTrue(self.mutated("RECOVERY", old, new, figures_check.check_recovery,
                                              self.RECOVERY_DIRS))

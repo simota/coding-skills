@@ -303,6 +303,21 @@ def check_scoping(tmp: pathlib.Path) -> int:
     return n
 
 
+# What recovery.md states for the behaviours check_recovery re-runs, read whole.
+RECOVERY_ROWS = {
+    "reset --hard HEAD~1": "reflog still lists the commit; reset back restores it",
+    "edit f.txt; restore .": "content gone; neither the reflog nor `fsck --lost-found` holds it",
+}
+RECOVERY_SENTENCES = (
+    "`checkout -f` discards tracked edits and leaves untracked files where they are — "
+    "except, when switching branch, an untracked file at a path the target branch "
+    "tracks, which it overwrites with no record.",
+    "A verified fixture run: with untracked `untracked.txt` present, `git stash` "
+    "stashed the tracked edit and **left `untracked.txt` in place**.",
+)
+STAGED = "PRECIOUS-STAGED-WORK"
+
+
 def check_recovery(tmp: pathlib.Path) -> int:
     """recovery.md: committed work is recoverable, uncommitted work is not, and
     `git add` alone puts content where fsck can still reach it."""
@@ -310,14 +325,24 @@ def check_recovery(tmp: pathlib.Path) -> int:
            "checkout -f", "gc --prune=now", "branch -D",
            "a plain `pop` brings staged edits to tracked files back unstaged",
            "switch --discard-changes <branch>",
-           "an untracked file in the way still stops the switch",
-           # The outcomes the checks below re-run, as the page states them: a
-           # command name alone stayed when its outcome was edited to the opposite.
-           "-> reflog still lists the commit; reset back restores it",
-           "-> content gone; neither the reflog nor `fsck --lost-found` holds it",
-           "**left `untracked.txt` in place**",
-           "leaves untracked files where they are")
+           "an untracked file in the way still stops the switch")
     states(SHIP, "a plain `pop` drops the staging of tracked edits")
+    # The outcomes the checks below re-run, as the page states them. A command
+    # name alone stayed when its outcome was edited to the opposite, and a
+    # phrase alone when a qualifier was wrapped round it: each is read whole.
+    rows = {}
+    for line in fenced(RECOVERY, "reset --hard HEAD~1     ->"):
+        if "->" in line:
+            command, outcome = line.split("->", 1)
+            rows[command.strip()] = outcome.strip()
+    for command, outcome in RECOVERY_ROWS.items():
+        if rows.get(command) != outcome:
+            fail(RECOVERY, f"the `{command}` row says {rows.get(command)!r}; "
+                           f"the check re-runs {outcome!r}")
+    prose = " ".join(page_text(RECOVERY).split())
+    for sentence in RECOVERY_SENTENCES:
+        if prose and sentence not in prose:
+            fail(RECOVERY, f"no longer says, whole, {sentence!r} — the check re-runs it")
     n = 0
     r = Repo(tmp / "reset")
     r.write("f.txt", "v1\n"); r.commit("c1")
@@ -337,31 +362,36 @@ def check_recovery(tmp: pathlib.Path) -> int:
                        "the page says nothing recorded it")
     n += 1
 
-    # The transcript is the expectation: fsck prints a dangling blob, and
-    # cat-file prints the staged content back, which the fixture then stages.
+    r3 = Repo(tmp / "staged")
+    r3.write("f.txt", "committed\n"); r3.commit("c1")
+    r3.write("f.txt", STAGED + "\n"); r3.must("add", "f.txt")
+    r3.git("restore", "--source=HEAD", "--staged", "--worktree", ".")
+    blobs = [l.split()[2] for l in r3.git("fsck", "--lost-found").splitlines()
+             if "dangling blob" in l]
+    found = [b for b in blobs if r3.git("cat-file", "-p", b) == STAGED]
+    if not found:
+        fail(RECOVERY, "a staged blob was not reachable via fsck; "
+                       "the page's cheapest-insurance claim rests on it")
+    # The transcript is the expectation, compared with the run rather than fed
+    # to it: fsck prints that blob's sha, cat-file is asked for that sha, and
+    # prints back exactly what the fixture staged.
     printed = {}
     block = fenced(RECOVERY, "$ git fsck --lost-found")
     for prompt, line in zip(block, block[1:]):
         for command in ("$ git fsck --lost-found", "$ git cat-file -p"):
             if prompt.startswith(command):
-                printed[command] = line.split("#", 1)[0].strip()
-    if not printed.get("$ git fsck --lost-found", "").startswith("dangling blob "):
-        fail(RECOVERY, "the transcript no longer prints a dangling blob under `fsck`; "
-                       "the check re-runs exactly that")
-    content = printed.get("$ git cat-file -p", "")
-    if not content or content.startswith(("$", "fatal")):
-        fail(RECOVERY, "the transcript no longer prints the recovered content under "
-                       "`cat-file -p` — the checker has stopped checking anything")
-        content = "PRECIOUS-STAGED-WORK"
-    r3 = Repo(tmp / "staged")
-    r3.write("f.txt", "committed\n"); r3.commit("c1")
-    r3.write("f.txt", content + "\n"); r3.must("add", "f.txt")
-    r3.git("restore", "--source=HEAD", "--staged", "--worktree", ".")
-    blobs = [l.split()[2] for l in r3.git("fsck", "--lost-found").splitlines()
-             if "dangling blob" in l]
-    if not any(r3.git("cat-file", "-p", b) == content for b in blobs):
-        fail(RECOVERY, "a staged blob was not reachable via fsck; "
-                       "the page's cheapest-insurance claim rests on it")
+                printed[command] = (prompt.split("#", 1)[0].split()[-1],
+                                    line.split("#", 1)[0].strip())
+    _, dangling = printed.get("$ git fsck --lost-found", ("", ""))
+    asked, content = printed.get("$ git cat-file -p", ("", ""))
+    sha = dangling.removeprefix("dangling blob ").removesuffix("...")
+    if not (dangling.startswith("dangling blob ") and len(sha) >= 4
+            and any(b.startswith(sha) for b in found)):
+        fail(RECOVERY, f"the transcript's fsck line {dangling!r} is not the blob fsck "
+                       f"found ({', '.join(found) or 'none'})")
+    if asked != sha or content != STAGED:
+        fail(RECOVERY, f"the transcript asks cat-file for {asked!r} and prints {content!r}; "
+                       f"the run recovered {STAGED!r} from {sha!r}")
     n += 1
 
     r4 = Repo(tmp / "untracked")
