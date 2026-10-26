@@ -8,13 +8,13 @@ bug-fix:
   pattern: linear
   when: "fix a bug and prepare commits or a PR"
   chain: [coding-debug, coding-ship]
-  gate: "the cause fits in one sentence before anything is edited"
+  gate: "the cause fits in one sentence before the fix is edited"
 
 feature:
   pattern: linear
   when: "new behaviour with design, independent test work, review, and shipping requested"
   chain: [coding-explore, coding-plan, coding-implement, coding-test, coding-review, coding-ship]
-  gate: "the brief's open_questions is empty before coding-implement starts"
+  gate: "the brief's open_questions is empty before coding-explore starts"
 
 small-feature:
   pattern: linear
