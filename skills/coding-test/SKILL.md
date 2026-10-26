@@ -107,8 +107,8 @@ Both halves are required — a test that was never seen red is `inspected` at
 best, and the entry says why it could not be made to fail.
 
 - **`DONE` here**: cases written, each seen red then green, the whole suite green
-  — or each remaining failure shown by the baseline to pre-date the change and
-  recorded `OUT-OF-SCOPE` — and the sweep balances
+  — or, where repairing it was not the task, each remaining failure shown by the
+  baseline to pre-date the change and recorded `OUT-OF-SCOPE` — and the sweep balances
 - A skipped or quarantined test is `UNVERIFIED` for whatever it covered, and
   leaves a marker naming what is no longer guarded
 - **Report what is still uncovered.** A test report without its gaps reads as
@@ -133,7 +133,7 @@ best, and the entry says why it could not be made to fail.
 ## Done when
 
 Each new case was observed failing for its stated reason and then passing, the
-full suite is green or each remaining failure is shown to pre-date the change,
+full suite is green or, where repairing it was not the task, each remaining failure is shown to pre-date the change,
 no assertion was weakened to get there, and the behaviours still unguarded are named.
 <!-- deliver:surface -->
 - **Say what the moment needs.** Start: what will be done and what is excluded.

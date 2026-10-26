@@ -186,13 +186,21 @@ def check_pickaxe(tmp: pathlib.Path) -> int:
     return n
 
 
-def stat_counts(text: str) -> tuple[int, int] | None:
-    """(insertions, deletions) from a `--stat` summary, or None if it prints none."""
+def stat_counts(text: str) -> tuple[int, int, int | None] | None:
+    """(insertions, deletions, files) from a `--stat` summary, or None if it
+    prints none. `files` is None where the summary leaves the count out."""
     ins = re.search(r"(\d+) insertions?\(\+\)", text)
     dels = re.search(r"(\d+) deletions?\(-\)", text)
+    files = re.search(r"(\d+) files? changed", text)
     if not (ins or dels):
         return None
-    return (int(ins.group(1)) if ins else 0, int(dels.group(1)) if dels else 0)
+    return (int(ins.group(1)) if ins else 0, int(dels.group(1)) if dels else 0,
+            int(files.group(1)) if files else None)
+
+
+def same_stat(got: tuple | None, want: tuple) -> bool:
+    """A count the page prints is compared; one it leaves out is not."""
+    return got is not None and got[:2] == want[:2] and want[2] in (None, got[2])
 
 
 def check_dots(tmp: pathlib.Path) -> int:
@@ -231,10 +239,10 @@ def check_dots(tmp: pathlib.Path) -> int:
                            "the checker has stopped checking anything")
                 continue
             n += 1
-            if stat_counts(out) != want:
+            if not same_stat(stat_counts(out), want):
                 fail(page, f"{label} diff gave {out.splitlines()[-1].strip()!r}, "
                            f"the page prints {printed.strip()!r}")
-    if stat_counts(three) != (1, 0):
+    if not same_stat(stat_counts(three), (1, 0, 1)):
         fail(HISTORY, "three-dot diff no longer isolates the branch's own change")
     if three == two:
         fail(HISTORY, "two-dot and three-dot diff agree; the page's central claim is that they differ")
@@ -295,6 +303,21 @@ def check_scoping(tmp: pathlib.Path) -> int:
     return n
 
 
+# What recovery.md states for the behaviours check_recovery re-runs, read whole.
+RECOVERY_ROWS = {
+    "reset --hard HEAD~1": "reflog still lists the commit; reset back restores it",
+    "edit f.txt; restore .": "content gone; neither the reflog nor `fsck --lost-found` holds it",
+}
+RECOVERY_SENTENCES = (
+    "`checkout -f` discards tracked edits and leaves untracked files where they are — "
+    "except, when switching branch, an untracked file at a path the target branch "
+    "tracks, which it overwrites with no record.",
+    "A verified fixture run: with untracked `untracked.txt` present, `git stash` "
+    "stashed the tracked edit and **left `untracked.txt` in place**.",
+)
+STAGED = "PRECIOUS-STAGED-WORK"
+
+
 def check_recovery(tmp: pathlib.Path) -> int:
     """recovery.md: committed work is recoverable, uncommitted work is not, and
     `git add` alone puts content where fsck can still reach it."""
@@ -304,6 +327,22 @@ def check_recovery(tmp: pathlib.Path) -> int:
            "switch --discard-changes <branch>",
            "an untracked file in the way still stops the switch")
     states(SHIP, "a plain `pop` drops the staging of tracked edits")
+    # The outcomes the checks below re-run, as the page states them. A command
+    # name alone stayed when its outcome was edited to the opposite, and a
+    # phrase alone when a qualifier was wrapped round it: each is read whole.
+    rows = {}
+    for line in fenced(RECOVERY, "reset --hard HEAD~1     ->"):
+        if "->" in line:
+            command, outcome = line.split("->", 1)
+            rows[command.strip()] = outcome.strip()
+    for command, outcome in RECOVERY_ROWS.items():
+        if rows.get(command) != outcome:
+            fail(RECOVERY, f"the `{command}` row says {rows.get(command)!r}; "
+                           f"the check re-runs {outcome!r}")
+    prose = " ".join(page_text(RECOVERY).split())
+    for sentence in RECOVERY_SENTENCES:
+        if prose and sentence not in prose:
+            fail(RECOVERY, f"no longer says, whole, {sentence!r} — the check re-runs it")
     n = 0
     r = Repo(tmp / "reset")
     r.write("f.txt", "v1\n"); r.commit("c1")
@@ -325,13 +364,34 @@ def check_recovery(tmp: pathlib.Path) -> int:
 
     r3 = Repo(tmp / "staged")
     r3.write("f.txt", "committed\n"); r3.commit("c1")
-    r3.write("f.txt", "PRECIOUS-STAGED-WORK\n"); r3.must("add", "f.txt")
+    r3.write("f.txt", STAGED + "\n"); r3.must("add", "f.txt")
     r3.git("restore", "--source=HEAD", "--staged", "--worktree", ".")
     blobs = [l.split()[2] for l in r3.git("fsck", "--lost-found").splitlines()
              if "dangling blob" in l]
-    if not any("PRECIOUS-STAGED-WORK" in r3.git("cat-file", "-p", b) for b in blobs):
+    found = [b for b in blobs if r3.git("cat-file", "-p", b) == STAGED]
+    if not found:
         fail(RECOVERY, "a staged blob was not reachable via fsck; "
                        "the page's cheapest-insurance claim rests on it")
+    # The transcript is the expectation, compared with the run rather than fed
+    # to it: fsck prints that blob's sha, cat-file is asked for that sha, and
+    # prints back exactly what the fixture staged.
+    printed = {}
+    block = fenced(RECOVERY, "$ git fsck --lost-found")
+    for prompt, line in zip(block, block[1:]):
+        for command in ("$ git fsck --lost-found", "$ git cat-file -p"):
+            if prompt.startswith(command):
+                printed[command] = (prompt.split("#", 1)[0].split()[-1],
+                                    line.split("#", 1)[0].strip())
+    _, dangling = printed.get("$ git fsck --lost-found", ("", ""))
+    asked, content = printed.get("$ git cat-file -p", ("", ""))
+    sha = dangling.removeprefix("dangling blob ").removesuffix("...")
+    if not (dangling.startswith("dangling blob ") and len(sha) >= 4
+            and any(b.startswith(sha) for b in found)):
+        fail(RECOVERY, f"the transcript's fsck line {dangling!r} is not the blob fsck "
+                       f"found ({', '.join(found) or 'none'})")
+    if asked != sha or content != STAGED:
+        fail(RECOVERY, f"the transcript asks cat-file for {asked!r} and prints {content!r}; "
+                       f"the run recovered {STAGED!r} from {sha!r}")
     n += 1
 
     r4 = Repo(tmp / "untracked")

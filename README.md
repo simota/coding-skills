@@ -234,7 +234,9 @@ Rendering checks every skill before writing any updates. Missing or duplicate
 destination sections, overlapping delivery blocks, and markers that cross a
 section boundary are errors to repair by hand; they never authorize deleting
 hand-written sections. `make drift` reports stale blocks, and `make render`
-applies their updates after this validation succeeds.
+applies their updates after this validation succeeds, each written in full beside its
+file before any is renamed into place: a write that fails leaves every skill as it was,
+and only a failed rename, once every new text is on disk, can stop partway.
 
 Adding a rule means adding a deliberate violation to `coding-tools/test_validate.py`
 and watching it fail. A check only ever seen passing may be checking nothing —

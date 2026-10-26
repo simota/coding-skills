@@ -67,8 +67,8 @@ twenty-file one nobody agreed to.
 Before reporting, run both halves and state both results:
 
 1. **Markers introduced by this run** — scan what changed since it began:
-   `git diff <the commit it started on>` and the untracked files, less what was
-   dirty at the start — never the whole tree. Every marker there must be in `open`, class matching
+   `git diff <the commit it started on>` (across a rebase or merge onto a moved base: up to the move, then from the commit the move made, plus what resolving its conflicts wrote) and the untracked files, less what was
+   dirty at the start — never the whole tree; what the base brought is not this run's. Every marker there must be in `open`, class matching
 2. **Coverage** — diff the files actually written against the files carrying
    evidence
 
