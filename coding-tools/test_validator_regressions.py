@@ -489,6 +489,83 @@ class ValidatorBoundaries(unittest.TestCase):
         self.finding_visuals()["forms"] = ["ASCII", "Mermaid"]
         self.assert_passes(validate.v36_finding_visuals)
 
+    def test_a_finding_visual_word_or_form_only_a_comment_holds_is_not_defined(self):
+        for page in ("`hops` and <!-- `labelled` -->, drawn in ASCII or Mermaid.\n",
+                     "`hops` and `labelled`, drawn in <!-- ASCII --> or Mermaid.\n",
+                     "`hops` and `labelled`, drawn in Mermaid.\n\n```\nASCII\n```\n"):
+            with self.subTest(page=page):
+                validate.FAILURES.clear()
+                self.finding_visuals()
+                self.write("playbooks/visualise.md", page)
+                self.assert_fails(validate.v36_finding_visuals, "V36")
+        validate.FAILURES.clear()
+        self.finding_visuals()
+        self.write("reference/diagram-forms.md", "## `labelled`\n\nASCII is the default.\n")
+        self.write("playbooks/visualise.md", "`hops`, or Mermaid.\n")
+        self.assert_passes(validate.v36_finding_visuals)
+
+    def test_the_signature_contract_defines_its_words_not_mentions_them(self):
+        signature = {"name": "prediction", "contract": "PREDICTION.md",
+                     "vocabulary": "prediction_outcomes", "required_of": [], "own_word": "redict"}
+        patch = mock.patch.object(validate, "SIGNATURE", signature)
+        patch.start()
+        self.addCleanup(patch.stop)
+        rows = "| Outcome | Meaning |\n|---|---|\n| `hit` | matched |\n| `miss` | differed |\n"
+        for void in ("A wrong one is `void`.\n", "<!-- | `void` | unobservable | -->\n",
+                     "```\n| `void` | unobservable |\n```\n"):
+            with self.subTest(void=void):
+                validate.FAILURES.clear()
+                (self.shared / "PREDICTION.md").write_text(rows + "\n" + void, encoding="utf-8")
+                self.assert_fails(validate.v35_signature, "V35")
+        for void in ("| `void` | unobservable |\n", "\n### `void`\n"):
+            with self.subTest(void=void):
+                validate.FAILURES.clear()
+                (self.shared / "PREDICTION.md").write_text(rows + void, encoding="utf-8")
+                self.assert_passes(validate.v35_signature)
+
+    def test_an_anchor_or_line_on_an_inline_path_is_not_part_of_the_file(self):
+        self.write("reference/oracles.md")
+        for text in ("Read `reference/oracles.md#values`.", "Read `reference/oracles.md:12`."):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.decide(text)
+                self.assert_passes(validate.v19_paths_resolve)
+        for text in ("Read `oracles.md#values`.", "Read `oracles.md:12`.",
+                     "Read `reference/missing.md#values`."):
+            with self.subTest(text=text):
+                validate.FAILURES.clear()
+                self.decide(text)
+                self.assert_fails(validate.v19_paths_resolve, "V19")
+
+    def test_a_reference_header_hidden_in_a_comment_is_not_stated(self):
+        headers = ("Purpose: p.\n\nRead when: r.\n\nSource: none — n.\n\n"
+                   "Verified: 2026-08-21 — no automated check.\n")
+        self.write("reference/r.md", f"# R\n\n{headers}")
+        for rule in (validate.v29_reference_headers, validate.v31_verified_names_a_check,
+                     validate.v37_source_pins_the_rot):
+            with self.subTest(rule=rule.__name__):
+                validate.FAILURES.clear()
+                self.assert_passes(rule)
+        # A line separator that CommonMark does not break at must not shift
+        # which line is judged visible.
+        self.write("reference/r.md", f"# R\u2028still the title\n\n{headers}")
+        validate.FAILURES.clear()
+        self.assert_passes(validate.v29_reference_headers)
+        self.write("reference/r.md", f"# R\n\n<!--\n{headers}-->\n")
+        validate.FAILURES.clear()
+        self.assert_fails(validate.v29_reference_headers, "V29")
+        # V31 and V37 leave a missing header to V29, as they always have:
+        # a header read inside a comment is missing, not malformed.
+        for name in ("Verified", "Source"):
+            with self.subTest(header=name):
+                self.write("reference/r.md", "# R\n\n" + headers.replace(
+                    f"{name}:", f"<!-- {name}: fake -->\n\n{name}:"))
+                validate.FAILURES.clear()
+                validate.v29_reference_headers()
+                validate.v31_verified_names_a_check()
+                validate.v37_source_pins_the_rot()
+                self.assertEqual(validate.FAILURES, [])
+
     def test_finding_visuals_without_its_files_is_reported_not_crashed_on(self):
         for key in ("playbook", "contract"):
             with self.subTest(key=key):
@@ -539,8 +616,10 @@ class ValidatorBoundaries(unittest.TestCase):
         signature = {"name": "prediction", "contract": "PREDICTION.md",
                      "vocabulary": "prediction_outcomes", "required_of": [self.skill.name],
                      "own_word": "redict"}
-        words = " ".join(f"`{w}`" for w in self.harness["vocabulary"]["prediction_outcomes"])
-        (self.shared / "PREDICTION.md").write_text(words + "\n", encoding="utf-8")
+        rows = "".join(f"| `{w}` | defined |\n"
+                       for w in self.harness["vocabulary"]["prediction_outcomes"])
+        (self.shared / "PREDICTION.md").write_text("| Outcome | Meaning |\n|---|---|\n" + rows,
+                                                   encoding="utf-8")
         with mock.patch.object(validate, "SIGNATURE", signature):
             self.write("SKILL.md", "Write the observable first <!-- predict -->.\n")
             self.assert_fails(validate.v35_signature, "V35")
