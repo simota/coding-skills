@@ -10,7 +10,9 @@ Idempotent: run it, commit the diff.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -127,10 +129,48 @@ def prepared(path: Path) -> tuple[str, bool]:
     return text, text != original
 
 
+def staged(path: Path, text: str) -> Path:
+    """The new text, complete on disk beside `path` and not yet in its place."""
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, path.stat().st_mode & 0o7777)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+    return Path(tmp)
+
+
+def write_all(updates: list[tuple[Path, str]]) -> None:
+    """Every file or none, as far as a filesystem allows. Writing in place
+    truncates as it goes: a full disk left earlier skills rewritten, one cut off
+    mid-sentence, and the rest stale. Each new text is written in full first;
+    only then does a rename, which replaces a file whole, put each in place."""
+    # A link is written through, as writing in place did, not replaced by a file.
+    updates = [(path.resolve(), text) for path, text in updates]
+    done: list[Path] = []
+    try:
+        for path, text in updates:
+            done.append(staged(path, text))
+    except BaseException:
+        for tmp in done:
+            tmp.unlink(missing_ok=True)
+        raise
+    try:
+        for tmp, (path, _) in zip(done, updates):
+            os.replace(tmp, path)
+    finally:
+        for tmp in done:
+            tmp.unlink(missing_ok=True)
+
+
 def render(path: Path) -> bool:
     text, changed = prepared(path)
     if changed:
-        path.write_text(text, encoding="utf-8")
+        write_all([(path, text)])
     return changed
 
 
@@ -153,9 +193,9 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             print("delivered blocks current")
             return 0
-        # A malformed later skill must not leave earlier skills half-rendered.
-        for path, text in updates:
-            path.write_text(text, encoding="utf-8")
+        # A malformed later skill, or a write that fails, must not leave
+        # earlier skills half-rendered.
+        write_all(updates)
     except (Malformed, OSError) as e:
         print(f"  {e}", file=sys.stderr)
         return 1

@@ -867,10 +867,15 @@ class Figures(unittest.TestCase):
 
     def test_stat_counts(self):
         sc = figures_check.stat_counts
-        self.assertEqual(sc(" 1 file changed, 2 insertions(+), 3 deletions(-)"), (2, 3))
-        self.assertEqual(sc("-> 1 insertion(+)"), (1, 0))
-        self.assertEqual(sc(" 1 file changed, 1 deletion(-)"), (0, 1))
+        self.assertEqual(sc(" 1 file changed, 2 insertions(+), 3 deletions(-)"), (2, 3, 1))
+        self.assertEqual(sc("-> 1 insertion(+)"), (1, 0, None))
+        self.assertEqual(sc(" 1 file changed, 1 deletion(-)"), (0, 1, 1))
+        self.assertEqual(sc(" 3 files changed, 1 deletion(-)"), (0, 1, 3))
         self.assertIsNone(sc("nothing here"))
+        same = figures_check.same_stat
+        self.assertTrue(same((2, 3, 1), (2, 3, None)))      # the page left the count out
+        self.assertFalse(same((2, 3, 1), (2, 3, 9)))
+        self.assertFalse(same(None, (2, 3, None)))
 
 
 if __name__ == "__main__":

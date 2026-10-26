@@ -186,13 +186,21 @@ def check_pickaxe(tmp: pathlib.Path) -> int:
     return n
 
 
-def stat_counts(text: str) -> tuple[int, int] | None:
-    """(insertions, deletions) from a `--stat` summary, or None if it prints none."""
+def stat_counts(text: str) -> tuple[int, int, int | None] | None:
+    """(insertions, deletions, files) from a `--stat` summary, or None if it
+    prints none. `files` is None where the summary leaves the count out."""
     ins = re.search(r"(\d+) insertions?\(\+\)", text)
     dels = re.search(r"(\d+) deletions?\(-\)", text)
+    files = re.search(r"(\d+) files? changed", text)
     if not (ins or dels):
         return None
-    return (int(ins.group(1)) if ins else 0, int(dels.group(1)) if dels else 0)
+    return (int(ins.group(1)) if ins else 0, int(dels.group(1)) if dels else 0,
+            int(files.group(1)) if files else None)
+
+
+def same_stat(got: tuple | None, want: tuple) -> bool:
+    """A count the page prints is compared; one it leaves out is not."""
+    return got is not None and got[:2] == want[:2] and want[2] in (None, got[2])
 
 
 def check_dots(tmp: pathlib.Path) -> int:
@@ -231,10 +239,10 @@ def check_dots(tmp: pathlib.Path) -> int:
                            "the checker has stopped checking anything")
                 continue
             n += 1
-            if stat_counts(out) != want:
+            if not same_stat(stat_counts(out), want):
                 fail(page, f"{label} diff gave {out.splitlines()[-1].strip()!r}, "
                            f"the page prints {printed.strip()!r}")
-    if stat_counts(three) != (1, 0):
+    if not same_stat(stat_counts(three), (1, 0, 1)):
         fail(HISTORY, "three-dot diff no longer isolates the branch's own change")
     if three == two:
         fail(HISTORY, "two-dot and three-dot diff agree; the page's central claim is that they differ")
@@ -302,7 +310,13 @@ def check_recovery(tmp: pathlib.Path) -> int:
            "checkout -f", "gc --prune=now", "branch -D",
            "a plain `pop` brings staged edits to tracked files back unstaged",
            "switch --discard-changes <branch>",
-           "an untracked file in the way still stops the switch")
+           "an untracked file in the way still stops the switch",
+           # The outcomes the checks below re-run, as the page states them: a
+           # command name alone stayed when its outcome was edited to the opposite.
+           "-> reflog still lists the commit; reset back restores it",
+           "-> content gone; neither the reflog nor `fsck --lost-found` holds it",
+           "**left `untracked.txt` in place**",
+           "leaves untracked files where they are")
     states(SHIP, "a plain `pop` drops the staging of tracked edits")
     n = 0
     r = Repo(tmp / "reset")
@@ -323,13 +337,29 @@ def check_recovery(tmp: pathlib.Path) -> int:
                        "the page says nothing recorded it")
     n += 1
 
+    # The transcript is the expectation: fsck prints a dangling blob, and
+    # cat-file prints the staged content back, which the fixture then stages.
+    printed = {}
+    block = fenced(RECOVERY, "$ git fsck --lost-found")
+    for prompt, line in zip(block, block[1:]):
+        for command in ("$ git fsck --lost-found", "$ git cat-file -p"):
+            if prompt.startswith(command):
+                printed[command] = line.split("#", 1)[0].strip()
+    if not printed.get("$ git fsck --lost-found", "").startswith("dangling blob "):
+        fail(RECOVERY, "the transcript no longer prints a dangling blob under `fsck`; "
+                       "the check re-runs exactly that")
+    content = printed.get("$ git cat-file -p", "")
+    if not content or content.startswith(("$", "fatal")):
+        fail(RECOVERY, "the transcript no longer prints the recovered content under "
+                       "`cat-file -p` — the checker has stopped checking anything")
+        content = "PRECIOUS-STAGED-WORK"
     r3 = Repo(tmp / "staged")
     r3.write("f.txt", "committed\n"); r3.commit("c1")
-    r3.write("f.txt", "PRECIOUS-STAGED-WORK\n"); r3.must("add", "f.txt")
+    r3.write("f.txt", content + "\n"); r3.must("add", "f.txt")
     r3.git("restore", "--source=HEAD", "--staged", "--worktree", ".")
     blobs = [l.split()[2] for l in r3.git("fsck", "--lost-found").splitlines()
              if "dangling blob" in l]
-    if not any("PRECIOUS-STAGED-WORK" in r3.git("cat-file", "-p", b) for b in blobs):
+    if not any(r3.git("cat-file", "-p", b) == content for b in blobs):
         fail(RECOVERY, "a staged blob was not reachable via fsck; "
                        "the page's cheapest-insurance claim rests on it")
     n += 1

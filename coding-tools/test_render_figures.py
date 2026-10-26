@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import io
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -82,6 +83,39 @@ class SafeRender(unittest.TestCase):
             for path, contents in before.items():
                 self.assertEqual(path.read_bytes(), contents)
 
+    def test_a_failed_write_leaves_every_skill_as_it_was(self):
+        # Writing in place truncated each file as it went: under a file-size
+        # limit the first skill was rewritten and the last cut off mid-sentence.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            first = self.skill(root, "coding-debug", self.SECTIONS)
+            last = self.skill(root, "coding-test", self.SECTIONS.replace(
+                "Hand-written Owns.", "Hand-written Owns. " + "x" * 20000))
+            before = {p: p.read_bytes() for p in (first, last)}
+            script = ("import pathlib, resource, sys\n"
+                      f"sys.path.insert(0, {str(pathlib.Path(render.__file__).parent)!r})\n"
+                      "import render\n"
+                      f"render.SKILLS_ROOT = pathlib.Path({tmp!r})\n"
+                      "resource.setrlimit(resource.RLIMIT_FSIZE, (16000, 16000))\n"
+                      "sys.exit(render.main([]))\n")
+            r = subprocess.run((sys.executable, "-c", script), capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            for path, contents in before.items():
+                self.assertEqual(path.read_bytes(), contents, path.parent.name)
+            self.assertEqual(sorted(p.name for p in root.rglob("*")),
+                             sorted(["coding-debug", "coding-test", "SKILL.md", "SKILL.md"]))
+
+    def test_a_linked_skill_is_written_through(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            real = root / "real.md"
+            real.write_text(self.SECTIONS, encoding="utf-8")
+            (root / "coding-test").mkdir()
+            (root / "coding-test" / "SKILL.md").symlink_to(real)
+            self.assertTrue(render.render(root / "coding-test" / "SKILL.md"))
+            self.assertTrue((root / "coding-test" / "SKILL.md").is_symlink())
+            self.assertIn("<!-- deliver:sizing -->", real.read_text(encoding="utf-8"))
+
     def test_unreadable_file_is_a_render_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(render.Malformed):
@@ -156,6 +190,33 @@ class FigureFailures(unittest.TestCase):
                                 "4ea7bd7 c3\n5c894bd2 c2\n", figures_check.check_pickaxe,
                                 ("pickaxe",))
         self.assertTrue(failures)
+
+
+    RECOVERY_DIRS = ("reset", "restore", "staged", "untracked", "force", "gc", "switch",
+                     "branchd", "plain-pop", "discard")
+
+    def test_a_recovery_outcome_stated_backwards_fails(self):
+        # Only the command names were checked: each of these edits states the
+        # opposite of what the check re-runs, and every one stayed green.
+        for old, new in (
+                ("-> reflog still lists the commit; reset back restores it",
+                 "-> the commit is gone for good; the reflog does not list it"),
+                ("-> content gone; neither the reflog nor `fsck --lost-found` holds it",
+                 "-> the reflog still holds the content"),
+                ("dangling blob fd6d6213...", "(no output: the blob is gone)"),
+                ("PRECIOUS-STAGED-WORK                 # recovered",
+                 "fatal: Not a valid object name      # unrecoverable"),
+                ("**left `untracked.txt` in place**", "**took `untracked.txt` with it**"),
+                ("leaves untracked files where they are", "deletes untracked files too")):
+            with self.subTest(old=old):
+                self.assertTrue(self.mutated("RECOVERY", old, new, figures_check.check_recovery,
+                                             self.RECOVERY_DIRS))
+
+    def test_a_false_files_changed_count_fails(self):
+        failures = self.mutated("HISTORY", " 1 file changed, 2 insertions",
+                                " 9 files changed, 2 insertions", figures_check.check_dots,
+                                ("dots",))
+        self.assertTrue(any("two-dot" in f for f in failures), failures)
 
 
 if __name__ == "__main__":
