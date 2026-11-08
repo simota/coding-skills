@@ -79,6 +79,9 @@ Short, mechanical, non-negotiable:
 - **The comment that lies**: a stale comment above changed code is worse than none
 - **The comment that says what**: cover it and read the code. Nothing lost means
   the comment is deletable; something lost means the code should have said it
+- **The comment that excuses or warns**: a workaround, an apology, a "do not
+  call before X". Agents copy what is nearby, so it spreads. Name the type,
+  test, or lint rule that would enforce it instead
 
 ## Pass 5 — the checks
 

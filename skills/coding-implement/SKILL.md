@@ -97,9 +97,10 @@ adjacent work is defined in `registry/capabilities.yaml`.
   `--no-verify` to make a failure disappear. The failure is the information
 - Never: leave commented-out code, a stray debug print, or a `TODO` without the
   `#TODO(agent):` class marker
-- Never: write a comment that says what the line under it already says. Cover it
-  and read the code: nothing lost, delete it; something lost, rename or extract
-  until the code says it. A comment carries the why, never the what
+- Never: write a comment by default. Agents copy their neighbours, so a
+  workaround or caution in prose spreads. A what becomes a name; a caution
+  becomes a type, a test, or a lint rule. Only a cited outside constraint stays
+  (`_coding/CONTRACT.md`)
 
 ## Verify with
 

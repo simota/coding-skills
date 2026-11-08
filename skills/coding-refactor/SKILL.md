@@ -87,7 +87,9 @@ messages, ordering, and timing that anything depends on.
 - Always: keep the tree green at every commit
 - Always: turn a comment that says what the next block does into that block's
   name — extract, rename, delete the comment. It changes no behaviour, so it is
-  this skill's work. A comment carrying a why is left alone
+  this skill's work. A caution in a comment becomes a test that fails when it
+  is ignored; a type or lint rule that narrows what callers may pass is
+  `coding-implement`'s. A cited outside constraint is left alone
 - Always: get permission before any change spanning ten or more files. **The only
   exception is one substitution applied identically everywhere**
 - Never: change behaviour. Not the return value in an edge case, not an error

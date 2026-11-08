@@ -34,7 +34,8 @@ nowhere.
 
 **Correctness and safety outrank consistency.** A precedent that is merely ugly
 gets followed. A precedent that is wrong — an injection, a missing
-authorisation check, a swallowed error, a race — does not: copying it creates a
+authorisation check, a swallowed error, a race, a workaround left as a
+comment — does not: copying it creates a
 second defect and makes the first one look sanctioned. Follow the precedent's
 *shape*, fix the flaw in the copy, and say that the original carries it too.
 

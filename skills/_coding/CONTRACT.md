@@ -79,25 +79,24 @@ file written with no evidence is an unverified change leaving.
 
 A run that left no residual reports `swept, 0 markers; 7 changed / 7 evidenced`.
 
-## Comments — the code says what, a comment says why
+## Comments — none by default; structure carries what one would say
 
-A comment that restates the line under it is a defect in the code, not a
-sentence missing from it. **The test is mechanical: cover the comment and read
-the code.** Nothing lost — delete the comment. Something lost — put it in the
-code, renaming or extracting until the comment has become the name, and delete
-it anyway.
+An agent copies what sits around the file it opened. One workaround or excuse
+left as a comment reads as how this codebase is written, and spreads. **So a
+comment is deleted by default, and what it carried moves into structure**: a
+what into a name (rename, extract); a caution — must be sorted, never before
+init, never null — into a type that cannot hold the bad value, a test that
+fails when it is ignored, or a lint rule. A workaround is fixed or becomes a
+residual with its `#TODO(agent):` marker — never a comment.
 
-What survives that test is what code cannot carry: why this way and not the
-obvious way, the outside constraint that forces it, the ordering that looks
-arbitrary and is not, the citation with its identifier. **Deleting those is the
-opposite failure and costs more** — a `why` that lived in one head is
-unrecoverable, where a `what` is re-read off the code. A `#TODO(agent):`
-marker, a licence or provenance header, and the identifier a test quotes for
-its oracle are never trimmed by this rule.
+What survives is what no structure can hold: the outside constraint, cited by
+its identifier (ticket, spec, upstream issue), and the why that would be
+re-derived wrongly without it. **Deleting those costs more** — a `why` in one
+head is unrecoverable. A `#TODO(agent):` marker, a licence or provenance
+header, and a test's oracle identifier are never trimmed by this rule.
 
-**Nothing checks this automatically.** It is a reading pass over the files this
-run wrote, made before the sweep is reported, and it binds those alone —
-stripping comments elsewhere is a change nobody asked for.
+**Nothing checks this automatically.** A reading pass over the files this run
+wrote, before the sweep, binding those alone; a nearby workaround is not copied.
 
 ## Boundary cases
 

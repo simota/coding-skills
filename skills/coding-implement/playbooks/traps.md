@@ -38,6 +38,7 @@ Most defects live where code meets something it does not control.
 | Demonstrated once, by hand | It worked when it was tried | Leave behind something that can be run again |
 | Green on the wrong thing | The check passes without exercising the change | Make it fail first, then make it pass. An assertion that never failed proves nothing |
 | The unfinished edge | The last case is left as a comment and the work is reported complete | Finish it. An in-scope gap left behind is a `DEFERRED` residual — marker, `open` entry, resume condition — and the status is `PARTIAL`. Never a comment and `DONE` |
+| The note instead of the guard | A comment says "must be sorted" or "workaround for X" | A comment binds nobody and the next agent copies it. Make it a type, a test, or a lint rule; a workaround is fixed or marked as a residual |
 | Scope discovered late | Work outside the brief is absorbed because it was found while building | It was not agreed. Mark it and hand the decision back |
 | The tidy-up rider | A rename or reformat rides along in the diff | Behaviour change plus cleanup is unreviewable. Separate commits, or separate work |
 
