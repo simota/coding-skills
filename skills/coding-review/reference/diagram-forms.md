@@ -100,6 +100,30 @@ flowchart LR
 Keep node labels to what was opened. A mermaid graph is as easy to fill with
 untraced edges as a sentence is, and harder to argue with, which is the danger.
 
+**The state chart** is the `ordering` form when the finding is a reachable
+state that breaks a rule: states in the reader's words, arrows as what happens,
+the path to the break numbered, and the breaking state marked.
+
+````
+```mermaid
+stateDiagram-v2
+  classDef breaks fill:#fdd,stroke:#c00
+  state "Paying, two charges in flight" as Paying2
+  state "Charged twice" as ChargedTwice
+  [*] --> Cart
+  Cart --> Paying: ① you press pay
+  Paying --> Paid: the charge succeeds
+  Paying --> Paying2: ② you press pay [while a charge is pending]
+  Paying2 --> ChargedTwice: ③ both charges succeed
+  class ChargedTwice breaks
+```
+````
+
+About 20 arrows at most: merge states that act the same before hiding steps,
+and never merge two states that break different rules. No variable or function
+names on states or arrows — each step's `file:line` goes in the finding's path,
+not on the chart.
+
 ## Drawing them
 
 - Box characters `┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ │ ─`, arrows `──▶ ▲ ▼ └─`

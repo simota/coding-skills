@@ -56,6 +56,7 @@ reasoning, and at most a written plan. It does not implement.
 | The codebase already solves something similar | Follow that shape. A second idiom costs every future reader, forever |
 | Two or more approaches are viable | [options](playbooks/options.md) — name them, price them, recommend one |
 | The design centres on an interface others will call | [interfaces](playbooks/interfaces.md) |
+| The design moves between states and the order of steps matters — a flow, a protocol, a lease | [states](playbooks/states.md) — model it, check every reachable state against its rules, chart the shortest path to each break |
 | It touches persisted data or a public format | Plan the migration and the rollback **before** the feature. Data outlives code |
 | The work is large or has an unclear middle | [sequencing](playbooks/sequencing.md) — get a thin end-to-end path first |
 | A requirement is ambiguous | Ask. One question now is cheaper than a plan built on a guess |

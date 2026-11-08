@@ -83,5 +83,7 @@ numbered marks and the findings referring to the numbers beats one map each.
 - **A blast-radius fan** when the finding is that a changed signature reaches
   further than the diff: the changed thing on the left, its callers to the
   right, and the ones the diff did not touch marked
+- **A state chart** when the finding is a reachable state that breaks a rule:
+  the path to it numbered, the breaking state marked, labels in the reader's words
 - **A case grid** when a conditional is missing a branch: the inputs down one
   axis, the states across the other, and the empty cell as the finding
