@@ -23,7 +23,8 @@ should be able to put a finger on the mark that is wrong.
 Title block — the plan, the revision read, run status, the loop's cycle when
 in one, who is next, the verdict. The index of views, each dotted by its worst
 mark: red for a flaw of rank 1–3 or a breaking cell, amber for a lower flaw or
-a `?`, green when clean, no dot when not owed. What stops the build, then
+a `?`, green when clean, no dot when not owed; each view's header says the
+same of itself. What stops the build, then
 counts. The legend. The premise. The rules, with the rule-by-view matrix (a
 dash under a view not owed). Then the views, numbered in the views table's
 order; a view not owed keeps its number and its one line. Then every seam the

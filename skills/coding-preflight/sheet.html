@@ -156,6 +156,16 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
 .ptx{display:inline-flex;width:19px;height:19px;border:1.5px solid var(--accent);color:var(--accent);align-items:center;justify-content:center;font:500 11px var(--mono);font-style:normal;margin-right:4px;vertical-align:middle}
 .nwt{font:500 10px var(--mono);letter-spacing:.06em;color:var(--new);margin-left:4px}
 .r{fill:none;stroke:var(--line);stroke-width:1.4} .r.gap{stroke:var(--gap);stroke-dasharray:5 4}
+/* after the design review: the verdict leads, the index shows every view, a header states its view's state */
+.stamp{font:600 18px/1 var(--cond);letter-spacing:.06em;padding:10px 14px}
+.ex{background:none;color:var(--muted);border-color:var(--rule)}
+.tb{box-shadow:none}
+.ix{flex-wrap:wrap;overflow:visible} [id]{scroll-margin-top:calc(112px + env(safe-area-inset-top,0px))}
+@media (max-width:720px){.ix{position:static}}
+.wfb{fill:var(--node);stroke:var(--ink);stroke-width:1.75} .dg .wfbt{fill:var(--ink);font-weight:600}
+.stt{margin-left:2px;display:inline-flex;align-items:center;gap:6px;font:500 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ok)}
+.stt::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor} .stt.bad{color:var(--bad)} .stt.gap{color:var(--gap)}
+.fig.s-bad{border-top-color:var(--bad)} .fig.s-gap{border-top-color:var(--gap)}
 </style>
 </head>
 <body>
@@ -272,8 +282,8 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
 <div class="sec"><span class="lab">The views</span></div>
 
 <!-- V01 -->
-<section class="fig" id="v01">
-  <header><span class="no">V01</span><h2>Usage</h2><span class="why">Owed: the plan adds a call that others make. Drawn first, before any type.</span></header>
+<section class="fig s-bad" id="v01">
+  <header><span class="no">V01</span><h2>Usage</h2><span class="stt bad">breaks</span><span class="why">Owed: the plan adds a call that others make. Drawn first, before any type.</span></header>
   <div class="draw"><pre class="use"><span class="c"># the call as the support console writes it</span>
 refund = refunds.refund(order_id, amount)          <span class="nw">[new]</span>
 <span class="c">if</span> refund.pending: show(<span class="c">"Refund on its way"</span>)
@@ -286,8 +296,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V02 -->
-<section class="fig" id="v02">
-  <header><span class="no">V02</span><h2>Structure</h2><span class="why">Owed: five modules are touched. Arrows point at what is depended on.</span></header>
+<section class="fig s-gap" id="v02">
+  <header><span class="no">V02</span><h2>Structure</h2><span class="stt gap">gaps</span><span class="why">Owed: five modules are touched. Arrows point at what is depended on.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 310" role="img" aria-label="Structure map">
     <path class="e" d="M170 52H250"/><path class="e" d="M400 52H480"/><path class="e" d="M630 52H710"/>
     <path class="e" d="M785 74V130"/><path class="e" d="M710 152H345V74"/>
@@ -310,16 +320,16 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <text class="ts" x="700" y="146" text-anchor="end">confirms the refund</text>
     <text class="ts" x="104" y="218">writes the order total</text>
     <text class="ts" x="328" y="198">writes the refund</text>
-    <g class="fg" transform="translate(726,296)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F8</text></g>
-    <text class="ts" x="704" y="300" text-anchor="end">no arrow in: nothing reads it</text>
+    <g class="fg" transform="translate(726,298)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F8</text></g>
+    <text class="ts" x="746" y="302">nothing reads it</text>
   </svg></div>
   <div class="under"><p><a class="fl" href="#f8">F8</a> Refund reasons is built in step 1 and read by no step. Checkout and Refunds both write the order row; the order of the two writes is attacked in V04.</p>
   <p class="note">Sources: plan §1–§6; existing boxes opened at checkout/order.py:31, payments/gateway.py:12, ledger/entry.py:8.</p></div>
 </section>
 
 <!-- V03 -->
-<section class="fig" id="v03">
-  <header><span class="no">V03</span><h2>Data flow</h2><span class="why">Owed: the amount crosses three boundaries. The value rides on the arrow, with its unit.</span></header>
+<section class="fig s-bad" id="v03">
+  <header><span class="no">V03</span><h2>Data flow</h2><span class="stt bad">breaks</span><span class="why">Owed: the amount crosses three boundaries. The value rides on the arrow, with its unit.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 150" role="img" aria-label="Data flow of the amount">
     <path class="e" d="M170 62H250"/><path class="e gap" d="M400 62H480"/><path class="e" d="M630 62H710"/>
     <g class="n new" transform="translate(20,40)"><rect width="150" height="44" rx="3"/><text x="75" y="27" text-anchor="middle">Refund form</text></g>
@@ -341,8 +351,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V04 -->
-<section class="fig" id="v04">
-  <header><span class="no">V04</span><h2>Sequence</h2><span class="why">Owed: five actors and the order matters. Time runs to the right.</span></header>
+<section class="fig s-bad" id="v04">
+  <header><span class="no">V04</span><h2>Sequence</h2><span class="stt bad">breaks</span><span class="why">Owed: five actors and the order matters. Time runs to the right.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 320" role="img" aria-label="Sequence with two staff pressing refund">
     <line class="lane" x1="130" y1="46" x2="864" y2="46"/><line class="lane" x1="130" y1="96" x2="864" y2="96"/><line class="lane" x1="130" y1="156" x2="864" y2="156"/><line class="lane" x1="130" y1="226" x2="864" y2="226"/><line class="lane" x1="130" y1="286" x2="864" y2="286"/>
     <text x="16" y="50">Staff A</text><text x="16" y="100">Staff B</text><text x="16" y="160">Server</text><text x="16" y="230">Gateway</text><text x="16" y="290">Ledger</text>
@@ -377,8 +387,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 <!-- A view that is not owed keeps its number and one line, and its index chip takes class="na":
      <section class="fig na" id="v05"><header><span class="no">V05</span><h2>States</h2><span class="why">Not owed: nothing here has a lifecycle.</span></header></section> -->
 <!-- V05 -->
-<section class="fig" id="v05">
-  <header><span class="no">V05</span><h2>States</h2><span class="why">Owed: a refund has a lifecycle. States and arrows are in the words of the person who decides.</span></header>
+<section class="fig s-bad" id="v05">
+  <header><span class="no">V05</span><h2>States</h2><span class="stt bad">breaks</span><span class="stt">clean</span><span class="why">Owed: a refund has a lifecycle. States and arrows are in the words of the person who decides.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 230" role="img" aria-label="State chart of a refund">
     <path class="e" d="M170 60H250"/><path class="e" d="M400 60H480"/><path class="e" d="M630 60H710"/>
     <path class="e gap" d="M270 80V120H95V160"/><path class="e bad" d="M350 80V160"/><path class="e bad" d="M400 180H480"/><path class="e bad" d="M600 80V120H785V160"/>
@@ -407,8 +417,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V06 -->
-<section class="fig" id="v06">
-  <header><span class="no">V06</span><h2>Failure</h2><span class="why">Owed: every step calls something that can fail. An empty cell is a finding.</span></header>
+<section class="fig s-bad" id="v06">
+  <header><span class="no">V06</span><h2>Failure</h2><span class="stt bad">breaks</span><span class="why">Owed: every step calls something that can fail. An empty cell is a finding.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Step</th><th>Fails how</th><th>Noticed by</th><th>Left behind</th><th>Way back</th></tr>
     <tr><td><i class="stp">2</i> check and reserve</td><td>database down</td><td class="o">staff: error shown</td><td>nothing</td><td class="o">press again</td></tr>
@@ -423,8 +433,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V07 -->
-<section class="fig" id="v07">
-  <header><span class="no">V07</span><h2>Data lifetime</h2><span class="why">Owed: step 1 adds a table and a column. Code above, data below, time to the right.</span></header>
+<section class="fig s-bad" id="v07">
+  <header><span class="no">V07</span><h2>Data lifetime</h2><span class="stt bad">breaks</span><span class="why">Owed: step 1 adds a table and a column. Code above, data below, time to the right.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 200" role="img" aria-label="Data lifetime across release and rollback">
     <text x="16" y="62">Code</text><text x="16" y="112">Schema</text><text x="16" y="162">Rows</text>
     <rect class="bar" x="120" y="44" width="240" height="28"/><rect class="bar new" x="360" y="44" width="260" height="28"/><rect class="bar" x="620" y="44" width="240" height="28"/>
@@ -442,8 +452,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V08 -->
-<section class="fig" id="v08">
-  <header><span class="no">V08</span><h2>Trust boundary</h2><span class="why">Owed: a rule says who may act, and input arrives from a browser and from outside.</span></header>
+<section class="fig s-bad" id="v08">
+  <header><span class="no">V08</span><h2>Trust boundary</h2><span class="stt bad">breaks</span><span class="why">Owed: a rule says who may act, and input arrives from a browser and from outside.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 200" role="img" aria-label="Trust boundaries">
     <rect class="zone" x="20" y="26" width="260" height="160"/><rect class="zone" x="300" y="26" width="340" height="160"/><rect class="zone" x="660" y="26" width="200" height="160"/>
     <text class="ts" x="30" y="46">Browser · not trusted</text><text class="ts" x="310" y="46">Server</text><text class="ts" x="670" y="46">Outside</text>
@@ -455,7 +465,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <g class="n new" transform="translate(480,125)"><rect width="140" height="44" rx="3"/><text x="70" y="27" text-anchor="middle">Webhook handler</text></g>
     <g class="n ext" transform="translate(680,125)"><rect width="160" height="44" rx="3"/><text x="80" y="27" text-anchor="middle">Payment gateway</text></g>
     <text class="tg q sm" x="320" y="122">? no role check stated here</text>
-    <text x="650" y="140" text-anchor="middle" class="sm" style="fill:var(--ok)">signed</text>
+    <text x="760" y="116" text-anchor="middle" class="sm" style="fill:var(--ok)">signed</text>
     <g class="fg" transform="translate(290,60)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F5</text></g>
   </svg></div>
   <div class="under"><p><a class="fl" href="#f5">F5</a> The only check the plan draws is whether the button is shown. Anyone signed in can send the request.</p>
@@ -464,8 +474,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 
 <!-- V09 + V10 -->
 <div class="two">
-<section class="fig" id="v09">
-  <header><span class="no">V09</span><h2>Operations</h2><span class="why">Owed: it ships to production and can fail there.</span></header>
+<section class="fig s-bad" id="v09">
+  <header><span class="no">V09</span><h2>Operations</h2><span class="stt bad">breaks</span><span class="why">Owed: it ships to production and can fail there.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Question</th><th>What the plan draws</th></tr>
     <tr><td>Rollout</td><td class="o">flag refunds_enabled, support team first</td></tr>
@@ -477,8 +487,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
   </table></div></div>
   <div class="under"><p><a class="fl" href="#f2">F2</a> <a class="fl" href="#f3">F3</a> <a class="fl" href="#f4">F4</a> Each failure that leaves money in doubt has no signal a person would see.</p></div>
 </section>
-<section class="fig" id="v10">
-  <header><span class="no">V10</span><h2>Load</h2><span class="why">Owed: a third party with a rate limit is called. Numbers or it is not drawn.</span></header>
+<section class="fig s-gap" id="v10">
+  <header><span class="no">V10</span><h2>Load</h2><span class="stt gap">gaps</span><span class="why">Owed: a third party with a rate limit is called. Numbers or it is not drawn.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Quantity</th><th>Number</th><th>Source</th></tr>
     <tr><td>Refunds a day</td><td>40</td><td>plan §0</td></tr>
@@ -493,8 +503,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </div>
 
 <!-- V11 -->
-<section class="fig" id="v11">
-  <header><span class="no">V11</span><h2>Build order</h2><span class="why">Owed: seven steps. Each box leans on what the arrow comes from; under it, the check that can run once it is done.</span></header>
+<section class="fig s-gap" id="v11">
+  <header><span class="no">V11</span><h2>Build order</h2><span class="stt gap">gaps</span><span class="why">Owed: seven steps. Each box leans on what the arrow comes from; under it, the check that can run once it is done.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 220" role="img" aria-label="Build order">
     <path class="e" d="M160 52H200"/><path class="e" d="M340 52H380"/><path class="e" d="M520 52H560"/><path class="e" d="M700 52H740"/>
     <path class="e" d="M325 74V152H380"/><path class="e" d="M690 74V152H740"/>
@@ -510,7 +520,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <text class="tg q sm" x="380" y="92">? runs only after 6</text>
     <text class="ts" x="560" y="92">replayed hook</text><text class="ts" x="740" y="92">ledger = gateway</text>
     <text class="ts" x="380" y="192">end to end</text><text class="tg q sm" x="740" y="192">? no check named</text>
-    <g class="fg" transform="translate(540,89)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F7</text></g>
+    <g class="fg" transform="translate(430,110)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F7</text></g>
     <text class="ts" x="20" y="152">First end-to-end path:</text><text class="ts" x="20" y="168">step 6 of 7</text>
   </svg></div>
   <div class="under"><p><a class="fl" href="#f7">F7</a> Step 3 moves real money and is the one step with nothing to run until the button exists.</p>
@@ -518,8 +528,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V12 -->
-<section class="fig" id="v12">
-  <header><span class="no">V12</span><h2>Proof</h2><span class="why">Owed: there are rules. For each, the check the plan names that would show it holds.</span></header>
+<section class="fig s-bad" id="v12">
+  <header><span class="no">V12</span><h2>Proof</h2><span class="stt bad">breaks</span><span class="why">Owed: there are rules. For each, the check the plan names that would show it holds.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Rule</th><th>Check the plan names</th><th>Runs after</th><th>Would it catch the break?</th></tr>
     <tr><td>R1</td><td class="b">none</td><td>—</td><td class="b">no: F1 ships unseen</td></tr>
@@ -533,8 +543,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V13 -->
-<section class="fig" id="v13">
-  <header><span class="no">V13</span><h2>Network</h2><span class="why">Owed: traffic crosses a network boundary in both directions. Where each part runs, and what may reach what.</span></header>
+<section class="fig s-bad" id="v13">
+  <header><span class="no">V13</span><h2>Network</h2><span class="stt bad">breaks</span><span class="why">Owed: traffic crosses a network boundary in both directions. Where each part runs, and what may reach what.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 270" role="img" aria-label="Network topology">
     <rect class="zone" x="20" y="26" width="200" height="226"/><rect class="zone" x="240" y="26" width="200" height="226"/><rect class="zone" x="460" y="26" width="400" height="226"/>
     <text class="ts" x="30" y="242">Internet</text><text class="ts" x="250" y="242">Office VPN</text><text class="ts" x="470" y="242">Private network · no inbound from the internet</text>
@@ -559,8 +569,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V14 -->
-<section class="fig" id="v14">
-  <header><span class="no">V14</span><h2>Screen design</h2><span class="why">Owed: staff see and press something new. Each screen as a wireframe, in every state it can be in. Square tags number the parts.</span></header>
+<section class="fig s-bad" id="v14">
+  <header><span class="no">V14</span><h2>Screen design</h2><span class="stt bad">breaks</span><span class="why">Owed: staff see and press something new. Each screen as a wireframe, in every state it can be in. Square tags number the parts.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 320" role="img" aria-label="Wireframes of the refund screens">
     <path class="e" d="M280 165H310"/><path class="e" d="M570 165H600"/>
     <g transform="translate(20,30)">
@@ -603,8 +613,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V15 -->
-<section class="fig" id="v15">
-  <header><span class="no">V15</span><h2>Screen spec</h2><span class="why">Owed: the screens have inputs and actions. One row per numbered part of V14.</span></header>
+<section class="fig s-bad" id="v15">
+  <header><span class="no">V15</span><h2>Screen spec</h2><span class="stt bad">breaks</span><span class="why">Owed: the screens have inputs and actions. One row per numbered part of V14.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Part</th><th>Kind</th><th>Value comes from</th><th>Rejects</th><th>On press, and while waiting</th></tr>
     <tr><td><i class="ptx">1</i> Refund</td><td>button</td><td>—</td><td class="o">hidden unless support role</td><td>opens the dialog</td></tr>
@@ -619,8 +629,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V16 -->
-<section class="fig" id="v16">
-  <header><span class="no">V16</span><h2>Screen flow</h2><span class="why">Owed: three screens and a dialog. Every screen, what moves between them, and the paths after something goes wrong.</span></header>
+<section class="fig s-bad" id="v16">
+  <header><span class="no">V16</span><h2>Screen flow</h2><span class="stt bad">breaks</span><span class="why">Owed: three screens and a dialog. Every screen, what moves between them, and the paths after something goes wrong.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 244" role="img" aria-label="Screen transitions">
     <path class="e" d="M170 82H250"/><path class="e" d="M400 82H480"/><path class="e" d="M630 82H700"/>
     <path class="e bad" d="M790 60V30H555V60"/><path class="e gap" d="M725 104V140H555V170"/><path class="e" d="M770 104V170"/>
@@ -636,7 +646,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <text class="ts" x="665" y="72" text-anchor="middle">confirm</text>
     <text class="ts tb2" x="672" y="22" text-anchor="middle">Refund again [while pending]</text>
     <text class="ts" x="540" y="128" text-anchor="end">declined: error shown here</text>
-    <text class="ts" x="562" y="134">gateway times out</text>
+    <text class="ts" x="600" y="158">gateway times out</text>
     <text class="ts" x="778" y="142">confirmed</text>
     <g class="fg" transform="translate(530,30)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F1</text></g>
     <g class="fg" transform="translate(555,230)"><rect x="-14" y="-10" width="28" height="20" rx="3"/><text y="4">F4</text></g>
@@ -646,8 +656,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V17 -->
-<section class="fig" id="v17">
-  <header><span class="no">V17</span><h2>Tables</h2><span class="why">Owed: step 1 adds two tables and a column. Per column: its type, and the constraint that holds a rule.</span></header>
+<section class="fig s-bad" id="v17">
+  <header><span class="no">V17</span><h2>Tables</h2><span class="stt bad">breaks</span><span class="why">Owed: step 1 adds two tables and a column. Per column: its type, and the constraint that holds a rule.</span></header>
   <div class="draw"><div class="scroll"><table>
     <tr><th>Table</th><th>Column</th><th>Type</th><th>Null</th><th>Key or constraint</th><th>What it holds, or fails to</th></tr>
     <tr><td rowspan="6">refunds <span class="nwt">NEW</span></td><td class="m">id</td><td class="m">bigint</td><td>no</td><td>PK</td><td>—</td></tr>
@@ -665,8 +675,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
 </section>
 
 <!-- V18 -->
-<section class="fig" id="v18">
-  <header><span class="no">V18</span><h2>ER diagram</h2><span class="why">Owed: four tables relate. Each line, with how many on each end.</span></header>
+<section class="fig s-bad" id="v18">
+  <header><span class="no">V18</span><h2>ER diagram</h2><span class="stt bad">breaks</span><span class="why">Owed: four tables relate. Each line, with how many on each end.</span></header>
   <div class="draw"><svg class="dg" viewBox="0 0 880 260" role="img" aria-label="Entity relationship diagram">
     <path class="r" d="M190 125H355"/><path class="r" d="M525 110H610V55H690"/><path class="r" d="M105 160V225H690"/>
     <path class="r gap" d="M525 150H610V205H690"/>

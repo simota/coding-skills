@@ -55,7 +55,7 @@ limits:
   # Raised from 4600 for the ninth skill. Compression could not make the room:
   # the old figure left 178 lines and a SKILL.md owes 59 delivered ones before
   # its first word. The raise is under that skill's measured size (SKILL.md 143,
-  # three playbooks 355), so the room above the corpus shrank: 178 lines to 39.
+  # three playbooks 356), so the room above the corpus shrank: 178 lines to 38.
   repo_md_lines_total: 4960
 
 # A listing under this many skills does not need packs. Crossing it is the

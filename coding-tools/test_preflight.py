@@ -86,6 +86,12 @@ class Sheet(unittest.TestCase):
                         else "gap" if flags or re.search(r'class="[^"]*\bq\b', body) else "")
                 chip = re.search(rf'<a(?: class="(\w+)")? href="#{v.lower()}">', SHEET)
                 self.assertEqual(chip.group(1) or "", want)
+                # The view says it of itself too: a reader scrolling past the
+                # index should not have to read under a drawing to learn its state.
+                head = re.search(rf'<section class="fig(?: s-(\w+))?" id="{v.lower()}">\s*<header>.*?'
+                                 r'<span class="stt(?: (\w+))?">', SHEET, flags=re.S)
+                self.assertIsNotNone(head, f"{v} has no state on its header")
+                self.assertEqual((head.group(1) or "", head.group(2) or ""), (want, want))
 
     def test_a_thing_called_unread_has_no_reader_in_another_view(self):
         """F8 removes the refund reasons because nothing reads them. A view that
