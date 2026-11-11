@@ -53,3 +53,13 @@ review-to-zero:
   oracle: "no unresolved finding of rank 1-4, and one full pass adds none"
   checker: other-engine          # resolved at run time to one that is not running this
   max_cycles: 4              # hand back rather than loop again
+
+plan-to-zero:
+  pattern: loop
+  when: "prove a written plan before any of it is built"
+  chain: [coding-preflight, coding-plan]
+  # Ranks are coding-preflight's hunt ordering: 1 a rule can be broken, 2 no way
+  # back, 3 a failure nobody owns. Ranks 4-6 are reported and the human decides.
+  oracle: "no unresolved flaw of rank 1-3, and one full pass over every view and seam adds none"
+  checker: other-engine          # resolved at run time to one that is not running this
+  max_cycles: 3              # the same flaw back twice goes to the human

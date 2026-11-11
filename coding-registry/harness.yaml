@@ -47,12 +47,16 @@ limits:
   # sets do not, and it is the one thing here that cannot be reconstructed after
   # the fact.
   shared_lines_total: 620
-  skills_max: 10                # 8 in use, 2 spare for demand found in use
+  skills_max: 10                # 9 in use, 1 spare for demand found in use
   routes_max: 12
   route_stages_max: 6           # the longest chain, `feature`, has 6
   # Raised from 3200 because reference/ carries no line budget of its own but is
   # counted here; the ceiling is the family's planning-set figure, not a blank cheque.
-  repo_md_lines_total: 4600
+  # Raised from 4600 for the ninth skill. Compression could not make the room:
+  # the old figure left 178 lines and a SKILL.md owes 59 delivered ones before
+  # its first word. The raise is under that skill's measured size (SKILL.md 143,
+  # three playbooks 353), so the room above the corpus shrank: 178 lines to 41.
+  repo_md_lines_total: 4960
 
 # A listing under this many skills does not need packs. Crossing it is the
 # trigger to split the set into named subsets, not a reason to delete skills.
