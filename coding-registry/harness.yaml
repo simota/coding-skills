@@ -55,7 +55,7 @@ limits:
   # Raised from 4600 for the ninth skill. Compression could not make the room:
   # the old figure left 178 lines and a SKILL.md owes 59 delivered ones before
   # its first word. The raise is under that skill's measured size (SKILL.md 143,
-  # three playbooks 353), so the room above the corpus shrank: 178 lines to 41.
+  # three playbooks 355), so the room above the corpus shrank: 178 lines to 39.
   repo_md_lines_total: 4960
 
 # A listing under this many skills does not need packs. Crossing it is the
@@ -100,13 +100,17 @@ engines:
 # adversary.
 refutation:
   lens: |
-    A claimed defect in code. Go for the citation before the reasoning: open the
-    named line and check it says what the claim says it says. Then ask whether the
+    A claimed defect in code, or a claimed flaw in a plan for code not yet written.
+    Go for the citation before the reasoning: open the named line — of the code or
+    of the plan — and check it says what the claim says it says. Then ask whether the
     path is reachable at all, and whether the failure needs a precondition the code
-    already prevents. Most false findings are a real pattern cited at the wrong place.
+    or the plan already prevents. Code a plan has yet to build is not missing: a
+    path through it is judged by the plan's words. Most false findings are a real
+    pattern cited at the wrong place.
   refuted_when: >-
     the cited line does not contain what is claimed, the path cannot be reached,
-    or the failure needs a state the code already rules out
+    or the failure needs a state that the code, or the plan for code not yet
+    written, already rules out
 
 # Tools a skill may run. Each is linked individually into the skills that can run
 # it; the tools directory is never linked whole, because a skill holding `Bash`

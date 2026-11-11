@@ -188,10 +188,10 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
      class="gap": a lower flaw or a ?; no class: clean; class="na": not owed (no dot). -->
 <nav class="ix" aria-label="Sheet index">
   <a class="sx" href="#rules">Rules</a>
-  <a class="gap" href="#v01">V01 Usage</a><a class="gap" href="#v02">V02 Structure</a><a class="gap" href="#v03">V03 Data flow</a>
+  <a class="bad" href="#v01">V01 Usage</a><a class="gap" href="#v02">V02 Structure</a><a class="bad" href="#v03">V03 Data flow</a>
   <a class="bad" href="#v04">V04 Sequence</a><a class="bad" href="#v05">V05 States</a><a class="bad" href="#v06">V06 Failure</a>
   <a class="bad" href="#v07">V07 Data lifetime</a><a class="bad" href="#v08">V08 Trust</a><a class="bad" href="#v09">V09 Operations</a>
-  <a class="gap" href="#v10">V10 Load</a><a class="gap" href="#v11">V11 Build order</a><a class="bad" href="#v12">V12 Proof</a><a class="gap" href="#v13">V13 Network</a>
+  <a class="gap" href="#v10">V10 Load</a><a class="gap" href="#v11">V11 Build order</a><a class="bad" href="#v12">V12 Proof</a><a class="bad" href="#v13">V13 Network</a>
   <a class="bad" href="#v14">V14 Screen design</a><a class="bad" href="#v15">V15 Screen spec</a><a class="bad" href="#v16">V16 Screen flow</a><a class="bad" href="#v17">V17 Tables</a><a class="bad" href="#v18">V18 ER diagram</a>
   <a class="sx" href="#seams">Seams</a><a class="sx" href="#flaws">Flaws</a>
 </nav>
@@ -202,6 +202,8 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
   <ol>
     <li><a class="fl" href="#f1">F1</a><a class="t" href="#f1">Two presses pay the customer twice</a><span>rank 1 · R1</span></li>
     <li><a class="fl" href="#f2">F2</a><a class="t" href="#f2">Money leaves and the ledger never hears</a><span>rank 1 · R2</span></li>
+    <li><a class="fl" href="#f6">F6</a><a class="t" href="#f6">The amount has no stated unit, and a second call no stated answer</a><span>rank 1 · R1</span></li>
+    <li><a class="fl" href="#f9">F9</a><a class="t" href="#f9">The webhook has no stated route in</a><span>rank 1 · R2</span></li>
     <li><a class="fl" href="#f3">F3</a><a class="t" href="#f3">The planned rollback deletes every refund record</a><span>rank 2 · R4</span></li>
     <li><a class="fl" href="#f4">F4</a><a class="t" href="#f4">A gateway timeout leaves a refund pending for good</a><span>rank 3 · R2</span></li>
     <li><a class="fl" href="#f5">F5</a><a class="t" href="#f5">The role is checked where the button is drawn, and nowhere else</a><span>rank 3 · R3</span></li>
@@ -210,14 +212,14 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
 <section class="sum" id="summary">
   <div><span class="lab">Flaws by rank</span>
     <div class="bars">
-      <div><span>rank 1</span><i style="width:100%"></i><span>2</span></div>
-      <div><span>rank 2</span><i style="width:50%"></i><span>1</span></div>
-      <div><span>rank 3</span><i style="width:100%"></i><span>2</span></div>
-      <div class="lo"><span>rank 4</span><i style="width:100%"></i><span>2</span></div>
-      <div class="lo"><span>rank 5</span><i style="width:50%"></i><span>1</span></div>
-      <div class="lo"><span>rank 6</span><i style="width:50%"></i><span>1</span></div>
+      <div><span>rank 1</span><i style="width:100%"></i><span>4</span></div>
+      <div><span>rank 2</span><i style="width:25%"></i><span>1</span></div>
+      <div><span>rank 3</span><i style="width:50%"></i><span>2</span></div>
+      <div class="lo"><span>rank 4</span><i style="width:0%"></i><span>0</span></div>
+      <div class="lo"><span>rank 5</span><i style="width:25%"></i><span>1</span></div>
+      <div class="lo"><span>rank 6</span><i style="width:25%"></i><span>1</span></div>
     </div></div>
-  <div><span class="lab">Blocking the build</span><span class="big">5</span><span class="note">flaws of rank 1–3. Zero is the condition to build.</span></div>
+  <div><span class="lab">Blocking the build</span><span class="big">7</span><span class="note">flaws of rank 1–3. Zero is the condition to build.</span></div>
   <div><span class="lab">Gaps marked ?</span><span class="big">31</span><span class="note">each amber ? on a view, counted once. The rule matrix repeats them and is not counted.</span></div>
   <div><span class="lab">Rules checked</span><span class="big">5</span><span class="note">4 can be broken as drawn; 1 holds in every view that shows it.</span></div>
 </section>
@@ -607,7 +609,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <tr><th>Part</th><th>Kind</th><th>Value comes from</th><th>Rejects</th><th>On press, and while waiting</th></tr>
     <tr><td><i class="ptx">1</i> Refund</td><td>button</td><td>—</td><td class="o">hidden unless support role</td><td>opens the dialog</td></tr>
     <tr><td><i class="ptx">2</i> Amount</td><td>text input</td><td>typed by staff</td><td class="b">more than paid − refunded, checked in the browser only</td><td class="g"><span class="q">?</span> format</td></tr>
-    <tr><td><i class="ptx">3</i> Reason</td><td>list</td><td>refund reasons table</td><td>nothing</td><td>stored, never read</td></tr>
+    <tr><td><i class="ptx">3</i> Reason</td><td>list</td><td>a fixed list on the page</td><td>nothing</td><td>stored, never read</td></tr>
     <tr><td><i class="ptx">4</i> Cancel</td><td>button</td><td>—</td><td>—</td><td>closes the dialog</td></tr>
     <tr><td><i class="ptx">5</i> Refund</td><td>button</td><td>—</td><td>—</td><td class="g">sends the request; while waiting <span class="q">?</span></td></tr>
     <tr><td><i class="ptx">6</i> Refund pending</td><td>badge</td><td>refund status</td><td>—</td><td class="g">cleared when <span class="q">?</span></td></tr>
@@ -716,6 +718,14 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
       <h3>Money leaves and the ledger never hears</h3>
       <ol><li>Step 3: the gateway pays.</li><li>Step 4: the webhook confirms.</li><li>Step 5: the ledger write hits a conflict and fails. Only a log line records it.</li></ol>
       <dl><dt>Change</dt><dd>Write the ledger row as pending before step 3 and confirm it after, so a failure leaves a row to reconcile.</dd><dt>Seen in</dt><dd>V04 · V05 · V06 · V09 · V17 · V18</dd></dl></article>
+    <article class="card" id="f6"><div class="hd"><span class="fl">F6</span><span class="chip">RANK 1 · a rule can be broken</span><span class="chip">QUESTION</span><span class="chip">R1</span></div>
+      <h3>The amount has no stated unit, and a second call no stated answer</h3>
+      <ol><li>Staff type 12500 for an order paid in yen.</li><li>The column is named in cents, so the amount is sent as 12500 cents of a currency that has none, or multiplied to match.</li><li>If the gateway reads it as a larger sum than was typed, the customer gets back more than they paid.</li></ol>
+      <dl><dt>Change</dt><dd>State the unit sent to the gateway for each currency, and what refund() returns for an order already refunded in part or in full.</dd><dt>Seen in</dt><dd>V01 · V03 · V14 · V15 · V17</dd></dl></article>
+    <article class="card" id="f9"><div class="hd"><span class="fl">F9</span><span class="chip">RANK 1 · a rule can be broken</span><span class="chip">QUESTION</span><span class="chip">R2</span></div>
+      <h3>The webhook has no stated route in</h3>
+      <ol><li>Step 3: the gateway pays.</li><li>The gateway sends the webhook to the support console host, which takes no traffic from the internet.</li><li>Steps 4 and 5 never run: the money is sent and no ledger row is written.</li></ol>
+      <dl><dt>Change</dt><dd>Name the public host that receives the webhook and how it hands the event to the private side. Without it no refund is ever confirmed.</dd><dt>Seen in</dt><dd>V13</dd></dl></article>
     <article class="card" id="f3"><div class="hd"><span class="fl">F3</span><span class="chip">RANK 2 · no way back</span><span class="chip cf">CONFIRMED · executed</span><span class="chip">R4</span></div>
       <h3>The planned rollback deletes every refund record</h3>
       <ol><li>Release; refunds are made and rows written.</li><li>Roll back as plan §8 says: migrate down.</li><li>The refunds table and the column are dropped.</li></ol>
@@ -732,18 +742,12 @@ refunds rows after:  relation "refunds" does not exist</div>
       <h3>The role is checked where the button is drawn, and nowhere else</h3>
       <ol><li>A signed-in user who is not support sends POST /refunds directly.</li><li>The plan draws no check between the request and refund().</li></ol>
       <dl><dt>Change</dt><dd>State the role check at the entrance of refund(). A question until the plan says whether a shared middleware already does it.</dd><dt>Seen in</dt><dd>V08 · V12</dd></dl></article>
-    <article class="card lo" id="f6"><div class="hd"><span class="fl">F6</span><span class="chip">RANK 4 · a gap</span><span class="chip">QUESTION</span><span class="chip">R1</span></div>
-      <h3>The amount has no stated unit, and a second call no stated answer</h3>
-      <dl><dt>Change</dt><dd>State the unit sent to the gateway for each currency, and what refund() returns for an order already refunded in part or in full.</dd><dt>Seen in</dt><dd>V01 · V03 · V14 · V15 · V17</dd></dl></article>
-    <article class="card lo" id="f9"><div class="hd"><span class="fl">F9</span><span class="chip">RANK 4 · a gap</span><span class="chip">QUESTION</span><span class="chip">R2</span></div>
-      <h3>The webhook has no stated route in</h3>
-      <dl><dt>Change</dt><dd>Name the public host that receives the webhook and how it hands the event to the private side. Without it no refund is ever confirmed.</dd><dt>Seen in</dt><dd>V13</dd></dl></article>
     <article class="card lo" id="f7"><div class="hd"><span class="fl">F7</span><span class="chip">RANK 5 · an unverifiable step</span><span class="chip">LIKELY</span></div>
       <h3>The step that moves money cannot be run until three steps later</h3>
       <dl><dt>Change</dt><dd>Give step 3 its own entrance against the gateway's test mode, and move a thin end-to-end path ahead of step 4.</dd><dt>Seen in</dt><dd>V11</dd></dl></article>
     <article class="card lo" id="f8"><div class="hd"><span class="fl">F8</span><span class="chip">RANK 6 · more than the goal needs</span><span class="chip">CONFIRMED · inspected</span></div>
-      <h3>A table that nothing reads</h3>
-      <dl><dt>Change</dt><dd>Drop the refund reasons table from step 1. Every rule still holds without it.</dd><dt>Seen in</dt><dd>V02 · V15 · V17 · seam V02–V04</dd></dl></article>
+      <h3>A reason that is stored and never read</h3>
+      <dl><dt>Change</dt><dd>Drop the reason from steps 1 and 6: the list on the screen, the reason column and the refund reasons table. Every rule still holds without them.</dd><dt>Seen in</dt><dd>V02 · V15 · V17 · seam V02–V04</dd></dl></article>
   </div>
 </section>
 

@@ -74,7 +74,9 @@ Before any detail:
 ## The seams
 
 Each of these is one name looked up in two views. A missing counterpart is a
-finding, and it is drawn as two columns.
+finding, and it is drawn as two columns. A seam is checked only when both its
+views are owed: a job with states and no screen has no screen to look them up
+on. One left out is listed as not checked, with the reason its view is not owed.
 
 - Every box in the structure appears in the sequence, or it does nothing
 - Every arrow in the sequence has a row in the failure grid
