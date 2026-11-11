@@ -26,7 +26,19 @@ coding-plan:
       go: coding-explore
     - what: "writing the code once the shape is settled"
       go: coding-implement
+    - what: "attacking a plan that is already written"
+      go: coding-preflight
   signals: [interfaces, signatures, data model, error and state design, state design, build order, between options, trade-off]
+
+coding-preflight:
+  class: doc-write
+  does: [plan-views, usage-view, structure-view, data-flow-view, sequence-view, failure-view, build-order-view, design-flaw-hunt]
+  not:
+    - what: "deciding the shape, or revising the plan a flaw was found in"
+      go: coding-plan
+    - what: "judging code that already exists"
+      go: coding-review
+  signals: [preflight, implementation plan, visualise, diagram, data flow, failure paths, design flaw, written plan]
 
 coding-implement:
   class: full
@@ -80,6 +92,8 @@ coding-review:
       go: coding-test
     - what: "a defect observed at runtime"
       go: coding-debug
+    - what: "a plan with no code yet"
+      go: coding-preflight
   signals: [review, defects, diff, correctness, boundaries, security, more code than]
 
 coding-ship:

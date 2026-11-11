@@ -65,3 +65,11 @@
   expect: coding-review
 - ask: "write the PR description"
   expect: coding-ship
+
+# Added with coding-preflight: a plan that exists is attacked, not re-planned.
+- ask: "visualise the implementation plan and find every design flaw before we build"
+  expect: coding-preflight
+- ask: "preflight this: draw the data flow and the failure paths"
+  expect: coding-preflight
+- ask: "draw a diagram of the written plan and try to break it"
+  expect: coding-preflight
