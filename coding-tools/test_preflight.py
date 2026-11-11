@@ -93,6 +93,23 @@ class Sheet(unittest.TestCase):
                 self.assertIsNotNone(head, f"{v} has no state on its header")
                 self.assertEqual((head.group(1) or "", head.group(2) or ""), (want, want))
 
+    def test_a_question_about_a_rule_is_a_card_and_not_a_sentence(self):
+        """hunt.md: a Question takes the rank of its bad answer and blocks at
+        rank 1-3. One raised only in the words under a drawing stops nothing:
+        the plan could clear with the rule still breakable."""
+        for v, body in views().items():
+            for rule in re.findall(r"question for (R\d+)", body.split('class="under"')[-1]):
+                with self.subTest(view=v, rule=rule):
+                    held = [c["id"] for c in cards()
+                            if rule in c["rules"] and "QUESTION" in c["body"] and v in c["seen"]]
+                    self.assertTrue(held, f"{v} asks a question about {rule} and no card carries it")
+
+    def test_the_rules_called_breakable_are_the_rules_the_blocking_cards_name(self):
+        named = {r for c in cards() if c["rank"] <= 3 for r in c["rules"]}
+        said = re.search(r"(\d) can be broken as drawn", SHEET)
+        self.assertIsNotNone(said, "the summary no longer says how many rules can be broken")
+        self.assertEqual(int(said.group(1)), len(named))
+
     def test_a_thing_called_unread_has_no_reader_in_another_view(self):
         """F8 removes the refund reasons because nothing reads them. A view that
         fills a list from them is a reader, and the removal would break it."""

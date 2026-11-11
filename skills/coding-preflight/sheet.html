@@ -180,7 +180,7 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
   <div>
     <span class="lab">Preflight sheet</span>
     <h1>Order refunds</h1>
-    <p>Every view the plan implies, drawn from the plan's own words, then attacked. Eighteen views, eleven seams, nine flaws.</p>
+    <p>Every view the plan implies, drawn from the plan's own words, then attacked. Eighteen views, eleven seams, ten flaws.</p>
     <span class="stamp">Not cleared for build</span>
     <div class="ex">Worked example. The plan, the code references and the probe output are invented to show the form.</div>
   </div>
@@ -214,6 +214,7 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
     <li><a class="fl" href="#f2">F2</a><a class="t" href="#f2">Money leaves and the ledger never hears</a><span>rank 1 · R2</span></li>
     <li><a class="fl" href="#f6">F6</a><a class="t" href="#f6">The amount has no stated unit, and a second call no stated answer</a><span>rank 1 · R1</span></li>
     <li><a class="fl" href="#f9">F9</a><a class="t" href="#f9">The webhook has no stated route in</a><span>rank 1 · R2</span></li>
+    <li><a class="fl" href="#f10">F10</a><a class="t" href="#f10">A webhook delivered twice tells the customer twice</a><span>rank 1 · R5</span></li>
     <li><a class="fl" href="#f3">F3</a><a class="t" href="#f3">The planned rollback deletes every refund record</a><span>rank 2 · R4</span></li>
     <li><a class="fl" href="#f4">F4</a><a class="t" href="#f4">A gateway timeout leaves a refund pending for good</a><span>rank 3 · R2</span></li>
     <li><a class="fl" href="#f5">F5</a><a class="t" href="#f5">The role is checked where the button is drawn, and nowhere else</a><span>rank 3 · R3</span></li>
@@ -222,16 +223,16 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
 <section class="sum" id="summary">
   <div><span class="lab">Flaws by rank</span>
     <div class="bars">
-      <div><span>rank 1</span><i style="width:100%"></i><span>4</span></div>
-      <div><span>rank 2</span><i style="width:25%"></i><span>1</span></div>
-      <div><span>rank 3</span><i style="width:50%"></i><span>2</span></div>
+      <div><span>rank 1</span><i style="width:100%"></i><span>5</span></div>
+      <div><span>rank 2</span><i style="width:20%"></i><span>1</span></div>
+      <div><span>rank 3</span><i style="width:40%"></i><span>2</span></div>
       <div class="lo"><span>rank 4</span><i style="width:0%"></i><span>0</span></div>
-      <div class="lo"><span>rank 5</span><i style="width:25%"></i><span>1</span></div>
-      <div class="lo"><span>rank 6</span><i style="width:25%"></i><span>1</span></div>
+      <div class="lo"><span>rank 5</span><i style="width:20%"></i><span>1</span></div>
+      <div class="lo"><span>rank 6</span><i style="width:20%"></i><span>1</span></div>
     </div></div>
-  <div><span class="lab">Blocking the build</span><span class="big">7</span><span class="note">flaws of rank 1–3. Zero is the condition to build.</span></div>
+  <div><span class="lab">Blocking the build</span><span class="big">8</span><span class="note">flaws of rank 1–3. Zero is the condition to build.</span></div>
   <div><span class="lab">Gaps marked ?</span><span class="big">31</span><span class="note">each amber ? on a view, counted once. The rule matrix repeats them and is not counted.</span></div>
-  <div><span class="lab">Rules checked</span><span class="big">5</span><span class="note">4 can be broken as drawn; 1 holds in every view that shows it.</span></div>
+  <div><span class="lab">Rules checked</span><span class="big">5</span><span class="note">All 5 can be broken as drawn.</span></div>
 </section>
 </div>
 
@@ -274,7 +275,7 @@ td.g{background:color-mix(in srgb,var(--gap-bg) 60%,transparent);box-shadow:inse
     <tr><td>R2 sent means in the ledger</td><td></td><td></td><td></td><td class="b">✕</td><td class="b">✕</td><td class="b">✕</td><td></td><td></td><td class="b">✕</td><td></td><td></td><td class="o">●</td><td><span class="cq">?</span></td><td><span class="cq">?</span></td><td></td><td><span class="cq">?</span></td><td class="b">✕</td><td><span class="cq">?</span></td></tr>
     <tr><td>R3 support staff only</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="b">✕</td><td></td><td></td><td></td><td><span class="cq">?</span></td><td></td><td></td><td class="o">●</td><td></td><td></td><td></td></tr>
     <tr><td>R4 rollback loses nothing</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="b">✕</td><td></td><td class="b">✕</td><td></td><td class="o">●</td><td class="b">✕</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>R5 told once, after</td><td></td><td></td><td></td><td class="o">●</td><td></td><td><span class="cq">?</span></td><td></td><td></td><td></td><td></td><td class="o">●</td><td><span class="cq">?</span></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>R5 told once, after</td><td></td><td></td><td></td><td class="o">●</td><td></td><td class="b">✕</td><td></td><td></td><td></td><td></td><td class="o">●</td><td class="b">✕</td><td></td><td></td><td></td><td></td><td><span class="cq">?</span></td><td></td></tr>
   </table></div>
   <p class="note">● shown and holds · ✕ shown and breaks · ? the view needs something the plan does not say · blank: the view cannot show this rule</p>
 </section>
@@ -428,7 +429,8 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <tr><td><i class="stp">5</i> write the ledger</td><td>write conflict</td><td class="b">a log line only</td><td class="b">money sent, no ledger row</td><td class="b">none</td></tr>
     <tr><td><i class="stp">7</i> email the customer</td><td>provider down</td><td class="g"><span class="q">?</span></td><td>refunded, customer not told</td><td class="g"><span class="q">?</span></td></tr>
   </table></div></div>
-  <div class="under"><p><a class="fl" href="#f2">F2</a> <a class="fl" href="#f4">F4</a> Rows 3 and 5 leave money in an unknown or unrecorded place with no way back. The double webhook is a question for R5: would the customer be told twice?</p>
+  <div class="under"><p><a class="fl" href="#f2">F2</a> <a class="fl" href="#f4">F4</a> Rows 3 and 5 leave money in an unknown or unrecorded place with no way back. </p>
+  <p><a class="fl" href="#f10">F10</a> A webhook delivered twice runs step 7 twice. It is a question for R5 until the plan says the second one is ignored.</p>
   <p class="note">Sources: plan §2–§7. The plan names failures for steps 2 and 3 (declined) only.</p></div>
 </section>
 
@@ -538,7 +540,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <tr><td>R4</td><td>migrate up and down</td><td><i class="stp">1</i></td><td class="b">no: it passes while rows are lost</td></tr>
     <tr><td>R5</td><td class="g"><span class="q">?</span></td><td>—</td><td class="g">—</td></tr>
   </table></div></div>
-  <div class="under"><p><a class="fl" href="#f1">F1</a> <a class="fl" href="#f5">F5</a> R1 and R3 have no check at all, so both breaks would ship unseen.</p>
+  <div class="under"><p><a class="fl" href="#f1">F1</a> <a class="fl" href="#f5">F5</a> <a class="fl" href="#f10">F10</a> R1, R3 and R5 have no check at all, so each break would ship unseen.</p>
   <p><a class="fl" href="#f3">F3</a> The R4 check looks at the schema and not at the rows, so it is green on the very run that loses them.</p></div>
 </section>
 
@@ -670,7 +672,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <tr><td>refund_reasons <span class="nwt">NEW</span></td><td class="m">id, label</td><td class="m">bigint, text</td><td>no</td><td>PK</td><td>no reader in any step</td></tr>
     <tr><td>ledger_entries</td><td class="m">order_id, amount_cents</td><td class="m">bigint, int</td><td>no</td><td>FK → orders</td><td class="b">no column points at the refund it records</td></tr>
   </table></div></div>
-  <div class="under"><p><a class="fl" href="#f1">F1</a> <a class="fl" href="#f2">F2</a> <a class="fl" href="#f4">F4</a> <a class="fl" href="#f6">F6</a> <a class="fl" href="#f8">F8</a> R1 and R2 are about stored data, and no constraint in the schema holds either.</p>
+  <div class="under"><p><a class="fl" href="#f1">F1</a> <a class="fl" href="#f2">F2</a> <a class="fl" href="#f4">F4</a> <a class="fl" href="#f6">F6</a> <a class="fl" href="#f8">F8</a> <a class="fl" href="#f10">F10</a> R1 and R2 are about stored data, and no constraint in the schema holds either. Whether the gateway's id is unique decides if a repeated webhook can be told apart.</p>
   <p class="note">Sources: plan §1 lines 4–11; existing tables opened at db/schema.sql:88 (orders), :140 (ledger_entries).</p></div>
 </section>
 
@@ -712,7 +714,7 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
     <tr><td>Every part in V15 has a column or a source in V17, and every column a writer</td><td class="o">●</td><td>—</td></tr>
     <tr><td>Every table in V17 is in V18, and every stored value of V03 is a column</td><td class="o">●</td><td>—</td></tr>
     <tr><td>Every rule is shown by at least one view</td><td class="o">●</td><td>—</td></tr>
-    <tr><td>Every rule has a check in V12 that runs before release</td><td class="b">✕</td><td>R1, R3, R5 <a class="fl" href="#f1">F1</a> <a class="fl" href="#f5">F5</a></td></tr>
+    <tr><td>Every rule has a check in V12 that runs before release</td><td class="b">✕</td><td>R1, R3, R5 <a class="fl" href="#f1">F1</a> <a class="fl" href="#f5">F5</a> <a class="fl" href="#f10">F10</a></td></tr>
   </table></div>
 </section>
 
@@ -736,6 +738,10 @@ refunds.refund(order_id, amount)   <span class="c"># the same order, a second ti
       <h3>The webhook has no stated route in</h3>
       <ol><li>Step 3: the gateway pays.</li><li>The gateway sends the webhook to the support console host, which takes no traffic from the internet.</li><li>Steps 4 and 5 never run: the money is sent and no ledger row is written.</li></ol>
       <dl><dt>Change</dt><dd>Name the public host that receives the webhook and how it hands the event to the private side. Without it no refund is ever confirmed.</dd><dt>Seen in</dt><dd>V13</dd></dl></article>
+    <article class="card" id="f10"><div class="hd"><span class="fl">F10</span><span class="chip">RANK 1 · a rule can be broken</span><span class="chip">QUESTION</span><span class="chip">R5</span></div>
+      <h3>A webhook delivered twice tells the customer twice</h3>
+      <ol><li>Step 3: the gateway pays and sends the webhook.</li><li>The gateway delivers the same webhook a second time. Nothing notices.</li><li>Step 4 runs again, so step 7 emails the customer again.</li></ol>
+      <dl><dt>Change</dt><dd>State that step 4 ignores a webhook it has already handled, keyed on the gateway's id for the refund. A question until the plan says whether the handler already does.</dd><dt>Seen in</dt><dd>V06 · V12 · V17</dd></dl></article>
     <article class="card" id="f3"><div class="hd"><span class="fl">F3</span><span class="chip">RANK 2 · no way back</span><span class="chip cf">CONFIRMED · executed</span><span class="chip">R4</span></div>
       <h3>The planned rollback deletes every refund record</h3>
       <ol><li>Release; refunds are made and rows written.</li><li>Roll back as plan §8 says: migrate down.</li><li>The refunds table and the column are dropped.</li></ol>
@@ -766,7 +772,7 @@ refunds rows after:  relation "refunds" does not exist</div>
   <div class="two">
     <div><span class="lab">Expected before drawing</span><ul class="tight"><li>Sequence would break: found (F1, F2).</li><li>Data lifetime would break: found (F3).</li><li>Load would break: not found. 40 a day against 10 a second.</li><li>Trust boundary was not expected to break: it did (F5).</li></ul></div>
     <div><span class="lab">What a plan cannot show</span><ul class="tight"><li>How the gateway behaves on a repeated request. A probe against its test mode would settle F1.</li><li>Production data: orders already refunded by hand.</li><li>The deployed mobile client, which also lists orders.</li></ul></div>
-    <div><span class="lab">Evidence</span><ul class="tight"><li>1 flaw executed (F3), 1 inspected (F8), 4 likely, 3 questions.</li><li>Existing boxes: 7 files opened, listed in the sources under each drawing.</li><li>Nothing was written in the repo except this sheet.</li></ul></div>
+    <div><span class="lab">Evidence</span><ul class="tight"><li>1 flaw executed (F3), 1 inspected (F8), 4 likely, 4 questions.</li><li>Existing boxes: 7 files opened, listed in the sources under each drawing.</li><li>Nothing was written in the repo except this sheet.</li></ul></div>
   </div>
 </section>
 
