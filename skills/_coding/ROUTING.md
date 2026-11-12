@@ -1,8 +1,7 @@
 <!-- coding:guidance -->
 # ROUTING — which coding skill owns this
 
-A request with an obvious owner calls that skill directly. This is the fallback
-and the ordering guide, not a gate.
+A request with an obvious owner calls that skill directly. This is the fallback and the ordering guide, not a gate.
 
 **Boundaries are defined in `registry/capabilities.yaml`, not here and not in
 any skill's description.** Each entry carries what a skill does, what it does
@@ -25,6 +24,7 @@ is a reading of that file, not a second copy of it.
 | `coding-review` | Finding defects in a change before it lands | No |
 | `coding-ship` | Commit granularity, history shape, PR, changelog, release | History and release docs only |
 | `coding-toolbox` | The scripts a run wrote, kept in the host's `.agents/toolbox/` for the next agent to find, reuse and prune | Helper scripts only |
+| `coding-setup` | The host's ground for agents: its rules, feature map, verify script and gates, audited, laid and proved | Rules, scripts and CI only |
 
 **Who may write a test.** `registry/capabilities.yaml` assigns checks of the
 current change to its writing skill, including retained regression cases and
@@ -34,7 +34,7 @@ Read-only skills may run checks, but their findings do not authorise edits.
 
 **Not owned by this set.** Documentation and comments belong to whichever skill
 changes the code they describe — which deletes a copy rather than updating it.
-Anything else outside these ten is said plainly, not absorbed by the nearest.
+Anything else outside these eleven is said plainly, not absorbed by the nearest.
 
 ## Disambiguation
 
@@ -51,6 +51,7 @@ registry cannot hold.
 | debug vs test | **A red suite is debug's until the cause is known, test's after.** Diagnosing why it fails is debug; repairing tests that lie, are flaky, or assert the wrong thing is test |
 | review vs test | review reads for defects; test builds the check that catches them. A finding worth guarding becomes a test |
 | test vs toolbox | **Does it assert the product's behaviour?** Yes → a test, in the suite. It only gets an agent to where it can look — start, seed, reproduce, read logs → toolbox |
+| toolbox vs setup | **Who is it for?** One agent getting to where it can look → toolbox. Every agent and CI deciding a change is good → setup |
 | implement vs ship | Ship starts once the code is correct. Ship never fixes code to make a commit tidy |
 
 ## Chains
@@ -68,8 +69,7 @@ stopping rule and the loop ends when someone gets tired.
 
 ## Rules for running a chain
 
-- **Settle the brief before the first stage.** Every stage receives it whole and
-  it does not change mid-run (`_coding/SIZING.md`)
+- **Settle the brief before the first stage.** Every stage receives it whole and it does not change mid-run (`_coding/SIZING.md`)
 - **A stage's output is a handoff** (`_coding/HANDOFF.md`), and the next stage runs the seven receiver checks before starting
 - **Never run a writing skill on work classified as report-only.** "Review this" does not authorise edits, and neither does finding something obviously wrong
 - **A chain wanting a seventh stage is mis-scoped.** Split the request instead

@@ -1,6 +1,6 @@
 # coding-skills
 
-Ten agent skills covering the coding lifecycle, the contracts they share, and
+Eleven agent skills covering the coding lifecycle, the contracts they share, and
 the budgets that keep the set from growing into something nobody can route
 through. Each skill owns one phase and returns evidence rather than assurances.
 
@@ -18,6 +18,7 @@ through. Each skill owns one phase and returns evidence rather than assurances.
 | [`coding-review`](skills/coding-review/SKILL.md) | Defects in a change, before it lands | No |
 | [`coding-ship`](skills/coding-ship/SKILL.md) | Commits, history shape, PR, release notes | History and release docs only |
 | [`coding-toolbox`](skills/coding-toolbox/SKILL.md) | The scripts a run wrote, kept in the host project where the next agent finds them | Helper scripts only |
+| [`coding-setup`](skills/coding-setup/SKILL.md) | The ground a host gives an agent: rules, feature map, verify script and gates, audited, laid and proved | Rules, scripts and CI only |
 
 ## The idea the set is built on
 
@@ -52,8 +53,8 @@ reaches anything.
 
 **Boundaries live in one file.** `coding-registry/capabilities.yaml` carries `not:` —
 what a skill does not do and where that work goes instead. Descriptions never
-name a neighbour. If they did, adding an eleventh skill would mean editing the
-other ten, and a description would spend its 200-character listing budget
+name a neighbour. If they did, adding a twelfth skill would mean editing the
+other eleven, and a description would spend its 200-character listing budget
 advertising a competitor.
 
 **Contracts are delivered, not referenced.** A rule kept in `skills/_coding/` is read
@@ -165,6 +166,7 @@ and when it was last checked against the tool.
 | [`coding-review/reference/diagram-forms.md`](skills/coding-review/reference/diagram-forms.md) | The copy-paste ASCII form for each finding a reader would otherwise reassemble |
 | [`coding-review/reference/machine-authored.md`](skills/coding-review/reference/machine-authored.md) | The ten defect classes that concentrate in generated code, each with a runnable check |
 | [`coding-ship/reference/recovery.md`](skills/coding-ship/reference/recovery.md) | What git can undo, what nothing can, and the one command that makes the difference |
+| [`coding-setup/reference/templates.md`](skills/coding-setup/reference/templates.md) | A starting shape for the agent rules, the feature map, the verify script, the CI workflow, the pull request template and CODEOWNERS |
 | [`coding-test/reference/oracles.md`](skills/coding-test/reference/oracles.md) | Where an expected value may come from, and the shapes that assert nothing |
 
 ## Names, and why none of them are generic
@@ -249,7 +251,7 @@ Nearing a playbook cap is not a reason to split a skill. Merge the duplicates,
 delete what nothing reads, compress it into a `Decide first` row, move it to the
 skill it belongs to — and only then consider splitting, which is accepted only
 when the two halves have disjoint signals and neither is left with only a
-playbook or two. Splitting to relieve a budget is how a set of ten becomes a set nobody
+playbook or two. Splitting to relieve a budget is how a set of eleven becomes a set nobody
 can route through.
 
 ## Installing
@@ -281,7 +283,7 @@ parent of its directory exists, and overriding one host still links the others.
   duplicated signal. Passing them is not evidence that nothing will be misrouted
 - **No rule here measures whether the right skill was picked.** That needs usage
   data this repo does not collect yet
-- **Ten skills need no pack machinery.** Selection degrades as a listing
+- **Eleven skills need no pack machinery.** Selection degrades as a listing
   grows; at this size the whole set is the working set. `packs_needed_above` in
   `coding-registry/harness.yaml` names the point where that stops being true
 

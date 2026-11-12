@@ -81,3 +81,15 @@
   expect: coding-toolbox
 - ask: "half the toolbox no longer runs, prune the stale tools"
   expect: coding-toolbox
+
+# Added with coding-setup: the ground is laid before the first task, not during it.
+- ask: "make this repo agent-ready before we let agents open pull requests"
+  expect: coding-setup
+- ask: "write an AGENTS.md and a feature map for this project"
+  expect: coding-setup
+- ask: "add a verify script and CODEOWNERS so a wrong change is stopped"
+  expect: coding-setup
+- ask: "add a PR template to this repo"
+  expect: coding-setup
+- ask: "turn on required checks for the default branch"
+  expect: coding-setup
