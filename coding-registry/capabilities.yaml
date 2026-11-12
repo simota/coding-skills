@@ -117,3 +117,15 @@ coding-toolbox:
     - what: "a defect in the product that a tool brought to light"
       go: coding-debug
   signals: [toolbox, helper script, throwaway script, reuse, stale tools, between runs]
+
+coding-setup:
+  class: full
+  does: [readiness-audit, agent-rules, feature-map, verify-script, ci-gate, review-gate, gate-proof]
+  not:
+    - what: "the product's own tests, written so the gate has something to run"
+      go: coding-test
+    - what: "restructuring product code so it fits the rules written about it"
+      go: coding-refactor
+    - what: "a script one run wrote for itself and the next could reuse"
+      go: coding-toolbox
+  signals: [agent-ready, AGENTS.md, feature map, verify script, CI gates, CODEOWNERS, pull request template, PR template, branch protection, required checks]

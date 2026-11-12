@@ -47,7 +47,9 @@ limits:
   # sets do not, and it is the one thing here that cannot be reconstructed after
   # the fact.
   shared_lines_total: 620
-  skills_max: 10                # 10 in use: the next addition retires one
+  # Raised from 10 for coding-setup. The owner asked for the skill and for any
+  # unneeded one to be retired; none of the ten was found to be unneeded.
+  skills_max: 11                # 11 in use: the next addition retires one
   routes_max: 12
   route_stages_max: 6           # the longest chain, `feature`, has 6
   # Raised from 3200 because reference/ carries no line budget of its own but is
@@ -61,7 +63,10 @@ limits:
   # delivered ones before its first word. The raise is that skill's measured size
   # (SKILL.md 145, two playbooks 141, one README row) plus the room there was
   # before it: 38 lines then, 41 now.
-  repo_md_lines_total: 5250
+  # Raised from 5250 for the eleventh skill, by about its measured size:
+  # SKILL.md 154, two playbooks 205, one reference page of templates 193, two
+  # README rows. The room above the corpus was 26 lines and is 17.
+  repo_md_lines_total: 5795
 
 # A listing under this many skills does not need packs. Crossing it is the
 # trigger to split the set into named subsets, not a reason to delete skills.
@@ -215,7 +220,8 @@ verified_markers:
 
 
 # Paths that belong to the host project, not to this set.
-external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json", "docs/plans/"]
+external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json", "docs/plans/",
+                 "docs/feature-map.md", ".github/"]
 
 # Content that goes stale belongs outside the budget, not in a playbook.
 # The validator flags these patterns in playbooks.
@@ -236,7 +242,7 @@ signature:
   name: prediction
   contract: PREDICTION.md
   vocabulary: prediction_outcomes
-  required_of: [coding-debug, coding-implement, coding-refactor, coding-test, coding-toolbox]
+  required_of: [coding-debug, coding-implement, coding-refactor, coding-test, coding-toolbox, coding-setup]
   own_word: redict
 
 # Blocks copied verbatim into each SKILL.md that owes them. Naming a shared file is not the
