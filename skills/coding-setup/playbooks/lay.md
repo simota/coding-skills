@@ -24,7 +24,7 @@ one with all seven half done.
 
 | File | Holds | Wrong when |
 |---|---|---|
-| `scripts/verify.sh` | Every check the host has, each run through the host's own command, in one invocation that a person, an agent and CI all use. It names each failing check and where its output is, and exits non-zero if any failed | It hides a failure behind a fallback, needs a secret, behaves differently in CI, or is slow enough that nobody runs it — then the default is the quick set and a flag runs all of it |
+| `scripts/verify.sh` | Every check the host has, each run through the host's own command, in one invocation that a person, an agent and CI all use. By default only the checks that reach what changed, and all of them when a change touches a path it lists as widening; `--full` runs all. It names each failing check and where its output is, writes each check's time, and exits non-zero if any failed | It hides a failure behind a fallback, needs a secret, behaves differently in CI, runs everything on a one-line change so nobody runs it, or leaves off its widening list a path whose change no related test reaches — shared code, config, manifests, lockfiles, the build |
 | `AGENTS.md` | Five short sections — architecture, coding, verification, safety, pull requests — each rule taken from what this host does. Rules a command enforces are named by that command; the rest sit under a heading that says they are discipline | It restates the linter, describes the structure where it could point at it, carries a rule the code breaks, or is long enough to be skimmed |
 | `docs/feature-map.md` | One row per feature, named as issues name it: the entry paths, the tests, and the narrowest command that runs only those tests | A path in it is missing, or it lists every file — that is a copy of the tree, and the tree is already there |
 | The CI workflow | On every pull request: install as the manifest says, run the verify script, keep the failure artefacts. The least permissions that allow that | It lists the checks itself. The second list is the one that drifts |
@@ -87,7 +87,8 @@ is shown to fail once.
    the status equal to the one recorded once all are done
 6. **The workflow is proved only by a pull request that ran it.** Until one
    has, it is `inspected` and `UNVERIFIED`; the same holds for a forge setting
-   that was written out and not applied
+   that was written out and not applied — and the related check, which an
+   uncommitted script widens past, until a break after its commit turns it red
 
 ## Forge settings
 

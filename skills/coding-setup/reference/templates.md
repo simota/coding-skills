@@ -5,9 +5,9 @@ Purpose: One starting shape per file — the agent rules, the feature map, the v
 
 Read when: about to write one of those files into a host that has none, or checking an existing one for a missing part.
 
-Source: none — these are this set's own shapes. The workflow names two hosted actions by major version as an example; the host's own pins replace them.
+Source: none — these are this set's own shapes. The verify script finds the change with git (`diff --name-only`, `merge-base`, `ls-files --others`). The workflow names two hosted actions by major version as an example; the host's own pins replace them.
 
-Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
+Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored; the default run is shown to run only the related check, to widen to every check on a widening or deleted path, to write the timings, and to leave a baseline only from a full run over a tree with nothing uncommitted. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
 
 Every `<…>` is replaced by what the host does, and a line with nothing to
 replace it is deleted. A shape copied whole is a set of claims nobody checked.
@@ -21,16 +21,15 @@ Output goes to `.verify/`; the same change adds it to the host's ignore file.
 
 ```sh
 #!/usr/bin/env bash
-# One command for a person, an agent and CI.
-# Exit 0: every check below passed. Exit 1: the last line names those that did not.
+# One command for a person, an agent and CI. Default: the checks that reach what
+# changed since the base; --full: every check, as CI runs it. Exit 1 names what failed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-mkdir -p .verify
+mkdir -p .verify && : >.verify/timings
 
 failed=()
 run() {                       # run <name> <command> [args...]
-  local name=$1; shift
-  local log=".verify/$name.log"
+  local name=$1 start=$SECONDS log=".verify/$1.log"; shift
   printf '== %s\n' "$name"
   if "$@" >"$log" 2>&1; then
     printf '   ok\n'
@@ -39,29 +38,39 @@ run() {                       # run <name> <command> [args...]
     tail -n 40 "$log"
     failed+=("$name")
   fi
+  printf '%s\t%ss\n' "$name" "$((SECONDS - start))" >>.verify/timings
 }
 
-# One line per check, quickest first. Use the host's own commands:
+# A changed path matching this, or a deleted one, reaches code no related test names.
+widens='^(scripts/verify\.sh|\.github/|<dependency manifests>|<lockfiles>|<build and test config>|<shared code>)'
+full=0 changed=(); [ "${1:-}" = "--full" ] && full=1
+[ "$full" = 0 ] && while IFS= read -r path; do
+  if [ ! -e "$path" ] || [[ $path =~ $widens ]]; then echo "verify: $path widens the change"; full=1; break; fi
+  changed+=("$path")
+done < <({ git diff --name-only "${VERIFY_BASE:-$(git merge-base HEAD <default branch>)}" --; git ls-files --others --exclude-standard; } | sort -u)
+
+# Every run, quickest first. Use the host's own commands:
 # run format  <format check>
 # run lint    <lint>
 # run types   <type check>
-# run unit    <unit tests>
-# run build   <build>
-[ "${1:-}" = "--full" ] && {
+if [ "$full" = 1 ]; then
+  : # run unit        <unit tests>
+  : # run build       <build>
   : # run integration <integration tests>
   : # run e2e         <end-to-end tests>
-}
-
-echo "not covered: <what the host has no check for>"
-if [ "${#failed[@]}" -gt 0 ]; then
-  printf 'verify: FAILED: %s\n' "${failed[*]}"
-  exit 1
+elif [ "${#changed[@]}" -gt 0 ]; then
+  : # run related <the host's command for the tests that reach these files> "${changed[@]}"
 fi
-echo "verify: ok"
+
+summary="verify: ok"; [ "${#failed[@]}" -gt 0 ] && summary="verify: FAILED: ${failed[*]}"
+[ "$full" = 1 ] && [ -z "$(git status --porcelain)" ] && echo "$summary" >".verify/baseline-$(git rev-parse HEAD)"
+echo "not covered: <what the host has no check for>"
+echo "$summary"
+[ "${#failed[@]}" -eq 0 ]
 ```
 
-Every check runs even after one fails: an agent that sees all the failures at
-once repairs them in one pass.
+Every check runs even after one fails, so all failures are repaired in one pass.
+`related` is the host's related-tests command: `jest --findRelatedTests`, `pytest --testmon`, the feature map's narrowest one.
 
 ## The agent rules
 
@@ -82,7 +91,8 @@ once repairs them in one pass.
 - <the host's own conventions that a linter does not hold>
 
 ## Verification
-- After every change: `./scripts/verify.sh`. Before a pull request: `./scripts/verify.sh --full`
+- After every change: `./scripts/verify.sh` (the checks that reach it; slow ones
+  in `.verify/timings`). Before a pull request: `./scripts/verify.sh --full`
 - A change to <the UI paths> also runs <the end-to-end command>
 - A failing check is investigated and repaired. Its log is under `.verify/`
 - To find a feature's code and tests: `docs/feature-map.md`

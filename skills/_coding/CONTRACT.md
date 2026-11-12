@@ -29,7 +29,7 @@ unverified change leaves.**
 
 | Status | Condition |
 |---|---|
-| `DONE` | Every acceptance criterion met, every file evidenced, zero `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals |
+| `DONE` | Every acceptance criterion met, every file evidenced by the checks that reach it, the full suite green or delegated to a required CI check that runs it on the pull request — named in the report, `regression: delegated to CI (<check>)`, and not a residual — and zero `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals |
 | `PARTIAL` | Everything else that produced work — a single `UNVERIFIED`, `BLOCKED` or `DEFERRED` residual lands here |
 | `BLOCKED` | Could not proceed. Say what was tried and what stopped it |
 

@@ -15,7 +15,8 @@ branches; it does not fix code to make a commit tidy.
 ## Before starting
 
 - **Confirm the work is actually done** — from the incoming handoff; with none,
-  run the suite and scan the diff for markers yourself. Tests green, sweep
+  scan the diff for markers and run the full suite — the required CI check, or
+  `verify.sh --full` where there is none. Tests green, sweep
   balanced, no `UNVERIFIED` residual. Shipping is not the place to discover an unrun file
 - **Read the repository's existing convention** — `git log --oneline -30`, the
   most recent merged PRs, `CONTRIBUTING`, and any commit template. Follow it,

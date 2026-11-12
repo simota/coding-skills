@@ -19,8 +19,8 @@ green honestly.
 - **Read the existing tests first.** Their structure, fixtures, and naming are
   the house style, and a second style makes the suite harder to work in than an
   imperfect consistent one
-- **Run the suite before writing anything.** A pre-existing failure discovered
-  after your change looks like your change
+- **Run the tests that reach what you will touch first** (a `.verify/baseline-<sha>`
+  for this commit is read instead). A failure found after your change looks like yours
 - A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
   checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
@@ -62,7 +62,7 @@ green honestly.
 | Writing a regression test for a fixed bug | Write it so it fails on the pre-fix code. Verify by removing only the fix, recoverably ([oracles](reference/oracles.md) § The regression-test rule), running it, and restoring |
 | The code is hard to test | That is information about the code, not about testing. Usually a missing seam — hand it to `coding-refactor` rather than building elaborate mocks |
 | A test needs six mocks to run | The unit is wrong. Test a level up, where fewer things need faking |
-| The suite is slow | Find the few slow tests before optimising the many fast ones. Slow suites stop being run, and an unrun suite catches nothing |
+| The suite is slow | Find the few slow tests before optimising the many fast ones — `.verify/timings` names the slow check, the runner's durations report the test. Slow suites stop being run, and an unrun suite catches nothing |
 | A test fails after a change | Classify it **before** editing either. If the code may be wrong, the cause is `coding-debug`'s (`registry/capabilities.yaml`); repair only what is shown to be the test's fault |
 | Asked to raise coverage to a number | Say what the number will and will not buy, then cover the behaviour that would break silently |
 | A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
@@ -106,8 +106,8 @@ A test is proved by watching it fail and then pass (evidence: `executed`).
 Both halves are required — a test that was never seen red is `inspected` at
 best, and the entry says why it could not be made to fail.
 
-- **`DONE` here**: cases written, each seen red then green, the whole suite green
-  — or, where repairing it was not the task, each remaining failure shown by the
+- **`DONE` here**: cases written, each seen red then green, the tests reaching
+  the change green, the full set green or delegated (`_coding/CONTRACT.md`) — or, where repairing it was not the task, each remaining failure shown by the
   baseline to pre-date the change and recorded `OUT-OF-SCOPE` — and the sweep balances
 - A skipped or quarantined test is `UNVERIFIED` for whatever it covered, and
   leaves a marker naming what is no longer guarded
@@ -133,7 +133,7 @@ best, and the entry says why it could not be made to fail.
 ## Done when
 
 Each new case was observed failing for its stated reason and then passing, the
-full suite is green or, where repairing it was not the task, each remaining failure is shown to pre-date the change,
+tests reaching the change are green, the full set is green or delegated to a required check, or, where repairing it was not the task, each remaining failure is shown to pre-date the change,
 no assertion was weakened to get there, and the behaviours still unguarded are named.
 <!-- deliver:surface -->
 - **Say what the moment needs.** Start: what will be done and what is excluded.

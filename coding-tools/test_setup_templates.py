@@ -91,10 +91,15 @@ class Proof(unittest.TestCase):
         git(self.repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid",
             "commit", "-qm", "base")
         script = shape("The verify script") \
-            .replace("# run unit    <unit tests>", "run unit grep -q ok product.txt") \
+            .replace("<default branch>", "HEAD") \
+            .replace("<shared code>", "shared/") \
+            .replace("  : # run unit        <unit tests>", "  run unit grep -q ok product.txt") \
             .replace("  : # run integration <integration tests>",
-                     "  run integration grep -q ok product.txt")
-        self.assertIn("run integration grep", script)
+                     "  run integration grep -q ok product.txt") \
+            .replace('  : # run related <the host\'s command for the tests that reach these files> "${changed[@]}"',
+                     '  run related grep -q ok "${changed[@]}"')
+        for check in ("unit", "integration", "related"):
+            self.assertIn(f"run {check} grep", script)
         (self.repo / "scripts").mkdir()
         self.script = self.repo / "scripts" / "verify.sh"
         self.script.write_text(script)
@@ -103,6 +108,11 @@ class Proof(unittest.TestCase):
     def verify(self, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["./scripts/verify.sh", *args], cwd=self.repo, text=True,
                               capture_output=True)
+
+    def commit_all(self) -> None:
+        git(self.repo, "add", "-A")
+        git(self.repo, "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+            "commit", "-qm", "lay")
 
     def test_the_script_is_made_executable_before_anything_calls_it(self) -> None:
         """Written by a file tool it is not executable, and the workflow, the
@@ -141,12 +151,73 @@ class Proof(unittest.TestCase):
         self.script.write_text(self.script.read_text().replace(
             "run integration grep -q ok product.txt", "run integration false"))
         self.script.chmod(0o755)
+        self.commit_all()
         self.assertEqual(self.verify().returncode, 0)
         already_red = self.verify("--full")
         self.assertIn("verify: FAILED: integration", already_red.stdout)
         self.assertIn("--full", step(LAY, "Proving the gate", 2))
         self.assertIn("--full", section(SKILL_MD, "Verify with"))
 
+
+    def test_the_default_run_holds_only_the_checks_that_reach_the_change(self) -> None:
+        """A one-line change that runs every check is a change after which
+        nobody runs the checks."""
+        self.script.chmod(0o755)
+        self.commit_all()
+        (self.repo / "product.txt").write_text("ok, edited\n")
+        green = self.verify()
+        self.assertEqual(green.returncode, 0, green.stdout)
+        self.assertIn("== related", green.stdout)
+        self.assertNotIn("== unit", green.stdout)
+        (self.repo / "product.txt").write_text("planted\n")
+        red = self.verify()
+        self.assertEqual(red.returncode, 1)
+        self.assertIn("verify: FAILED: related", red.stdout)
+
+    def test_an_untouched_tree_runs_no_related_check(self) -> None:
+        self.script.chmod(0o755)
+        self.commit_all()
+        run = self.verify()
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertNotIn("== related", run.stdout)
+
+    def test_a_widening_or_deleted_path_runs_every_check(self) -> None:
+        """What a shared module or a removed file reaches, no related-tests
+        command can name."""
+        self.script.chmod(0o755)
+        (self.repo / "shared").mkdir()
+        (self.repo / "shared" / "lib.txt").write_text("ok\n")
+        (self.repo / "gone.txt").write_text("ok\n")
+        self.commit_all()
+        (self.repo / "shared" / "lib.txt").write_text("ok, edited\n")
+        widened = self.verify()
+        self.assertIn("shared/lib.txt widens the change", widened.stdout)
+        self.assertIn("== integration", widened.stdout)
+        git(self.repo, "restore", "shared/lib.txt")
+        (self.repo / "gone.txt").unlink()
+        deleted = self.verify()
+        self.assertIn("gone.txt widens the change", deleted.stdout)
+        self.assertIn("== unit", deleted.stdout)
+
+    def test_each_check_run_has_its_time_written(self) -> None:
+        self.script.chmod(0o755)
+        self.verify("--full")
+        timings = (self.repo / ".verify" / "timings").read_text()
+        self.assertEqual([line.split("\t")[0] for line in timings.splitlines()],
+                         ["unit", "integration"])
+
+    def test_a_baseline_comes_only_from_a_full_run_over_a_committed_tree(self) -> None:
+        """A baseline taken over uncommitted work is not the commit's, and a
+        later run reading it would blame the commit for that work."""
+        self.script.chmod(0o755)
+        self.verify("--full")
+        self.assertEqual(list((self.repo / ".verify").glob("baseline-*")), [])
+        self.commit_all()
+        self.verify()
+        self.assertEqual(list((self.repo / ".verify").glob("baseline-*")), [])
+        self.verify("--full")
+        sha = git(self.repo, "rev-parse", "HEAD").strip()
+        self.assertEqual((self.repo / ".verify" / f"baseline-{sha}").read_text(), "verify: ok\n")
 
 if __name__ == "__main__":
     unittest.main()
