@@ -99,6 +99,8 @@ what existing code does is proved by a probe that was run (evidence:
 - **State the coverage**: the views drawn, the views not owed and why, the
   rules checked, and what a plan cannot show — load, production data, the
   deployed client
+- **The sheet is a snapshot of one plan, never kept current.** A revised plan is
+  redrawn; a built one takes its sheet down with it (`_coding/CONTRACT.md`)
 <!-- deliver:report -->
 - **Grade every claim**: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says

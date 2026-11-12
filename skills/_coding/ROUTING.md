@@ -33,8 +33,8 @@ characterisation nets. Keeping a check does not create a second owner.
 Read-only skills may run checks, but their findings do not authorise edits.
 
 **Not owned by this set.** Documentation and comments belong to whichever skill
-changes the code they describe. Anything else outside these ten is said
-plainly rather than absorbed by the nearest skill.
+changes the code they describe — which deletes a copy rather than updating it.
+Anything else outside these ten is said plainly, not absorbed by the nearest.
 
 ## Disambiguation
 
