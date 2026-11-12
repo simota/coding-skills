@@ -26,7 +26,7 @@ if ! git cat-file -e "$tree:coding-tools/validate.py" 2>/dev/null; then
 	fi
 	exit 0
 fi
-tmp=$(mktemp -d)
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 trap 'exit 1' HUP INT TERM
 tmp=$(cd "$tmp" && pwd -P)
