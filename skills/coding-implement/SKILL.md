@@ -101,6 +101,8 @@ adjacent work is defined in `registry/capabilities.yaml`.
   workaround or caution in prose spreads. A what becomes a name; a caution
   becomes a type, a test, or a lint rule. Only a cited outside constraint stays
   (`_coding/CONTRACT.md`)
+- Never: leave a page saying what the code now says — a plan step just built, a
+  README passage on this behaviour. Delete the copy; keep the pointer and the why
 
 ## Verify with
 

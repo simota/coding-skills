@@ -79,24 +79,24 @@ file written with no evidence is an unverified change leaving.
 
 A run that left no residual reports `swept, 0 markers; 7 changed / 7 evidenced`.
 
-## Comments — none by default; structure carries what one would say
+## Comments and documents — the code is the only copy
 
-An agent copies what sits around the file it opened. One workaround or excuse
-left as a comment reads as how this codebase is written, and spreads. **So a
-comment is deleted by default, and what it carried moves into structure**: a
-what into a name (rename, extract); a caution — must be sorted, never before
-init, never null — into a type that cannot hold the bad value, a test that
-fails when it is ignored, or a lint rule. A workaround is fixed or becomes a
-residual with its `#TODO(agent):` marker — never a comment.
+An agent copies what sits around the file it opened, and believes a page about
+the code before the code. One workaround left as a comment spreads; one page
+restating behaviour is still read after the code moved. **So prose about code is
+deleted by default, and what it carried moves into structure**: a what into a
+name; a caution — must be sorted, never null — into a type that cannot hold the
+bad value, a test that fails when it is ignored, or a lint rule. A workaround is
+fixed or becomes a residual with its `#TODO(agent):` marker.
 
-What survives is what no structure can hold: the outside constraint, cited by
+**A document is an index, never a second copy.** It points — path, symbol,
+command — and holds only what no structure can: the outside constraint, cited by
 its identifier (ticket, spec, upstream issue), and the why that would be
 re-derived wrongly without it. **Deleting those costs more** — a `why` in one
-head is unrecoverable. A `#TODO(agent):` marker, a licence or provenance
-header, and a test's oracle identifier are never trimmed by this rule.
-
-**Nothing checks this automatically.** A reading pass over the files this run
-wrote, before the sweep, binding those alone; a nearby workaround is not copied.
+head is unrecoverable. A plan is scaffolding: what the code now says leaves it.
+Never trimmed: a `#TODO(agent):` marker, a licence or provenance header, a test's
+oracle identifier. **Nothing checks this**: a reading pass over the files this
+run wrote, before the sweep, binding those alone; a nearby workaround is not copied.
 
 ## Boundary cases
 

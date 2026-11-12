@@ -84,6 +84,9 @@ reasoning, and at most a written plan. It does not implement.
 - Never: write implementation code. A signature or a schema sketch is the plan;
   a working function is `coding-implement`'s
 - Never: plan around a fact that could have been looked up. Read the file
+- Never: copy into the plan what the code already says. Cite it by `file:line`;
+  the plan holds only what no code says yet — the decision, its reason, the
+  options rejected
 - Never: introduce an abstraction whose only justification is a hypothetical
   second use
 
@@ -102,6 +105,9 @@ claim about existing behaviour is anchored to `file:line` (evidence:
   ask (default `docs/plans/<slug>.md`)
 - **The plan names its own falsification.** "This is wrong if X" is what makes
   a plan checkable rather than persuasive
+- **The plan is scaffolding and says so**: each step names what is deleted from
+  it once built. What outlives the build is the decision and its reason, never
+  the shape — the code is the only copy of that (`_coding/CONTRACT.md`)
 <!-- deliver:report -->
 - **Grade every claim**: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says

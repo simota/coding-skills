@@ -11,6 +11,7 @@ named difficulty, apply it, run the tests, commit. One move per commit.
 | A function is edited on every unrelated feature | Split by reason-to-change, not by line count |
 | You must read the body to know what it does | Extract and name the parts, or fix the name |
 | A comment explains what the next block does | Extract that block, and the comment becomes the name |
+| A page describes the structure being moved | Delete the description and leave a pointer to the new path. Updating a copy keeps a copy |
 | The same fix has to be applied in several places | Deduplicate — but only once you have confirmed they are the same thing |
 | A magic value appears in more than one place | Name it once, at the level where it is meaningful |
 | Nested conditionals past three levels | Guard clauses, early return, or invert the condition |

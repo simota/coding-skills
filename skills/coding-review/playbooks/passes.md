@@ -82,6 +82,9 @@ Short, mechanical, non-negotiable:
 - **The comment that excuses or warns**: a workaround, an apology, a "do not
   call before X". Agents copy what is nearby, so it spreads. Name the type,
   test, or lint rule that would enforce it instead
+- **The page that restates**: a README, guide or plan in the diff describing what
+  the code does. Cover it and read the code. Nothing lost means it is deletable
+  down to a pointer; a why or an outside constraint lost means that part stays
 
 ## Pass 5 — the checks
 
