@@ -7,7 +7,7 @@ Read when: about to write one of those files into a host that has none, or check
 
 Source: none — these are this set's own shapes. The workflow names two hosted actions by major version as an example; the host's own pins replace them.
 
-Verified: 2026-11-12 — the verify script was run under bash 3.2 with one passing and one failing check, and it printed the failing check's name and log path and exited 1. The other shapes have no automated check.
+Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
 
 Every `<…>` is replaced by what the host does, and a line with nothing to
 replace it is deleted. A shape copied whole is a set of claims nobody checked.
@@ -16,7 +16,7 @@ replace it is deleted. A shape copied whole is a set of claims nobody checked.
 
 ## The verify script
 
-`scripts/verify.sh`. Each `run` line wraps one command the host already has.
+`scripts/verify.sh`, made executable. Each `run` line wraps one command the host already has.
 Output goes to `.verify/`; the same change adds it to the host's ignore file.
 
 ```sh
@@ -126,6 +126,7 @@ and lists no check of its own.
 name: ci
 on:
   pull_request:
+  merge_group:
   push:
     branches: [<default branch>]
 permissions:
@@ -142,6 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verify-output
+          include-hidden-files: true
           path: |
             .verify/
             <where end-to-end traces and screenshots land>
@@ -159,7 +161,7 @@ jobs:
 <the behaviour that is different, not the list of files>
 
 ## Verification
-<each command that was run, and its result>
+<each command that was run, its result, and how many tests ran>
 
 ## Not verified
 <what could not be run, and why>

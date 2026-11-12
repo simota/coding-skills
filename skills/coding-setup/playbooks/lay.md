@@ -7,8 +7,8 @@ run can stop after any step with what exists so far still working.
 
 ## The order
 
-1. **`scripts/verify.sh`** — the one command, and `.verify/` added to the
-   host's ignore file with it. Everything else refers to it
+1. **`scripts/verify.sh`** — the one command, made executable, and `.verify/`
+   added to the host's ignore file with it. Everything else refers to it
 2. **`AGENTS.md`** — what an agent may do, must do and must ask about
 3. **`docs/feature-map.md`** — where each feature's code and tests are
 4. **The CI workflow** — runs the verify script on every pull request
@@ -69,9 +69,11 @@ change.
 A verify script seen only passing may be checking nothing. Each check it wraps
 is shown to fail once.
 
-1. **Start clean.** The tree has no uncommitted work, or the proof runs in a
-   throwaway worktree. Never plant a break over someone's edits
-2. **Predict green, then run the script on the untouched tree.** Red here is a
+1. **Record the tree's status first** — it holds what this run laid, still
+   uncommitted. A break goes only into a tracked file with no change of its
+   own: never into a file this run wrote, never over someone's edits
+2. **Predict green, then run the script on the untouched tree, and again with
+   `--full`** — a check never seen green cannot be shown red. Red here is a
    finding about the host: report it and stop, without repairing the product
    and without loosening the check
 3. **For each check, plant the smallest break it should catch** — a formatting
@@ -82,7 +84,7 @@ is shown to fail once.
    green run is a `miss` — the check is not wired, or the file sits outside what
    it reads. Fix the script, never the prediction
 5. **Restore the file from version control before the next break**, and show
-   the tree clean once all are done
+   the status equal to the one recorded once all are done
 6. **The workflow is proved only by a pull request that ran it.** Until one
    has, it is `inspected` and `UNVERIFIED`; the same holds for a forge setting
    that was written out and not applied

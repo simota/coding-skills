@@ -97,17 +97,18 @@ in `registry/capabilities.yaml`.
 - Never: restructure product code or write its tests in a setup run
 - Never: run a host command that changes state outside the checkout — a
   database, a service, an account — before reading it and getting a go-ahead
-- Never: leave a planted break in the tree, or plant one over uncommitted work.
-  Each is restored before the next, and the tree is shown clean at the end
+- Never: leave a planted break in the tree, or plant one in a file that has
+  uncommitted changes. Each is restored before the next, and the status ends
+  as it was before the first
 - Never: write a secret into a rule, a script or a workflow, or tell an agent
   where one is kept
 
 ## Verify with
 
-`scripts/verify.sh` exits zero on the untouched tree, and for each check it
-wraps, one planted break made it exit non-zero naming that check (evidence:
-`executed`), with the tree shown clean afterwards. Every path in the feature
-map exists and every command in `AGENTS.md` was run as written.
+`scripts/verify.sh` exits zero on the untouched tree, with `--full` too, and
+for each check it wraps one planted break made it exit non-zero naming that
+check (evidence: `executed`), the status afterwards as it was before. Every
+path in the feature map exists and every command in `AGENTS.md` was run as written.
 
 - **A workflow no pull request has run, and a forge setting not read back, are
   `inspected`** — each says why, and is `UNVERIFIED` until one is

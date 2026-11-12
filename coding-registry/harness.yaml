@@ -64,8 +64,8 @@ limits:
   # (SKILL.md 145, two playbooks 141, one README row) plus the room there was
   # before it: 38 lines then, 41 now.
   # Raised from 5250 for the eleventh skill, by about its measured size:
-  # SKILL.md 154, two playbooks 205, one reference page of templates 193, two
-  # README rows. The room above the corpus was 26 lines and is 17.
+  # SKILL.md 155, two playbooks 207, one reference page of templates 195, two
+  # README rows. The room above the corpus was 26 lines and is 12.
   repo_md_lines_total: 5795
 
 # A listing under this many skills does not need packs. Crossing it is the
