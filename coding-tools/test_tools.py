@@ -791,7 +791,7 @@ class Round4(unittest.TestCase):
 
     def test_spawn_failures_are_engine_errors(self):
         with self.assertRaises(engine.EngineError):
-            engine._spawn("x", [sys.executable, "-c", "pass", "x" * 200_000])
+            engine._spawn("x", [sys.executable, "-c", "pass", "x" * (os.sysconf("SC_ARG_MAX") + 1)])
         r = engine._spawn("x", [sys.executable, "-c",
                                 "import sys; sys.stdout.buffer.write(b'\\xff{}')"])
         self.assertIn("{}", r.stdout)

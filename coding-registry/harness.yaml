@@ -47,7 +47,7 @@ limits:
   # sets do not, and it is the one thing here that cannot be reconstructed after
   # the fact.
   shared_lines_total: 620
-  skills_max: 10                # 9 in use, 1 spare for demand found in use
+  skills_max: 10                # 10 in use: the next addition retires one
   routes_max: 12
   route_stages_max: 6           # the longest chain, `feature`, has 6
   # Raised from 3200 because reference/ carries no line budget of its own but is
@@ -56,7 +56,12 @@ limits:
   # the old figure left 178 lines and a SKILL.md owes 59 delivered ones before
   # its first word. The raise is under that skill's measured size (SKILL.md 143,
   # three playbooks 356), so the room above the corpus shrank: 178 lines to 38.
-  repo_md_lines_total: 4960
+  # Raised from 4960 for the tenth skill, by the same arithmetic: the old figure
+  # left 38 lines and a SKILL.md that owes the prediction mechanism carries 68
+  # delivered ones before its first word. The raise is that skill's measured size
+  # (SKILL.md 145, two playbooks 141, one README row) plus the room there was
+  # before it: 38 lines then, 41 now.
+  repo_md_lines_total: 5250
 
 # A listing under this many skills does not need packs. Crossing it is the
 # trigger to split the set into named subsets, not a reason to delete skills.
@@ -119,6 +124,9 @@ refutation:
 # failure rather than an oversight.
 linked_tools:
   refute.py: all
+  # Only the skill that owns the toolbox regenerates its index. The others read
+  # the index, which needs no tool.
+  toolbox.py: [coding-toolbox]
 
 # A finding a reader has to reassemble in their head is a finding that gets
 # skimmed, and a skimmed report did not happen. This is the one place the
@@ -228,7 +236,7 @@ signature:
   name: prediction
   contract: PREDICTION.md
   vocabulary: prediction_outcomes
-  required_of: [coding-debug, coding-implement, coding-refactor, coding-test]
+  required_of: [coding-debug, coding-implement, coding-refactor, coding-test, coding-toolbox]
   own_word: redict
 
 # Blocks copied verbatim into each SKILL.md that owes them. Naming a shared file is not the
