@@ -105,3 +105,15 @@ coding-ship:
     - what: "judging whether the change is correct"
       go: coding-review
   signals: [commit, history shape, merge order, splitting, oversized pull request, pr, changelog, release notes, squash, rebase]
+
+coding-toolbox:
+  class: full
+  does: [find-tool, keep-script, tool-header, tool-index, tool-upkeep, prune-tools]
+  not:
+    - what: "a check of the product's own behaviour, kept in its suite"
+      go: coding-test
+    - what: "a command or script the product itself ships"
+      go: coding-implement
+    - what: "a defect in the product that a tool brought to light"
+      go: coding-debug
+  signals: [toolbox, helper script, throwaway script, reuse, stale tools, between runs]

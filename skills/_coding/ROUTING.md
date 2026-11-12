@@ -24,6 +24,7 @@ is a reading of that file, not a second copy of it.
 | `coding-test` | Test cases, coverage of behaviour, flaky repair, suite repair once the cause is known | Yes |
 | `coding-review` | Finding defects in a change before it lands | No |
 | `coding-ship` | Commit granularity, history shape, PR, changelog, release | History and release docs only |
+| `coding-toolbox` | The scripts a run wrote, kept in the host's `.agents/toolbox/` for the next agent to find, reuse and prune | Helper scripts only |
 
 **Who may write a test.** `registry/capabilities.yaml` assigns checks of the
 current change to its writing skill, including retained regression cases and
@@ -32,7 +33,7 @@ characterisation nets. Keeping a check does not create a second owner.
 Read-only skills may run checks, but their findings do not authorise edits.
 
 **Not owned by this set.** Documentation and comments belong to whichever skill
-changes the code they describe. Anything else outside these nine is said
+changes the code they describe. Anything else outside these ten is said
 plainly rather than absorbed by the nearest skill.
 
 ## Disambiguation
@@ -49,6 +50,7 @@ registry cannot hold.
 | implement vs refactor | Does observable behaviour change? Changes → implement. Identical → refactor. **Mixed: split it** — a behaviour change hidden inside a rename is unreviewable. Refactor first, commit, then change behaviour |
 | debug vs test | **A red suite is debug's until the cause is known, test's after.** Diagnosing why it fails is debug; repairing tests that lie, are flaky, or assert the wrong thing is test |
 | review vs test | review reads for defects; test builds the check that catches them. A finding worth guarding becomes a test |
+| test vs toolbox | **Does it assert the product's behaviour?** Yes → a test, in the suite. It only gets an agent to where it can look — start, seed, reproduce, read logs → toolbox |
 | implement vs ship | Ship starts once the code is correct. Ship never fixes code to make a commit tidy |
 
 ## Chains
@@ -68,9 +70,7 @@ stopping rule and the loop ends when someone gets tired.
 
 - **Settle the brief before the first stage.** Every stage receives it whole and
   it does not change mid-run (`_coding/SIZING.md`)
-- **A stage's output is a handoff** (`_coding/HANDOFF.md`), and the next stage runs the
-  seven receiver checks before starting
-- **Never run a writing skill on work classified as report-only.** "Review this"
-  does not authorise edits, and neither does finding something obviously wrong
+- **A stage's output is a handoff** (`_coding/HANDOFF.md`), and the next stage runs the seven receiver checks before starting
+- **Never run a writing skill on work classified as report-only.** "Review this" does not authorise edits, and neither does finding something obviously wrong
 - **A chain wanting a seventh stage is mis-scoped.** Split the request instead
 - Stages run in order: two skills editing the same files at once produce a merge, not a result

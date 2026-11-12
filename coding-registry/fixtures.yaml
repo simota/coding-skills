@@ -73,3 +73,11 @@
   expect: coding-preflight
 - ask: "draw a diagram of the written plan and try to break it"
   expect: coding-preflight
+
+# Added with coding-toolbox: a script worth keeping is kept, not rewritten.
+- ask: "keep this throwaway script so the next agent can reuse it"
+  expect: coding-toolbox
+- ask: "is there already a helper script for seeding the local database"
+  expect: coding-toolbox
+- ask: "half the toolbox no longer runs, prune the stale tools"
+  expect: coding-toolbox
