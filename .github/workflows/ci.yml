@@ -21,13 +21,4 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r coding-tools/requirements.txt
-      - name: Static rules
-        run: python3 coding-tools/validate.py
-      - name: Every rule still fires
-        run: python3 coding-tools/test_validate.py
-      - name: The tools stop where they say they stop
-        run: python3 -m unittest discover -s coding-tools -p 'test_*.py'
-      - name: Documented git behaviour still holds
-        run: python3 coding-tools/figures_check.py
-      - name: Delivered blocks are current
-        run: python3 coding-tools/render.py --check
+      - run: make check

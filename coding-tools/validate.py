@@ -204,7 +204,6 @@ VOCAB = H["vocabulary"]
 PREFIX = H["prefix"]
 SET = H["set"]
 SHARED = H["shared_dir"]
-CONTRACT_FILE = f"{SHARED}/CONTRACT.md"
 ROUTING_FILE = f"{SHARED}/ROUTING.md"
 SIGNATURE = H["signature"]
 PLATFORM_DIRS = set(H["platform_dirs"])

@@ -122,9 +122,7 @@ coding-skills/
 ├── README.md
 ├── Makefile
 ├── coding-registry/            # budgets, boundaries, routes, delivered blocks
-├── coding-tools/               # validate · test_validate · test_tools · render ·
-│                               # figures_check · fences · engine · refute · toolbox ·
-│                               # githooks/
+├── coding-tools/               # the validator, renderer, linked tools, hook, and their tests
 ├── docs/                       # the generated overview page (not edited here)
 └── skills/                     # everything the CLI reads
     ├── _coding/                # shared contracts, and routing guidance
@@ -284,8 +282,7 @@ parent of its directory exists, and overriding one host still links the others.
 - **No rule here measures whether the right skill was picked.** That needs usage
   data this repo does not collect yet
 - **Eleven skills need no pack machinery.** Selection degrades as a listing
-  grows; at this size the whole set is the working set. `packs_needed_above` in
-  `coding-registry/harness.yaml` names the point where that stops being true
+  grows; at this size the whole set is the working set
 
 ## The published overview
 

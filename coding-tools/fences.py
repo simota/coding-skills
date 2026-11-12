@@ -212,15 +212,6 @@ def marker_lines(lines: list[str], marker: str) -> list[int]:
             if line.strip() == marker and not code]
 
 
-def _inline(text: str):
-    """(source line index, child token) for every inline child, in order."""
-    for tok in _tokens(text):
-        if tok.type != "inline" or not tok.map:
-            continue
-        for child in tok.children or []:
-            yield tok.map[0] + (child.map[0] if child.map else 0), child
-
-
 class _Visible(HTMLParser):
     """The text an HTML block shows, by line offset. A `<` that opens no tag is
     text, as a browser shows it; comments, attributes and the contents of a

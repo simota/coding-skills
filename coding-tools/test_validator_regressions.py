@@ -455,7 +455,7 @@ class ValidatorBoundaries(unittest.TestCase):
                 self.assert_passes(validate.v20_contract_vocabulary)
 
     def test_a_verified_date_is_not_vouched_for_by_the_next_header(self):
-        self.write("reference/r.md", "Verified: 2026-08-21\nSource: git — quoted from its help.\n")
+        self.write("reference/r.md", "Verified: 2026-08-21\nSource: git — read by running its help.\n")
         self.assert_fails(validate.v31_verified_names_a_check, "V31")
 
     def test_a_pinned_version_is_not_a_prefix_of_another(self):
