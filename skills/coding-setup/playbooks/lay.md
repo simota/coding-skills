@@ -105,6 +105,6 @@ On a go-ahead, apply exactly what was confirmed, then read the setting back.
 ## What it leaves behind
 
 The files, each merged where one existed. In the report: the green run, one red
-run per check, the clean tree, every rule that is discipline with no gate, and
+run per check, the status restored, every rule that is discipline with no gate, and
 every setting and owner name still waiting on the human. The handoff's
 `evidence` keys each file to the command that was run against it.

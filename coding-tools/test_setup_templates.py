@@ -119,6 +119,8 @@ class Proof(unittest.TestCase):
         self.assertNotIn("no uncommitted work", step(LAY, "Proving the gate", 1))
         self.assertNotIn("over uncommitted work", SKILL_MD)
         self.assertNotIn("shown clean", SKILL_MD)
+        # The report asks for what the proof leaves, and that is not a clean tree.
+        self.assertNotIn("clean tree", section(LAY, "What it leaves behind"))
 
     def test_a_break_is_planted_and_undone_beside_uncommitted_files(self) -> None:
         self.script.chmod(0o755)
