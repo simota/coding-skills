@@ -362,6 +362,11 @@ def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
               "  playbook_lines: 300\n# measured max: 147\n")
 
 
+@case("V39-sentence-end")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300   # the measured max is 116.\n")
+
+
 @case("V39-on-the-key")
 def _(r): sub(r / "coding-registry/harness.yaml", "limits:\n", "limits:   # 10 in use\n")
 

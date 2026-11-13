@@ -1,6 +1,7 @@
 # What the tools import, and the linter that reads them. CI installs exactly
 # these, and `make check` fails when the interpreter has other versions. Only
-# plain name==version lines: pins.py refuses any other form by name.
+# plain name==version lines, each version spelt as `pip show` prints it:
+# pins.py compares text, and refuses any other form by name.
 #   python3 -m pip install -r coding-tools/requirements.txt
 pyyaml==6.0.2
 markdown-it-py==3.0.0

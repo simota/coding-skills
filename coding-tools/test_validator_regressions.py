@@ -130,6 +130,17 @@ class RegistryLoading(unittest.TestCase):
         self.assertNotIn("V39", result.stdout)
         self.assertEqual(result.returncode, 0, result.stdout)
 
+    def test_a_comment_introducing_the_next_key_is_not_a_budget_comment(self):
+        harness = self.registry("harness.yaml")
+        original = harness.read_text(encoding="utf-8")
+        self.assertIn("\npermission_classes:", original)
+        harness.write_text(original.replace(
+            "\npermission_classes:", "\n# Three classes, granted by the 3 tools below.\npermission_classes:", 1),
+            encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotIn("V39", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_the_gate_leaves_presence_and_emptiness_to_the_rules(self):
         # Forms the rules document as valid, or judge in their own words.
         harness = self.registry("harness.yaml")

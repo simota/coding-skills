@@ -1343,23 +1343,39 @@ def v38_enumerations_declared():
                                 "which harness.yaml vocabulary does not declare")
 
 
-# A number standing alone. A digit inside a word (a rule id such as V11, a
-# target such as py311) names something; it does not measure it.
-FIGURE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])")
+# A number that starts a word: `116.`, `2x`, `3.11`. A digit inside a word (a
+# rule id such as V11, a target such as py311) names something; it does not
+# measure it.
+FIGURE = re.compile(r"(?<!\w)(?<!\d\.)\d+(?:\.\d+)?")
 
 
 def v39_budget_comments_carry_no_figure():
     """A figure in a budget comment is a measurement, and a written measurement
     drifts: these comments were corrected by hand twice and drifted a third
     time. The use is printed beside each limit on a green run instead (`usage`).
-    Every comment from `limits:` to the next key is read, at any indent."""
-    inside = False
-    for i, line in enumerate(read(ROOT / "coding-registry" / "harness.yaml").splitlines(), 1):
-        if line.strip() and not line.startswith((" ", "#")):
-            inside = line.startswith("limits:")
-        if inside and "#" in line and FIGURE.search(line.split("#", 1)[1]):
+    Every comment in the block is read, at any indent. A comment at column zero
+    belongs to what follows it: above a limit it is read, above the next key it
+    introduces that key and is not."""
+    def check(i: int, line: str) -> None:
+        if FIGURE.search(line.split("#", 1)[1]):
             fail("V39", f"coding-registry/harness.yaml:{i} writes a figure into a budget "
                         "comment; the measured use is printed by make validate")
+    inside, pending = False, []
+    for i, line in enumerate(read(ROOT / "coding-registry" / "harness.yaml").splitlines(), 1):
+        if line.startswith("#"):
+            if inside:
+                pending.append((i, line))
+            continue
+        if line.strip() and not line.startswith(" "):
+            inside, pending = line.startswith("limits:"), []
+        elif line.strip() and inside:
+            for held in pending:
+                check(*held)
+            pending = []
+        if inside and "#" in line:
+            check(i, line)
+    for held in pending:          # the block ran to the end of the file
+        check(*held)
 
 
 def usage() -> str:

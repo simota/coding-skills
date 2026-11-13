@@ -27,6 +27,8 @@ export REPO CLAUDE_DIR CODEX_DIR AGY_DIR FORCE CLAIMS RUNNING
 HOST_DIRS  := "$$CLAUDE_DIR" "$$CODEX_DIR" "$$AGY_DIR"
 
 .DEFAULT_GOAL := help
+# `check` runs its parts in order: deps first, even under make -j.
+.NOTPARALLEL:
 .PHONY: help check deps lint validate test figures drift engines refute render hooks link unlink status
 
 help:
@@ -52,6 +54,7 @@ deps:
 	@python3 coding-tools/pins.py
 
 lint:
+	@python3 -m ruff --version >/dev/null 2>&1 || { echo "lint: ruff is not installed; run python3 -m pip install -r coding-tools/requirements.txt"; exit 1; }
 	@python3 -m ruff check --no-cache --quiet coding-tools
 
 validate:
