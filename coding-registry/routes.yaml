@@ -38,6 +38,12 @@ locate:
   chain: [coding-explore]
   stops_at: "the answer and the paths it rests on. Nothing is edited"
 
+garden:
+  pattern: report-only
+  when: "is the tree in good shape before work starts"
+  chain: [coding-garden]
+  stops_at: "two lists, blocks the start and recorded, each finding with the skill that takes it. Nothing is edited"
+
 pre-merge:
   pattern: report-only
   when: "is this safe to land"

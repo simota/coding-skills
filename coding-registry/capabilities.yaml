@@ -129,3 +129,17 @@ coding-setup:
     - what: "a script one run wrote for itself and the next could reuse"
       go: coding-toolbox
   signals: [agent-ready, AGENTS.md, feature map, verify script, CI gates, CODEOWNERS, pull request template, PR template, branch protection, required checks]
+
+coding-garden:
+  class: read-only
+  does: [gate-state, silent-checks, test-health, doc-drift, architecture-rules, dead-weight, comment-hygiene, dependency-age, finding-routing]
+  not:
+    - what: "fixing, upgrading or regenerating anything a finding names"
+      go: "the skill the finding is routed to"
+    - what: "a defect in one change before it lands"
+      go: coding-review
+    - what: "laying or proving a check the host is missing"
+      go: coding-setup
+    - what: "the cause of a red gate or a failing test"
+      go: coding-debug
+  signals: [garden, before work starts, health check, drift, broken tests, static analysis, over-implementation, unnecessary comments, outdated dependencies]

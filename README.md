@@ -1,6 +1,6 @@
 # coding-skills
 
-Eleven agent skills covering the coding lifecycle, the contracts they share, and
+Twelve agent skills covering the coding lifecycle, the contracts they share, and
 the budgets that keep the set from growing into something nobody can route
 through. Each skill owns one phase and returns evidence rather than assurances.
 
@@ -19,6 +19,7 @@ through. Each skill owns one phase and returns evidence rather than assurances.
 | [`coding-ship`](skills/coding-ship/SKILL.md) | Commits, history shape, PR, release notes | History and release docs only |
 | [`coding-toolbox`](skills/coding-toolbox/SKILL.md) | The scripts a run wrote, kept in the host project where the next agent finds them | Helper scripts only |
 | [`coding-setup`](skills/coding-setup/SKILL.md) | The ground a host gives an agent: rules, feature map, verify script and gates, audited, laid and proved | Rules, scripts and CI only |
+| [`coding-garden`](skills/coding-garden/SKILL.md) | The tree's state before work starts: gate, checks, tests, docs, architecture, dead weight, dependencies, each finding routed | No |
 
 ## The idea the set is built on
 
@@ -53,8 +54,8 @@ reaches anything.
 
 **Boundaries live in one file.** `coding-registry/capabilities.yaml` carries `not:` —
 what a skill does not do and where that work goes instead. Descriptions never
-name a neighbour. If they did, adding a twelfth skill would mean editing the
-other eleven, and a description would spend its 200-character listing budget
+name a neighbour. If they did, adding a thirteenth skill would mean editing the
+other twelve, and a description would spend its 200-character listing budget
 advertising a competitor.
 
 **Contracts are delivered, not referenced.** A rule kept in `skills/_coding/` is read
@@ -249,7 +250,7 @@ Nearing a playbook cap is not a reason to split a skill. Merge the duplicates,
 delete what nothing reads, compress it into a `Decide first` row, move it to the
 skill it belongs to — and only then consider splitting, which is accepted only
 when the two halves have disjoint signals and neither is left with only a
-playbook or two. Splitting to relieve a budget is how a set of eleven becomes a set nobody
+playbook or two. Splitting to relieve a budget is how a set of twelve becomes a set nobody
 can route through.
 
 ## Installing
@@ -281,7 +282,7 @@ parent of its directory exists, and overriding one host still links the others.
   duplicated signal. Passing them is not evidence that nothing will be misrouted
 - **No rule here measures whether the right skill was picked.** That needs usage
   data this repo does not collect yet
-- **Eleven skills need no pack machinery.** Selection degrades as a listing
+- **Twelve skills need no pack machinery.** Selection degrades as a listing
   grows; at this size the whole set is the working set
 
 ## The published overview

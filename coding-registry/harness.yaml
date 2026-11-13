@@ -28,13 +28,14 @@ limits:
   # CONTRACT.md is the file nearest the cap; REPORT.md is the densest.
   shared_file_lines: 115
   # Above the family figure: this set alone carries the pre-registration contract.
-  shared_lines_total: 620
-  skills_max: 11                # 11 in use: the next addition retires one
+  # +2 with coding-garden: its ownership row and one disambiguation row in ROUTING.
+  shared_lines_total: 622
+  skills_max: 12                # 12 in use: the next addition retires one
   routes_max: 12
   route_stages_max: 6           # the longest chain, `feature`, has 6
   # reference/ has no budget of its own and is counted here. Each raise has
   # been one new skill's measured size; how each was derived is in git history.
-  repo_md_lines_total: 5795
+  repo_md_lines_total: 6061
 
 permission_classes:
   read-only:

@@ -93,3 +93,11 @@
   expect: coding-setup
 - ask: "turn on required checks for the default branch"
   expect: coding-setup
+
+# Added with coding-garden: the tree is read before work goes on top of it.
+- ask: "run a garden pass before work starts on the billing module"
+  expect: coding-garden
+- ask: "health check: has the documentation drift from the code, and are there broken tests"
+  expect: coding-garden
+- ask: "list the outdated dependencies and unnecessary comments, report only"
+  expect: coding-garden

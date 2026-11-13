@@ -25,6 +25,7 @@ is a reading of that file, not a second copy of it.
 | `coding-ship` | Commit granularity, history shape, PR, changelog, release | History and release docs only |
 | `coding-toolbox` | The scripts a run wrote, kept in the host's `.agents/toolbox/` for the next agent to find, reuse and prune | Helper scripts only |
 | `coding-setup` | The host's ground for agents: its rules, feature map, verify script and gates, audited, laid and proved | Rules, scripts and CI only |
+| `coding-garden` | The tree's state before work starts, each finding routed to the skill that takes it | No |
 
 Who may write a test: `registry/capabilities.yaml` assigns checks of the
 current change to its writing skill, including retained regression cases and
@@ -34,7 +35,7 @@ Read-only skills may run checks, but their findings do not authorise edits.
 
 Not owned by this set: documentation and comments belong to whichever skill
 changes the code they describe, which deletes a copy rather than updating it.
-Anything else outside these eleven is said plainly, not absorbed by the nearest.
+Anything else outside these twelve is said plainly, not absorbed by the nearest.
 
 ## Disambiguation
 
@@ -52,6 +53,7 @@ registry cannot hold.
 | review vs test | review reads for defects; test builds the check that catches them. A finding worth guarding becomes a test |
 | test vs toolbox | Does it assert the product's behaviour? Yes → a test, in the suite. It only gets an agent to where it can look (start, seed, reproduce, read logs) → toolbox |
 | toolbox vs setup | Who is it for? One agent getting to where it can look → toolbox. Every agent and CI deciding a change is good → setup |
+| garden vs setup or review | What is being judged? Whether a gate exists, laid and proved → setup. A diff before it lands → review. The tree as it stands before work starts → garden, which sends a missing gate to setup and a judgement call to review |
 | implement vs ship | Ship starts once the code is correct. Ship never fixes code to make a commit tidy |
 
 ## Chains
