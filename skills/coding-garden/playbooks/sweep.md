@@ -12,23 +12,22 @@ what the host already has. Nothing here installs, edits or regenerates.
    area about to change: stop, for `coding-debug`. It is absent or cannot run:
    stop, for `coding-setup`. It fails only elsewhere: record that and go on
 2. **The checks are alive.** For each check the gate wraps (format, lint,
-   types, tests), confirm that it ran over the paths in scope. Proving a check
-   red by planting a break writes to the tree; that proof belongs to
-   `coding-setup`. Here a check is silent when its config excludes the scope,
-   when its run reports zero files, or when a rule is disabled wholesale. Count
-   the suppressions in scope (`eslint-disable`, `# noqa`, `@ts-ignore`,
-   `#[allow(`) now and a month of history back: more now is a finding
+   types, tests), confirm it ran over the paths in scope; proving one red by a
+   planted break writes to the tree, so that is `coding-setup`'s. A check is
+   silent when its config excludes the scope, its run reports zero files, or a
+   rule is disabled wholesale. Count the suppressions in scope (`eslint-disable`,
+   `# noqa`, `@ts-ignore`, `#[allow(`) now and a month of history back: more now is a finding
 3. **The tests** in scope that the gate did not run. A skipped or disabled test
    is listed with its reason, or as giving none
 4. **The docs.** Every path the agent rules and the feature map name exists.
    Every read-only command they give runs as written; one that changes state is
    listed, not run. Generated docs (an API schema, a CLI's help, an API report)
-   are regenerated in a `cp -R` copy outside the checkout and diffed against
-   the committed ones; where the copy cannot run the generator, the category is
-   unchecked. Doc examples run where the host has a runner for them
+   are regenerated in a `cp -R` copy outside the checkout and diffed, on those
+   paths only, against the committed ones; uncommitted edits, or a copy that
+   cannot run the generator, leave it unchecked. Doc examples run where they can
 5. **The architecture.** The host's declared boundary rules run, and cycles are
-   counted. No declared rules is a finding for `coding-plan`, which decides
-   boundaries, never a licence to infer them and judge against the guess
+   counted. No declared rules is a finding for `coding-setup`, which declares the
+   ones the code keeps, never a licence to infer them and judge against the guess
 6. **What has grown.** Dead code, unused exports and dependencies, duplication,
    complexity above the host's threshold, and comments: code left commented out,
    a workaround or excuse left as a note, a TODO with no owner (a `#TODO(agent):`
@@ -55,8 +54,9 @@ Anything on neither list is recorded. The human may move a row; the pass may not
 | The gate or a test is red | `coding-debug`; `coding-test` once the cause is the test itself |
 | The gate absent; a check silent, broken or missing; a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
 | A test skipped, disabled, or asserting nothing | `coding-test` |
-| A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` |
-| No declared boundaries, or a boundary itself in question | `coding-plan` |
+| A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` if behaviour is unchanged, else `coding-implement` |
+| No declared boundary rules | `coding-setup`, declaring the boundaries the code already keeps |
+| A boundary itself in question | `coding-plan` |
 | A doc that disagrees with the code, or a comment that binds nobody | The skill that next changes that code; documentation and comments travel with it |
 | More code than the problem needed, or prose that may read out of date | The human, as a Question: judging the tree is nobody's standing work |
 | An outdated dependency or an advisory | `coding-implement`, after the human agrees to the upgrade |

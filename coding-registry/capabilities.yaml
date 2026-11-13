@@ -142,4 +142,4 @@ coding-garden:
       go: coding-setup
     - what: "the cause of a red gate or a failing test"
       go: coding-debug
-  signals: [garden, tree health]
+  signals: [garden pass, tree health]

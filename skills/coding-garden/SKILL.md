@@ -19,8 +19,8 @@ authorises fixing it here. Ownership of adjacent work is defined in
 ## Before starting
 
 - **Read the host's gate, then run it first**: its result decides the pass. A
-  step writing in the checkout runs in a copy, one changing state outside it (a
-  database, a service) only on a go-ahead; a step left unrun is reported unchecked
+  step writing in the checkout runs in a copy; one changing state outside it or
+  fetching from the network runs only on a go-ahead. Unrun, it is reported unchecked
 - **Record the tree that was read**: the commit, and whether the status was
   clean. A finding about uncommitted edits is a finding about someone's work in
   progress, and it is reported as that

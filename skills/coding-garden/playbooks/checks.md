@@ -39,7 +39,7 @@ run; a missing one is reported, never installed.
 |---|---|---|
 | A doc generated from code | Regenerate in a throwaway copy, then `git diff --exit-code` on the result: an API schema, a CLI's help text, an API report (api-extractor, cargo-public-api) | Anything written by hand |
 | Code inside docs | doctest (Python), rustdoc tests, Go `Example` functions | Prose around the example |
-| Paths, links and commands | Path existence; lychee for links; each read-only command in the agent rules run as written | Whether the command still does what the sentence says |
+| Paths, links and commands | Path existence; lychee `--offline` for links, or online on the go-ahead; each read-only command in the agent rules run as written | Whether the command still does what the sentence says |
 | Docstrings against signatures | pydoclint; eslint-plugin-jsdoc `check-param-names` | Whether the description is still true |
 | Meaning | Nothing mechanical. A reading, as a Question for the human | |
 
