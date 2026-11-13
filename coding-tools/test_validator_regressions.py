@@ -118,6 +118,18 @@ class RegistryLoading(unittest.TestCase):
             finally:
                 harness.write_text(original, encoding="utf-8")
 
+    def test_a_name_carrying_a_digit_in_a_budget_comment_is_not_a_figure(self):
+        # V39 forbids measurements, not names: a rule id or a target names a thing.
+        harness = self.registry("harness.yaml")
+        original = harness.read_text(encoding="utf-8")
+        old = "# the next addition retires one"
+        self.assertIn(old, original)
+        harness.write_text(original.replace(old, "# V11 counts them for py311 too; " + old[2:], 1),
+                           encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotIn("V39", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_the_gate_leaves_presence_and_emptiness_to_the_rules(self):
         # Forms the rules document as valid, or judge in their own words.
         harness = self.registry("harness.yaml")

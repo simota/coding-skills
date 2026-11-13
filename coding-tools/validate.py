@@ -433,22 +433,30 @@ def v5_playbook_budget():
                 fail("V5", f"{pb.relative_to(ROOT)} is {n} lines (max {LIM['playbook_lines']})")
 
 
+def _shared_pages() -> list[tuple[int, str]]:
+    """(lines, name) of each shared page: one definition for the budget and the usage line."""
+    return [(len(read(f).splitlines()), f.name)
+            for f in sorted((SKILLS_ROOT / SHARED).glob("*.md"))]
+
+
+def _repo_markdown_lines() -> int:
+    return sum(len(read(f).splitlines()) for f in ROOT.rglob("*.md") if ".git" not in f.parts)
+
+
 def v6_budgets():
     # The budgets, labels and path rules read the shared directory one level
     # down, as _flat says of playbooks/; a page in a subdirectory escaped them all.
     for sub in sorted(p for p in (SKILLS_ROOT / SHARED).glob("*") if p.is_dir()):
         fail("V6", f"{SHARED}/{sub.name}/ is a directory; shared pages sit directly "
                    f"in {SHARED}/, where the rules read them")
-    total = 0
-    for f in sorted((SKILLS_ROOT / SHARED).glob("*.md")):
-        n = len(read(f).splitlines())
-        total += n
+    shared = _shared_pages()
+    for n, name in shared:
         if n > LIM["shared_file_lines"]:
-            fail("V6", f"{SHARED}/{f.name} is {n} lines (max {LIM['shared_file_lines']})")
+            fail("V6", f"{SHARED}/{name} is {n} lines (max {LIM['shared_file_lines']})")
+    total = sum(n for n, _ in shared)
     if total > LIM["shared_lines_total"]:
         fail("V6", f"{SHARED} totals {total} lines (max {LIM['shared_lines_total']})")
-    repo = sum(len(read(f).splitlines()) for f in ROOT.rglob("*.md")
-               if ".git" not in f.parts)
+    repo = _repo_markdown_lines()
     if repo > LIM["repo_md_lines_total"]:
         fail("V6", f"repo markdown totals {repo} lines (max {LIM['repo_md_lines_total']})")
 
@@ -1335,16 +1343,21 @@ def v38_enumerations_declared():
                                 "which harness.yaml vocabulary does not declare")
 
 
+# A number standing alone. A digit inside a word (a rule id such as V11, a
+# target such as py311) names something; it does not measure it.
+FIGURE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])")
+
+
 def v39_budget_comments_carry_no_figure():
     """A figure in a budget comment is a measurement, and a written measurement
     drifts: these comments were corrected by hand twice and drifted a third
-    time. The use is printed beside each limit on every run instead (`usage`)."""
+    time. The use is printed beside each limit on a green run instead (`usage`).
+    Every comment from `limits:` to the next key is read, at any indent."""
     inside = False
     for i, line in enumerate(read(ROOT / "coding-registry" / "harness.yaml").splitlines(), 1):
         if line.strip() and not line.startswith((" ", "#")):
             inside = line.startswith("limits:")
-        elif inside and line.startswith(" ") and "#" in line \
-                and re.search(r"\d", line.split("#", 1)[1]):
+        if inside and "#" in line and FIGURE.search(line.split("#", 1)[1]):
             fail("V39", f"coding-registry/harness.yaml:{i} writes a figure into a budget "
                         "comment; the measured use is printed by make validate")
 
@@ -1354,7 +1367,7 @@ def usage() -> str:
     budget comments used to carry, and let drift."""
     def lines(p: Path) -> int:
         return len(read(p).splitlines())
-    shared = [(lines(f), f.name) for f in sorted((SKILLS_ROOT / SHARED).glob("*.md"))]
+    shared = _shared_pages()
     use = {
         "skill_md_lines": max((lines(d / "SKILL.md"), d.name) for d in SKILL_DIRS),
         "description_chars": max((len(frontmatter(read(d / "SKILL.md"), d.name)
@@ -1368,8 +1381,7 @@ def usage() -> str:
         "skills_max": (len(SKILLS), "skills"),
         "routes_max": (len(ROUTES), "routes"),
         "route_stages_max": max((len(r.get("chain", [])), name) for name, r in ROUTES.items()),
-        "repo_md_lines_total": (sum(lines(f) for f in ROOT.rglob("*.md")
-                                    if ".git" not in f.parts), "markdown"),
+        "repo_md_lines_total": (_repo_markdown_lines(), "markdown"),
     }
     return "\n".join(f"  {k} {use[k][0]}/{LIM[k]} ({use[k][1]})" for k in LIMITS)
 

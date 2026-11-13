@@ -357,6 +357,15 @@ def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
               "  playbook_lines: 300           # measured max: 147\n")
 
 
+@case("V39-column-zero")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300\n# measured max: 147\n")
+
+
+@case("V39-on-the-key")
+def _(r): sub(r / "coding-registry/harness.yaml", "limits:\n", "limits:   # 10 in use\n")
+
+
 @case("V38")
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "verdict: KEEP | DROP\n\n## ")
 

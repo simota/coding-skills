@@ -8,12 +8,16 @@ Run: make deps (part of make check)
 """
 from __future__ import annotations
 
+import re
 import sys
 from importlib import metadata
 from pathlib import Path
 from typing import Callable
 
 REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
+# The one form read. Extras, markers, ranges and options (`-r`, `--hash`) are
+# refused by name: read as a name, `pyyaml[x]` would be reported missing.
+PIN = re.compile(r"([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9.+!_-]+)")
 
 
 def mismatches(text: str, installed: Callable[[str], str] = metadata.version) -> list[str]:
@@ -23,10 +27,11 @@ def mismatches(text: str, installed: Callable[[str], str] = metadata.version) ->
         line = raw.split("#", 1)[0].strip()
         if not line:
             continue
-        name, pinned, version = (part.strip() for part in line.partition("=="))
-        if not pinned:
-            found.append(f"{line} is not pinned with ==, so no version can be checked")
+        pin = PIN.fullmatch(line.replace(" ", ""))
+        if not pin:
+            found.append(f"{line} is not a plain name==version pin, so no version can be checked")
             continue
+        name, version = pin.groups()
         try:
             have = installed(name)
         except metadata.PackageNotFoundError:
