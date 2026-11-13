@@ -26,7 +26,7 @@ authorises fixing it here. Ownership of adjacent work is defined in
   progress, and it is reported as that
 - **Scope by the work about to start**, not by the whole repository. Scope sets
   where the pass runs, never its tier: a pass that routes findings is `T1`, and
-  `T0` is only the gate run, asked for alone and answered in one line
+  `T0` is only the gate run, asked for alone. No work named: the area is the tree
 - **Nothing leaves the machine without a go-ahead.** Asking a package registry
   what is current sends the dependency list. Ask before the pass; without a
   yes, dependencies go in the brief's `excludes` and the report names them
@@ -60,7 +60,8 @@ authorises fixing it here. Ownership of adjacent work is defined in
 | Starting a pass | [sweep](playbooks/sweep.md): the order, what blocks the start and what is only recorded, and which skill takes each finding |
 | Deciding what can check a category mechanically | [checks](playbooks/checks.md): structure first, then a declared rule a tool enforces, then a reading, which proves least |
 | The gate is red on the untouched tree | Read which check failed. It fails in the area about to change: stop the pass, and that is the report's first line, routed to `coding-debug`. It is absent or cannot run (no script, a tool not installed): stop, routed to `coding-setup`. It fails only elsewhere: record that with its area and run the remaining steps |
-| A check exists and passes on anything | A silent gate is worse than a missing one. It blocks the start like a red one and goes to `coding-setup` |
+| A check exists and passes on anything | A silent gate is worse than a missing one. It goes on the blocking list for `coding-setup`, and the pass goes on |
+| Asked to fix, remove or set something up | Not a pass. Name the owner from [sweep](playbooks/sweep.md) and hand the ask on without running one |
 | The host has no tool for a category | Report it unchecked, with the kind of tool that would check it. Adopting one adds a dependency, so it goes to `coding-setup` and the human decides |
 | The same kind of finding was fixed before | Search the history for the earlier fix. A second occurrence is also sent to be closed for good: [sweep](playbooks/sweep.md) § The second sighting says by whom |
 | A finding rests on judgement: an abstraction nothing needs, prose that reads out of date | `inspected` at best. It goes in as a Question for the human, who decides whether it is work, or it is dropped |
@@ -82,14 +83,13 @@ authorises fixing it here. Ownership of adjacent work is defined in
   `file:line` it rests on, so its owner starts from evidence, not a description
 - Always: keep what blocks the start apart from what is only recorded. An
   outdated dependency is a line on a list; blocking on it is a start that never comes
-- Always: order the fixes before the new work, one commit each and never
-  inside its diff. A cleanup inside a feature is unreviewable
+- Always: order the blocking fixes before the new work, one commit each and
+  never inside its diff. A cleanup inside a feature is unreviewable
 - Never: edit, install, upgrade, format, or regenerate in the tree. A generator
-  run to detect drift writes files: run it in a copy of the checkout made
-  outside it, installed dependencies included, or report the category unchecked
-- Never: pass a tool's raw output on as findings. Each line is read,
-  deduplicated, and graded; a thousand warnings of one kind are one finding
-  about the threshold
+  run to detect drift writes files: run it in a `cp -R` copy outside the
+  checkout (never a worktree), or report the category unchecked
+- Never: pass a tool's raw output on as findings. Each line is read, deduplicated
+  and graded: a thousand warnings of one kind are one finding about the threshold
 - Never: run a host command that changes state outside the checkout (a
   database, a service, an account) without a go-ahead for this pass
 
@@ -99,13 +99,13 @@ A finding is proved by its owner being able to reproduce it: each carries the
 command that produced it (evidence: `executed`) or the `file:line` it was read
 at (`inspected`, with why nothing could be run).
 
-- Findings travel in `done` with list, owner, rank and evidence, never as
-  `BLOCKED`; `open` holds residuals at the `file:line` a marker belongs, `written: false`
+- Findings travel in `done` with list, owner and evidence, never as `BLOCKED`,
+  and `next` is none; `open` holds residuals at the `file:line` a marker belongs
 - **`DONE` here**: the gate's state is known, every category in scope was run or
   is a finding saying why it could not be, and every finding has one owner. A
-  pass stopped at the gate is `PARTIAL`, each step not run `DEFERRED` until it is green
-- Writing nothing, the sweep reads `0 changed / 0 evidenced`, and the status of
-  the tree read back after the pass matches the one recorded before it
+  pass stopped at the gate is `PARTIAL`, each step not run `DEFERRED` until the gate runs green
+- Writing nothing, the sweep reads `0 changed / 0 evidenced`, and `git status`
+  and a hash of `git diff` read back after the pass match those taken before it
 <!-- deliver:report -->
 - Grade every claim: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says

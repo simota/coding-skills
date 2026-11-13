@@ -23,7 +23,7 @@ what the host already has. Nothing here installs, edits or regenerates.
 4. **The docs.** Every path the agent rules and the feature map name exists.
    Every read-only command they give runs as written; one that changes state is
    listed, not run. Generated docs (an API schema, a CLI's help, an API report)
-   are regenerated in a copy of the checkout made outside it and diffed against
+   are regenerated in a `cp -R` copy outside the checkout and diffed against
    the committed ones; where the copy cannot run the generator, the category is
    unchecked. Doc examples run where the host has a runner for them
 5. **The architecture.** The host's declared boundary rules run, and cycles are
@@ -46,16 +46,16 @@ what the host already has. Nothing here installs, edits or regenerates.
 | A boundary violation in the area about to change | Violations elsewhere, and cycles |
 | An advisory the human says blocks | Outdated dependencies; edits not yet committed |
 
-The human may move a row between lists. The pass may not, in either direction.
+Anything on neither list is recorded. The human may move a row; the pass may not.
 
 ## Who takes each finding
 
 | Finding | Goes to |
 |---|---|
-| The gate or a test is red | `coding-debug`, then `coding-test` once the cause is known |
-| The gate absent; a check silent, broken or missing; suppressions grown or a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
+| The gate or a test is red | `coding-debug`; `coding-test` once the cause is the test itself |
+| The gate absent; a check silent, broken or missing; a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
 | A test skipped, disabled, or asserting nothing | `coding-test` |
-| A boundary violation, a cycle, dead code, duplication, complexity over threshold | `coding-refactor` |
+| A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` |
 | No declared boundaries, or a boundary itself in question | `coding-plan` |
 | A doc that disagrees with the code, or a comment that binds nobody | The skill that next changes that code; documentation and comments travel with it |
 | More code than the problem needed, or prose that may read out of date | The human, as a Question: judging the tree is nobody's standing work |

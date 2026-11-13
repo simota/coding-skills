@@ -47,7 +47,7 @@ run; a missing one is reported, never installed.
 
 | Kind | What checks it |
 |---|---|
-| A check that covers less than it claims | The files it read, from its listing mode (`tsc --listFiles`, a verbose or debug flag), against the files in scope. No listing mode: unchecked |
+| A check that covers less than it claims | The files it read, from a mode that lists and writes nothing (`tsc --listFilesOnly`; a linter whose config fixes runs with `--no-fix`), against the files in scope. No such mode: unchecked |
 | Suppressions | The count in scope now and a month of history back: more now is a finding |
 | Thresholds | A threshold at the tool's maximum, or raised in the history without a reason in the message |
 | Skipped tests | The runner's skip count, each skip with its stated reason |
