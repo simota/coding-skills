@@ -27,10 +27,12 @@ export REPO CLAUDE_DIR CODEX_DIR AGY_DIR FORCE CLAIMS RUNNING
 HOST_DIRS  := "$$CLAUDE_DIR" "$$CODEX_DIR" "$$AGY_DIR"
 
 .DEFAULT_GOAL := help
-.PHONY: help check validate test figures drift engines refute render hooks link unlink status
+.PHONY: help check deps lint validate test figures drift engines refute render hooks link unlink status
 
 help:
-	@echo "make check     validate + test + figures + render drift (what CI runs)"
+	@echo "make check     deps + lint + validate + test + figures + render drift (what CI runs)"
+	@echo "make deps      fail unless the interpreter has exactly the pinned packages"
+	@echo "make lint      ruff over the tools, with the rules in coding-tools/ruff.toml"
 	@echo "make validate  static rules over the corpus"
 	@echo "make test      prove every rule still fires, and test the tools"
 	@echo "make figures   re-run the git behaviour the reference layer states"
@@ -43,7 +45,14 @@ help:
 	@echo "make unlink    remove those symlinks (FORCE=1: dangling ones too)"
 	@echo "make status    show what is linked"
 
-check: validate test figures drift
+check: deps lint validate test figures drift
+
+# First, because every check after it is only as true as the versions it ran on.
+deps:
+	@python3 coding-tools/pins.py
+
+lint:
+	@python3 -m ruff check --no-cache --quiet coding-tools
 
 validate:
 	@python3 coding-tools/validate.py

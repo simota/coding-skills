@@ -1,4 +1,6 @@
-# What the tools import. CI installs exactly these; so does `make check` locally:
+# What the tools import, and the linter that reads them. CI installs exactly
+# these, and `make check` fails when the interpreter has other versions:
 #   python3 -m pip install -r coding-tools/requirements.txt
 pyyaml==6.0.2
 markdown-it-py==3.0.0
+ruff==0.15.10

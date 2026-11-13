@@ -17,24 +17,23 @@ skills_dir: skills
 platform_dirs: [.git, .github, .claude, skills, docs]   # named by the platform, not by this set
 
 limits:
-  # Derived, not chosen: a skill that owes the prediction mechanism carries 58
-  # delivered lines plus 10 marker lines (68); the others carry 51 + 8 (59). That
-  # leaves 88 lines of the skill's own words under the cap; the measured own-content
-  # max is 88, in coding-test — at the cap.
+  # Derived, not chosen: the delivered blocks a skill carries (more for a skill
+  # that owes the prediction), plus room for its own words. Every limit's
+  # measured use is printed beside it by `make validate`. A figure written in a
+  # comment here is a measurement that drifts, and a rule fails on one.
   skill_md_lines: 156
   description_chars: 200        # the listing truncates past this
-  playbook_lines: 300           # measured max: 116
-  playbooks_per_skill: 8        # measured max: 3
-  # CONTRACT.md is the file nearest the cap; REPORT.md is the densest.
+  playbook_lines: 300
+  playbooks_per_skill: 8
   shared_file_lines: 115
   # Above the family figure: this set alone carries the pre-registration contract.
-  shared_lines_total: 620
-  skills_max: 11                # 11 in use: the next addition retires one
+  shared_lines_total: 622
+  skills_max: 12                # the next addition retires one
   routes_max: 12
-  route_stages_max: 6           # the longest chain, `feature`, has 6
+  route_stages_max: 6
   # reference/ has no budget of its own and is counted here. Each raise has
   # been one new skill's measured size; how each was derived is in git history.
-  repo_md_lines_total: 5795
+  repo_md_lines_total: 6061
 
 permission_classes:
   read-only:

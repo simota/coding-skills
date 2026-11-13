@@ -352,6 +352,11 @@ def _(r): sub(r / f"{S}coding-review/SKILL.md",
 def _(r): sub(r / "coding-registry/harness.yaml", "finding_visuals:", "unused_visuals:")
 
 
+@case("V39")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300           # measured max: 147\n")
+
+
 @case("V38")
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "verdict: KEEP | DROP\n\n## ")
 
