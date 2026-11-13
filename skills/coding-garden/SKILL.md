@@ -19,14 +19,14 @@ authorises fixing it here. Ownership of adjacent work is defined in
 ## Before starting
 
 - **Read the host's gate, then run it first**: its result decides the pass. A
-  step in it that writes in the checkout (a formatter's write mode, a lint fix,
-  a snapshot update) runs in a copy or is reported unchecked
+  step writing in the checkout runs in a copy, one changing state outside it (a
+  database, a service) only on a go-ahead; a step left unrun is reported unchecked
 - **Record the tree that was read**: the commit, and whether the status was
   clean. A finding about uncommitted edits is a finding about someone's work in
   progress, and it is reported as that
-- **Scope by the work about to start**, not by the whole repository. Here `T0`
-  is the gate run reported in one line; the full pass is for a start that
-  touches more than one area, or when the whole tree is asked for
+- **Scope by the work about to start**, not by the whole repository. Scope sets
+  where the pass runs, never its tier: a pass that routes findings is `T1`, and
+  `T0` is only the gate run, asked for alone and answered in one line
 - **Nothing leaves the machine without a go-ahead.** Asking a package registry
   what is current sends the dependency list. Ask before the pass; without a
   yes, dependencies go in the brief's `excludes` and the report names them
@@ -59,7 +59,7 @@ authorises fixing it here. Ownership of adjacent work is defined in
 |---|---|
 | Starting a pass | [sweep](playbooks/sweep.md): the order, what blocks the start and what is only recorded, and which skill takes each finding |
 | Deciding what can check a category mechanically | [checks](playbooks/checks.md): structure first, then a declared rule a tool enforces, then a reading, which proves least |
-| The gate is red on the untouched tree | Read which check failed. The gate cannot run, or fails in the area about to change: stop the pass, and that is the report's first line, routed to `coding-debug`. It fails only elsewhere: record that failure with its area and run the remaining steps over the scope |
+| The gate is red on the untouched tree | Read which check failed. It fails in the area about to change: stop the pass, and that is the report's first line, routed to `coding-debug`. It is absent or cannot run (no script, a tool not installed): stop, routed to `coding-setup`. It fails only elsewhere: record that with its area and run the remaining steps |
 | A check exists and passes on anything | A silent gate is worse than a missing one. It blocks the start like a red one and goes to `coding-setup` |
 | The host has no tool for a category | Report it unchecked, with the kind of tool that would check it. Adopting one adds a dependency, so it goes to `coding-setup` and the human decides |
 | The same kind of finding was fixed before | Search the history for the earlier fix. A second occurrence is also sent to be closed for good: [sweep](playbooks/sweep.md) § The second sighting says by whom |
@@ -91,7 +91,7 @@ authorises fixing it here. Ownership of adjacent work is defined in
   deduplicated, and graded; a thousand warnings of one kind are one finding
   about the threshold
 - Never: run a host command that changes state outside the checkout (a
-  database, a service, an account)
+  database, a service, an account) without a go-ahead for this pass
 
 ## Verify with
 
@@ -103,7 +103,7 @@ at (`inspected`, with why nothing could be run).
   `BLOCKED`; `open` holds residuals at the `file:line` a marker belongs, `written: false`
 - **`DONE` here**: the gate's state is known, every category in scope was run or
   is a finding saying why it could not be, and every finding has one owner. A
-  pass stopped at a red gate is `DONE`: that one finding is the whole report
+  pass stopped at the gate is `PARTIAL`, each step not run `DEFERRED` until it is green
 - Writing nothing, the sweep reads `0 changed / 0 evidenced`, and the status of
   the tree read back after the pass matches the one recorded before it
 <!-- deliver:report -->

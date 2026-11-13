@@ -142,4 +142,4 @@ coding-garden:
       go: coding-setup
     - what: "the cause of a red gate or a failing test"
       go: coding-debug
-  signals: [garden, before work starts, tree health, doc drift, silent checks, over-implementation, unnecessary comments, outdated dependencies]
+  signals: [garden, tree health, doc drift, silent checks, over-implementation]

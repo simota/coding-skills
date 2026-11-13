@@ -104,5 +104,9 @@
   expect: coding-implement
 - ask: "fix the broken tests after the merge"
   expect: coding-debug
-- ask: "list the outdated dependencies and unnecessary comments, report only"
+- ask: "settle the interfaces before work starts on billing"
+  expect: coding-plan
+- ask: "write test cases for the parser before work starts"
+  expect: coding-test
+- ask: "garden pass: outdated dependencies and unnecessary comments, report only"
   expect: coding-garden
