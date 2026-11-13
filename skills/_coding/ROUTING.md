@@ -53,7 +53,7 @@ registry cannot hold.
 | review vs test | review reads for defects; test builds the check that catches them. A finding worth guarding becomes a test |
 | test vs toolbox | Does it assert the product's behaviour? Yes → a test, in the suite. It only gets an agent to where it can look (start, seed, reproduce, read logs) → toolbox |
 | toolbox vs setup | Who is it for? One agent getting to where it can look → toolbox. Every agent and CI deciding a change is good → setup |
-| garden vs setup or review | What is being judged? Whether a gate exists, laid and proved → setup. A diff before it lands → review. The tree as it stands before work starts → garden, which sends a missing gate to setup and a judgement call to review |
+| garden vs setup or review | What is being judged? Whether a gate exists, laid and proved → setup. A diff before it lands → review. The tree as it stands before work starts → garden, which sends a missing gate to setup and a judgement call to the human as a Question |
 | implement vs ship | Ship starts once the code is correct. Ship never fixes code to make a commit tidy |
 
 ## Chains

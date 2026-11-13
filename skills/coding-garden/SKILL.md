@@ -1,6 +1,6 @@
 ---
 name: coding-garden
-description: "Garden pass before work starts: a health check for drift between code and docs, broken tests, static analysis, over-implementation, unnecessary comments, outdated dependencies. Report-only."
+description: "Garden pass before work starts: tree health, doc drift, silent checks, red tests, over-implementation, unnecessary comments, outdated dependencies. Report-only, each finding routed to its owner."
 allowed-tools: Read, Grep, Glob, Bash
 ---
 <!-- coding:contract -->
@@ -18,18 +18,18 @@ authorises fixing it here. Ownership of adjacent work is defined in
 
 ## Before starting
 
-- **Run the host's gate before reading anything.** The verify command
-  (`scripts/verify.sh`, or whatever the host's rules name) on the untouched
-  tree comes first. Its result decides the rest of the pass
+- **Read the host's gate, then run it first**: its result decides the pass. A
+  step writing in the checkout runs in a copy; one changing state outside it or
+  fetching from the network runs only on a go-ahead. Unrun, it is reported unchecked
 - **Record the tree that was read**: the commit, and whether the status was
   clean. A finding about uncommitted edits is a finding about someone's work in
   progress, and it is reported as that
-- **Scope by the work about to start**, not by the whole repository. Here `T0`
-  is the gate run reported in one line; the full pass is for a start that
-  touches more than one area, or when the whole tree is asked for
+- **Scope by the work about to start**, not by the whole repository. Scope sets
+  where the pass runs, never its tier: a pass that routes findings is `T1`, and
+  `T0` is only the gate run, asked for alone. No work named: the area is the tree
 - **Nothing leaves the machine without a go-ahead.** Asking a package registry
-  what is current sends the dependency list. Ask first, or report the category
-  as not checked
+  what is current sends the dependency list. Ask before the pass; without a
+  yes, dependencies go in the brief's `excludes` and the report names them
 - A handoff received is checked first (`_coding/HANDOFF.md`, seven receiver
   checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
@@ -59,11 +59,12 @@ authorises fixing it here. Ownership of adjacent work is defined in
 |---|---|
 | Starting a pass | [sweep](playbooks/sweep.md): the order, what blocks the start and what is only recorded, and which skill takes each finding |
 | Deciding what can check a category mechanically | [checks](playbooks/checks.md): structure first, then a declared rule a tool enforces, then a reading, which proves least |
-| The gate is red on the untouched tree | Stop the pass. That is the report's first line, routed to `coding-debug`. Findings on top of a red gate are noise nobody can rank |
-| A check exists and passes on anything | A silent gate is worse than a missing one. It blocks the start like a red one and goes to `coding-setup` |
+| The gate is red on the untouched tree | Read which check failed. It fails in the area about to change: stop the pass, and that is the report's first line, routed to `coding-debug`. It is absent or cannot run (no script, a tool not installed): stop, routed to `coding-setup`. It fails only elsewhere: record that with its area and run the remaining steps |
+| A check exists and passes on anything | A silent gate is worse than a missing one. It goes on the blocking list for `coding-setup`, and the pass goes on |
+| Asked to fix, remove or set something up | Not a pass. Name the owner from [sweep](playbooks/sweep.md) and hand the ask on without running one |
 | The host has no tool for a category | Report it unchecked, with the kind of tool that would check it. Adopting one adds a dependency, so it goes to `coding-setup` and the human decides |
-| The same kind of finding was fixed before | Search the history for the earlier fix. A second occurrence goes to `coding-setup` as a check to lay, so it cannot grow back |
-| A finding rests on judgement: an abstraction nothing needs, prose that reads out of date | `inspected` at best. It goes in as a Question for `coding-review`, or it is dropped |
+| The same kind of finding was fixed before | Search the history for the earlier fix. A second occurrence is also sent to be closed for good: [sweep](playbooks/sweep.md) § The second sighting says by whom |
+| A finding rests on judgement: an abstraction nothing needs, prose that reads out of date | `inspected` at best. It goes in as a Question for the human, who decides whether it is work, or it is dropped |
 | A claim here would be expensive to get wrong | [refute](refute.py). Ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which). Read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
@@ -82,16 +83,15 @@ authorises fixing it here. Ownership of adjacent work is defined in
   `file:line` it rests on, so its owner starts from evidence, not a description
 - Always: keep what blocks the start apart from what is only recorded. An
   outdated dependency is a line on a list; blocking on it is a start that never comes
-- Always: order the fixes before the new work, one commit each and never
-  inside its diff. A cleanup inside a feature is unreviewable
+- Always: order the blocking fixes before the new work, one commit each and
+  never inside its diff. A cleanup inside a feature is unreviewable
 - Never: edit, install, upgrade, format, or regenerate in the tree. A generator
-  run to detect drift writes files: run it in a throwaway copy, or report the
-  category unchecked
-- Never: pass a tool's raw output on as findings. Each line is read,
-  deduplicated, and graded; a thousand warnings of one kind are one finding
-  about the threshold
+  run to detect drift writes files: run it in a `cp -R` copy outside the
+  checkout (never a worktree), or report the category unchecked
+- Never: pass a tool's raw output on as findings. Each line is read, deduplicated
+  and graded: a thousand warnings of one kind are one finding about the threshold
 - Never: run a host command that changes state outside the checkout (a
-  database, a service, an account)
+  database, a service, an account) without a go-ahead for this pass
 
 ## Verify with
 
@@ -99,13 +99,13 @@ A finding is proved by its owner being able to reproduce it: each carries the
 command that produced it (evidence: `executed`) or the `file:line` it was read
 at (`inspected`, with why nothing could be run).
 
-- This skill holds no `Edit`/`Write`: residuals go in the handoff's `open`
-  with the `file:line` a marker belongs at and `written: false`
+- Findings travel in `done` with list, owner and evidence, never as `BLOCKED`,
+  and `next` is none; `open` holds residuals at the `file:line` a marker belongs
 - **`DONE` here**: the gate's state is known, every category in scope was run or
   is a finding saying why it could not be, and every finding has one owner. A
-  category stopped by a refused go-ahead is `DEFERRED`, so the pass is `PARTIAL`
-- Writing nothing, the sweep reads `0 changed / 0 evidenced`, and the status of
-  the tree read back after the pass matches the one recorded before it
+  pass stopped at the gate is `PARTIAL`, each step not run `DEFERRED` until the gate runs green
+- Writing nothing, the sweep reads `0 changed / 0 evidenced`, and `git status`
+  and a hash of `git diff` read back after the pass match those taken before it
 <!-- deliver:report -->
 - Grade every claim: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says

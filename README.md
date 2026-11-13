@@ -66,9 +66,9 @@ rule fails if any copy has drifted. The longer prose stays in `skills/_coding/`.
 
 **Budgets are enforced, not intended.** `coding-registry/harness.yaml` holds every
 threshold — line counts, skill count, description length. `coding-tools/validate.py`
-decides them, prints each one's measured use, and CI fails on a violation. Nothing
-is exempt for being important, because a gate that a person can argue past is a
-gate the person who wants to grow the set will argue past.
+decides them, prints each one's measured use when green, and CI fails on a
+violation. Nothing is exempt for being important, because a gate that a person
+can argue past is a gate the person who wants to grow the set will argue past.
 
 ## Three rules that follow from it
 

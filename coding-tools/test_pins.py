@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from importlib import metadata
 from pathlib import Path
@@ -31,15 +32,27 @@ class Pins(unittest.TestCase):
     def test_a_missing_package_fails(self):
         self.assertEqual(pins.mismatches("a==1.0\n", installed({})), ["a missing, pinned 1.0"])
 
-    def test_an_unpinned_line_fails_rather_than_passing_unchecked(self):
-        self.assertEqual(pins.mismatches("a>=1.0\n", installed({"a": "1.0"})),
-                         ["a>=1.0 is not pinned with ==, so no version can be checked"])
+    def test_every_form_but_a_plain_pin_is_refused_by_name(self):
+        for line in ("a>=1.0", "a[x]==1.0", 'a==1.0; python_version<"3.12"',
+                     "-r other.txt", "a==1.0 --hash=sha256:00"):
+            with self.subTest(line=line):
+                self.assertEqual(pins.mismatches(line + "\n", installed({"a": "1.0"})),
+                                 [f"{line} is not a plain name==version pin, "
+                                  "so no version can be checked"])
 
-    def test_the_repository_file_parses(self):
-        text = pins.REQUIREMENTS.read_text(encoding="utf-8")
-        every = {line.split("==")[0]: line.split("==")[1] for line in text.splitlines()
-                 if line and not line.startswith("#")}
-        self.assertEqual(pins.mismatches(text, installed(every)), [])
+    def test_a_file_saved_with_a_bom_reads_as_pins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "requirements.txt"
+            path.write_bytes("\ufeffa==1.0\n".encode("utf-8"))
+            self.assertEqual(pins.mismatches(pins.requirements(path), installed({"a": "1.0"})), [])
+
+    def test_every_line_of_the_repository_file_is_read_as_a_pin(self):
+        # Against an interpreter with nothing installed, a line read as a pin is
+        # reported missing; a line the parser refuses would be reported refused.
+        found = pins.mismatches(pins.requirements(), installed({}))
+        self.assertTrue(found)
+        for line in found:
+            self.assertRegex(line, r"^\S+ missing, pinned \S+$")
 
 
 if __name__ == "__main__":

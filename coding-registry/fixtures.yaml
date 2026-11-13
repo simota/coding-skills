@@ -97,7 +97,24 @@
 # Added with coding-garden: the tree is read before work goes on top of it.
 - ask: "run a garden pass before work starts on the billing module"
   expect: coding-garden
-- ask: "health check: has the documentation drift from the code, and are there broken tests"
+- ask: "check tree health: any doc drift, or silent checks that pass on anything"
   expect: coding-garden
-- ask: "list the outdated dependencies and unnecessary comments, report only"
+# Ordinary asks that carry a word near garden's, and are not garden's.
+- ask: "add a health check endpoint to the API"
+  expect: coding-implement
+- ask: "add a garden planner screen"
+  expect: coding-implement
+- ask: "fix the broken tests after the merge"
+  expect: coding-debug
+- ask: "refactor to remove the over-implementation in billing"
+  expect: coding-refactor
+- ask: "review this diff for over-implementation"
+  expect: coding-review
+- ask: "set up CI gates so silent checks fail"
+  expect: coding-setup
+- ask: "settle the interfaces before work starts on billing"
+  expect: coding-plan
+- ask: "write test cases for the parser before work starts"
+  expect: coding-test
+- ask: "garden pass: outdated dependencies and unnecessary comments, report only"
   expect: coding-garden

@@ -357,6 +357,37 @@ def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
               "  playbook_lines: 300           # measured max: 147\n")
 
 
+@case("V39-column-zero")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300\n# measured max: 147\n")
+
+
+@case("V39-sentence-end")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300   # the measured max is 116.\n")
+
+
+@case("V39-above-the-key")
+def _(r): sub(r / "coding-registry/harness.yaml", "\nlimits:\n", "\n# 10 in use\nlimits:\n")
+
+
+@case("V39-at-the-end")
+def _(r):
+    f = r / "coding-registry/harness.yaml"
+    t = f.read_text(encoding="utf-8")
+    a, b = t.index("limits:\n"), t.index("\npermission_classes:")
+    f.write_text(t[:a] + t[b + 1:] + "\n" + t[a:b] + "\n# measured max: 147\n", encoding="utf-8")
+
+
+@case("V39-after-cjk")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300   # 上限は120行\n")
+
+
+@case("V39-on-the-key")
+def _(r): sub(r / "coding-registry/harness.yaml", "limits:\n", "limits:   # 10 in use\n")
+
+
 @case("V38")
 def _(r): sub(r / f"{S}coding-test/playbooks/cases.md", "## ", "verdict: KEEP | DROP\n\n## ")
 
