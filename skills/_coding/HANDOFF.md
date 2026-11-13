@@ -6,9 +6,9 @@ person, or a later session. It is the single place the facts live, and it is the
 **record, not the report**: what a person reads is a bounded view over it
 (`_coding/REPORT.md`), never this object rendered field by field.
 
-**`T0` is the exception** (`_coding/SIZING.md`): a one-skill, reversible,
+`T0` is the exception (`_coding/SIZING.md`): a one-skill, reversible,
 under-three-files change with one-sentence acceptance returns its one-line
-report and no handoff. It still names what was run and what was observed — `T0`
+report and no handoff. It still names what was run and what was observed. `T0`
 drops the paperwork, never the evidence.
 
 ## The object
@@ -33,21 +33,21 @@ swept: "2 markers / 2 in open; 7 changed / 7 evidenced"
 next: "<the skill that should receive this, or none>"
 ```
 
-- **`brief` travels whole and is not modifiable** — every field of
+- `brief` travels whole and is not modifiable: every field of
   `_coding/SIZING.md`'s brief, not a subset. The receiver may not rewrite any of
   them. Rewriting the brief downstream is the main route by which scope creeps,
   and it is invisible in the diff
-- **The keys of `evidence` are the artifacts.** A file written and not keyed is
+- The keys of `evidence` are the artifacts. A file written and not keyed is
   a coverage hole arriving at a boundary
-- **`open` carries a class and the class decides what happens.** `BLOCKED` and
+- `open` carries a class and the class decides what happens. `BLOCKED` and
   `UNVERIFIED` stop the chain and go back to the human; `DEFERRED` and
   `OUT-OF-SCOPE` travel as record, so the receiver learns what was already
   decided against rather than rediscovering it
-- **`written` says whether the `#TODO(agent):` marker is in the tree yet.**
+- `written` says whether the `#TODO(agent):` marker is in the tree yet.
   A run that may not write that file sets it `false` and names where the marker
   belongs; the first receiver that may write a marker there places it and flips the flag
   (`_coding/CONTRACT.md` § Residuals)
-- **Review findings travel in `done`**, each with rank and certainty; `open` is for residuals
+- Review findings travel in `done`, each with rank and certainty; `open` is for residuals
 - Pass the change in state, not the working log. Reasoning does not travel
 
 ## What the receiver checks before starting
@@ -65,7 +65,7 @@ next: "<the skill that should receive this, or none>"
 
 ## Send-backs
 
-A send-back **names the check that failed and the field it failed on**.
+A send-back names the check that failed and the field it failed on.
 Without that, the same handoff returns unchanged and the round trip bought
 nothing.
 

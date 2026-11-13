@@ -7,15 +7,29 @@ author's attention and lowers the credibility of the next real one.
 
 ## The test a finding must pass
 
-**Name the concrete failure**: the input, the state, or the sequence that makes
-this produce a wrong result. If you cannot, it is not a defect finding.
+Name the concrete failure: the input, the state, or the sequence that makes
+this produce a wrong result. Without one it is not a defect finding.
 
-- Can name it, and it is in this diff → **report it**
-- Can name it, but it is pre-existing → **`OUT-OF-SCOPE`**, mention once, do not
+- Can name it, and it is in this diff → report it
+- Can name it, but it is pre-existing → `OUT-OF-SCOPE`, mention once, do not
   make it the author's problem
-- Cannot name it, but the risk is real and specific → report as a **question**,
+- Cannot name it, but the risk is real and specific → report as a Question (next section),
   with the case that worries you
-- Cannot name it and the concern is general → **drop it**
+- Cannot name it and the concern is general → drop it
+
+## Uncertainty, stated honestly
+
+Say which of these applies, in the finding itself:
+
+- **Confirmed**: ran it and saw it fail (`executed`), or traced every hop with
+  each `file:line` opened (`inspected`); the finding says which
+- **Likely**: the code path reads wrong and the input that breaks it is named,
+  but it was not run
+- **Question**: you do not know the intent, and the answer decides whether it is a bug
+
+Do not upgrade a question into a defect to make the review look sharper. A
+review that cries wolf twice is skipped the third time, and the third one is the
+one that mattered.
 
 ## Ordering
 
@@ -29,33 +43,19 @@ this produce a wrong result. If you cannot, it is not a defect finding.
 | 6 | Real maintenance cost | A second idiom, an abstraction that will bend, duplication that will diverge |
 | 7 | Clarity | A name or structure that will mislead the next reader |
 
-Everything below 7 — formatting the linter does not enforce, an alternative
-spelling, a preference — does not go in the report.
+Formatting the linter does not enforce, an alternative spelling, a preference:
+everything below 7 stays out of the report.
 
 ## Things that are not findings
 
-- **"I would have done it differently."** Different is not worse
-- **A style the codebase does not enforce.** If it should be enforced, that is a
+- "I would have done it differently." Different is not worse
+- A style the codebase does not enforce. If it should be enforced, that is a
   linter change, and it is its own piece of work
-- **A hypothetical future requirement.** "This won't scale" needs a number and a
+- A hypothetical future requirement. "This won't scale" needs a number and a
   timeline, or it is not a finding
-- **Repeating what the linter or type checker already said.** It already said it
-- **A general principle with no instance.** "This should have better error
+- Repeating what the linter or type checker already said. It already said it
+- A general principle with no instance. "This should have better error
   handling" names nothing to fix
-
-## Uncertainty, stated honestly
-
-Say which of these applies, in the finding itself:
-
-- **Confirmed** — ran it and saw it fail (`executed`), or traced every hop with
-  each `file:line` opened (`inspected` — say which)
-- **Likely** — the code path reads wrong and the input that breaks it is named,
-  but it was not run
-- **Question** — you do not know the intent, and the answer decides whether it is a bug
-
-Do not upgrade a question into a defect to make the review look sharper. A
-review that cries wolf twice is skipped the third time, and the third one is the
-one that mattered.
 
 ## Calibration by what the change is
 
@@ -72,4 +72,4 @@ one that mattered.
 - Every finding names a concrete failure or is explicitly a question
 - The most severe is first, and the report says plainly when nothing was found
 - Nothing pre-existing is presented as introduced by this change
-- Nothing was edited — the review reports, it does not fix
+- Nothing was edited, because the review reports and does not fix

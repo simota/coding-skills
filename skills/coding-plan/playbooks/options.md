@@ -9,13 +9,13 @@ recommendation returns the work to the person who asked.
 Two options are usually one option and a strawman. Force real difference by
 generating along axes that actually conflict:
 
-- **The smallest thing that could work** — often uglier and often correct
-- **The shape the codebase already uses** — cheapest to review, cheapest to own
-- **The one that removes something** — can this be solved by deleting a feature,
+- The smallest thing that could work: often uglier and often correct
+- The shape the codebase already uses: cheapest to review, cheapest to own
+- The one that removes something: can this be solved by deleting a feature,
   a branch, or a dependency instead of adding one?
-- **The one that buys the option** — a thin seam now so the expensive decision
+- The one that buys the option: a thin seam now so the expensive decision
   can be made later with more information
-- **Do nothing yet** — always on the list. Sometimes it wins, and naming it stops
+- Do nothing yet: always on the list. Sometimes it wins, and naming it stops
   the plan from being motivated by momentum
 
 Drop any candidate you would never recommend. Carrying a strawman to make the
@@ -43,7 +43,7 @@ own the recommendation.
 
 1. Name the one axis that dominates *this* decision, and say why it dominates
 2. Recommend the option that wins on it
-3. State what the recommendation costs — every choice costs something, and a
+3. State what the recommendation costs. Every choice costs something, and a
    recommendation with no stated cost has not been examined
 4. State the condition under which you would switch. This is what makes the
    decision revisable instead of permanent
@@ -65,11 +65,11 @@ default, and nobody remembers it was ever a choice.
 
 ## Traps
 
-- **Deciding on the axis that is easiest to measure** rather than the one that
+- Deciding on the axis that is easiest to measure rather than the one that
   matters. Lines of code is measurable; reversibility is what will hurt
-- **Comparing an approach you understand against one you do not.** The unfamiliar
+- Comparing an approach you understand against one you do not. The unfamiliar
   option always looks riskier. Read enough to price it honestly, or say you did not
-- **Letting the sunk plan decide.** Work already done on an approach is not a
+- Letting the sunk plan decide. Work already done on an approach is not a
   reason to continue it
-- **Reopening a decision the human already made.** Their call is an input, not a
-  candidate — unless a fact has changed, and then say which fact
+- Reopening a decision the human already made. Their call is an input, not a
+  candidate, unless a fact has changed, and then say which fact

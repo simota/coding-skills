@@ -7,73 +7,75 @@ allowed-tools: Read, Grep, Glob, Bash
 
 ## Owns
 
-Answering **where**, **how**, and **what breaks** about code that already
-exists — locating a feature, tracing a value from entry to storage, mapping the
-blast radius of a proposed change, and reading history for why something is the
-way it is. This skill produces understanding, never a diff.
+For code that already exists, this skill answers where, how and what breaks:
+it locates a feature, traces a value from entry to storage, maps the blast
+radius of a proposed change, and reads history for why something is the way it
+is. It produces understanding, never a diff.
 
 ## Before starting
 
 - **Write the question down as one sentence before searching.** "How does X
   work" is not a question; "which code decides whether X is retried" is. An
   unbounded exploration returns a tour, and a tour answers nothing
-- **Decide what would end the search.** A file path, a function name, a call
-  chain, a commit — name the artifact that will constitute the answer
-- **Here `T0`** is one obvious lookup answered in a line; several areas is `T1`:
+- **Decide what would end the search**: the file path, function name, call
+  chain or commit that will constitute the answer
+- Here `T0` is one obvious lookup answered in a line; several areas is `T1`:
   settle the brief, then order the passes
-- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+- A handoff received is checked first (`_coding/HANDOFF.md`, seven receiver
   checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before the first write**, first match wins. `T0` — one skill owns it,
-  reversible, under three files, acceptance in one sentence: act and report in
-  one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
-- **A dialogue comes first** when the deliverable's shape is not uniquely
+- Size it before the first write, first match wins. `T0`: one skill owns it,
+  reversible, under three files, acceptance in one sentence. Act and report in
+  one line; it needs no brief and no handoff. `T1`: a `T0` condition fails, so
+  settle the brief first. `T2`: two or more skills own parts of it, or it spans
+  phases, so route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
+- A dialogue comes first when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
-- **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the brief's
+- A term with two meanings, or a concept with two names, is a question, never
+  a silent choice: one question with its default, the answer into the brief's
   `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
   write it, else `open`), and only those names from then on (`_coding/SIZING.md`)
 <!-- /deliver:sizing -->
 
 ## Decide first
 
-- **Here the tie usually goes to §1 honesty over speed** — a claim you did not
+- Here the tie usually goes to §1 honesty over speed: a claim you did not
   confirm is a guess, and it is reported as one
 
 | Situation | How to proceed |
 |---|---|
 | You know a name, symbol, or string | Grep for it first. The cheapest search that could work runs first |
-| You know only the behaviour | [search](playbooks/search.md) — work inward from the entry point the user can see |
+| You know only the behaviour | [search](playbooks/search.md): work inward from the entry point the user can see |
 | The question is "what breaks if I change this" | [blast-radius](playbooks/blast-radius.md) |
-| The question is "why is it like this" | [history](reference/history.md) — `-S` and `-G` search different axes, and `..`/`...` invert between `log` and `diff` |
+| The question is "why is it like this" | [history](reference/history.md): `-S` and `-G` search different axes, and `..`/`...` invert between `log` and `diff` |
 | Three searches returned nothing | The vocabulary is wrong. Find the entry point and read outward instead of guessing more names |
 | The answer looks obvious after one file | Confirm with a second, independent signal before reporting it |
 | Framework or generated code dominates the result | Exclude it by path and search again. Vendored code answers questions about the vendor |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A claim here would be expensive to get wrong | [refute](refute.py). Ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which). Read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
   the better shape · what lasts over what helps today · the human decides what,
-  the agent decides how. Against all of them: **a harness that is correct and
-  avoided has failed** — when the ceremony costs more than the change, say so
+  the agent decides how. Against all of them, a harness that is correct and
+  avoided has failed: when the ceremony costs more than the change, say so
   rather than performing it
 <!-- /deliver:values -->
 
 ## Always / Never
 
-- Always: report **file:line**, never a paraphrase of where something is
+- Always: report `file:line`, never a paraphrase of where something is
 - Always: distinguish what was read from what was inferred. "Called from three
   places" is a fact; "probably only used by the admin path" is a guess and is
   labelled one
-- Always: state coverage honestly — which directories were searched, which were
-  not, and what a dynamic call or reflection could be hiding
+- Always: state which directories were searched, which were not, and what
+  a dynamic call or reflection could be hiding. An exploration reported
+  without its boundary reads as exhaustive, and the next person builds on a gap
+  they cannot see
 - Never: edit, format, or "fix while I'm here". This skill is read-only, and
-  finding something wrong does not authorise changing it — record it in `open` and hand it back
+  finding something wrong does not authorise changing it: record it in `open` and hand it back
 - Never: transmit code or findings off the machine without the human's go-ahead
   (`refute` included). Read-only is not permission to publish
 - Never: report a call graph derived from names alone. A name match is a
@@ -83,30 +85,28 @@ way it is. This skill produces understanding, never a diff.
 
 An answer is proved by the reader being able to check it: every claim carries a
 `file:line` a reader can open (evidence: `inspected`), and a claim about
-runtime behaviour is `executed` — the test, the script, or the program was run.
+runtime behaviour is `executed`: the test, the script, or the program was run.
 
 - This skill holds no `Edit`/`Write`, so residuals go in the handoff's `open`
-  with the `file:line` a marker belongs at — never as a write
+  with the `file:line` a marker belongs at, never as a write
 - **`DONE` here**: the question answered, every claim anchored to a path,
   confidence stated, unexamined areas named
 - Writing nothing, the sweep reads `0 changed / 0 evidenced`; the `file:line`s
   the answer cites are its anchors, each `inspected` (read-only) or `executed` where run
-- **Say what you did not cover.** An exploration reported without its boundary
-  reads as exhaustive, and the next person builds on a gap they cannot see
 <!-- deliver:report -->
-- **Grade every claim**: `executed` (it was run) supports completion;
+- Grade every claim: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says
-  why; `asserted` never does. **The unit is the file written to** — each carries
+  why; `asserted` never does. The unit is the file written to: each carries
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
-- **`status`**: `DONE` (every criterion met, every file evidenced, zero
+- `status`: `DONE` (every criterion met, every file evidenced, zero
   `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
-- **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
+- Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report
   closes and is gone; the marker stays
-- **Never omit the sweep** — markers in this run's diff against `open`, files
-  written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
+- Never omit the sweep: markers in this run's diff against `open`, files
+  written against files evidenced (`swept, 0 markers; 7 changed / 7 evidenced`).
   While either pair disagrees the status is not `DONE` (`_coding/CONTRACT.md`)
 <!-- /deliver:report -->
 
@@ -116,21 +116,21 @@ The one-sentence question has an answer anchored to specific lines, the
 confidence in it is stated, and the parts of the codebase that were not looked
 at are named.
 <!-- deliver:surface -->
-- **Say what the moment needs.** Start: what will be done and what is excluded.
-  Mid-run: a line when the reader must act — a divergence from what was agreed,
-  a path found blocked, work that would grow the scope — or when the run changes
+- Say what the moment needs. Start: what will be done and what is excluded.
+  Mid-run: a line when the reader must act (a divergence from what was agreed,
+  a path found blocked, work that would grow the scope) or when the run changes
   course; tool calls are already visible and are not replayed. A question names
   the decision it unblocks and the default taken if nobody answers
-- **End with the answer in one line** — status and what changed; then the sweep
+- End with the answer in one line: status and what changed; then the sweep
   line, then one line per residual a human must decide, then what is next. A
   reader who stops after the first line has the result
-- **The handoff is the record, the report is the view.** The brief, the per-file
+- The handoff is the record, the report is the view. The brief, the per-file
   grades and the `open` list travel in the handoff and are shown when asked
-- **Sized to the tier**, the deliverable linked, never pasted: `T0` is one line
+- Sized to the tier, the deliverable linked, never pasted: `T0` is one line
   with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next.
-  Trimming cuts what the reader already has — request, files, path (`_coding/REPORT.md`)
-- **Not bigger than it is.** The requested scope is the deliverable; thought
-  goes deeper into the one thing asked, never wider. **A real problem is the
-  exception** — something that would break, is unsafe, or rests on a false
+  Trimming cuts what the reader already has: request, files, path (`_coding/REPORT.md`)
+- Not bigger than it is. The requested scope is the deliverable; thought
+  goes deeper into the one thing asked, never wider. A real problem is the
+  exception: something that would break, is unsafe, or rests on a false
   premise is explained in full (`_coding/REPORT.md`)
 <!-- /deliver:surface -->

@@ -153,8 +153,8 @@ def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Done when", "## Finished when"
 
 
 @case("V17")
-def _(r): sub(r / f"{S}coding-test/SKILL.md", "- **Grade every claim**",
-              "- **Grade some claims**")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "- Grade every claim:",
+              "- Grade some claims:")
 
 
 @case("V18")

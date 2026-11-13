@@ -21,7 +21,7 @@ One line decides everything on this page:
 
 Git's safety net is the object store plus the reflog, and both only hold what
 was written into them. A change that exists solely in the working tree has never
-been written anywhere, so overwriting it leaves no trace to find — not a warning,
+been written anywhere, so overwriting it leaves no trace to find: not a warning,
 not a dangling object, nothing.
 
 ---
@@ -37,7 +37,7 @@ not a dangling object, nothing.
 | `git checkout <sha>` (detached work) | nothing, until GC | **yes** | `git reflog`, `git fsck --lost-found` |
 | `git stash drop` / `stash clear` | the stash commit | **yes, until GC** | `git fsck --lost-found`, then `git show` each dangling commit |
 | `git restore .` / `git checkout -- .` | **unstaged** worktree edits (restored from the index; staged content is untouched) | **no** | nothing recorded them |
-| `git checkout -f` / `git switch --discard-changes <branch>` | uncommitted edits to **tracked** files; with `-f` and a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten — it carries non-conflicting edits across; `-f` removes the refusal. `--discard-changes` removes it for tracked edits only: an untracked file in the way still stops the switch, and the edits stay. Other untracked files survive |
+| `git checkout -f` / `git switch --discard-changes <branch>` | uncommitted edits to **tracked** files; with `-f` and a target branch, also untracked files that branch tracks | **no** for unstaged edits and overwritten untracked files; staged content survives as a dangling blob | plain `checkout <branch>` refuses when a local edit or an untracked file would be overwritten (it carries non-conflicting edits across); `-f` removes the refusal. `--discard-changes` removes it for tracked edits only: an untracked file in the way still stops the switch, and the edits stay. Other untracked files survive |
 | `git clean -fd` | untracked files | **no** | git never had them |
 | `rm -rf` on the worktree | everything uncommitted | **no** | — |
 
@@ -57,7 +57,7 @@ clean -fd               -> the untracked file is destroyed, git has no record
 leaves untracked files where they are — except, when switching branch, an
 untracked file at a path the target branch tracks, which it overwrites with no
 record. `clean -fd` removes untracked files and does not touch tracked edits.
-So "I ran checkout -f, my new file must be gone" is usually wrong — look before
+So "I ran checkout -f, my new file must be gone" is usually wrong. Look before
 concluding.
 
 ## `git add` is the cheapest insurance there is
@@ -77,12 +77,12 @@ PRECIOUS-STAGED-WORK                 # recovered
 
 So the rule before any destructive operation is one of:
 
-1. `git add -A` — only when nothing in the index is curated; content survives in
+1. `git add -A`, only when nothing in the index is curated: content survives in
    the object store, findable via `fsck`
-2. `git stash -u` — **`-u` is required**; plain `git stash` leaves untracked
+2. `git stash -u`: **`-u` is required**, because plain `git stash` leaves untracked
    files in the worktree, where the next `clean -fd` takes them. Restore it with
    `git stash pop --index`: a plain `pop` brings staged edits to tracked files back unstaged
-3. `git commit` on a scratch branch — the strongest, and the reflog indexes it
+3. `git commit` on a scratch branch: the strongest, and the reflog indexes it
 
 A verified fixture run: with untracked `untracked.txt` present, `git stash`
 stashed the tracked edit and **left `untracked.txt` in place**.
@@ -95,11 +95,11 @@ git reflog show <branch>         # one branch's movements
 git fsck --lost-found            # objects no reference points at
 ```
 
-Reflog entries expire — reachable ones after 90 days, unreachable ones after 30
-by default — and `git reflog expire --expire=now --all` empties them at once.
-`git gc --prune=now` does not shorten the reflog beyond those limits — every
+Reflog entries expire (reachable ones after 90 days, unreachable ones after 30
+by default), and `git reflog expire --expire=now --all` empties them at once.
+`git gc --prune=now` does not shorten the reflog beyond those limits: every
 `gc` expires entries past 90/30 days, and `--prune=now` changes nothing there. It
-deletes dangling objects no reflog entry holds — a dropped stash, a staged-then-wiped blob — which `gc`
+deletes dangling objects no reflog entry holds (a dropped stash, a staged-then-wiped blob), which `gc`
 otherwise keeps for `gc.pruneExpire`, two weeks by default. Recovery is a
 question with a deadline, so it is attempted before anything else, not after
 finishing the task that motivated the reset.

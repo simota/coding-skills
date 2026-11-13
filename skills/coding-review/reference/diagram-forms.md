@@ -12,12 +12,10 @@ that this page and `visualise` between them define every trigger, form and floor
 word the registry declares; a rule in this set's validator (V36) re-runs that on
 every commit, so a word deleted from here fails the build.
 
-## Forms
-
 Four shapes, one per trigger, cover almost everything, and the fan is the `hops`
 form turned outwards. Pick by trigger, not by taste.
 
-## `hops` — the call chain
+## `hops`: the call chain
 
 The default here. Left to right, one arrow per step, each node a place that was
 opened. Hang the finding off the step it is at.
@@ -44,7 +42,18 @@ auth/session.ts:88  getUser(id) ──▶ getUser(id, opts)
     └──▶ admin/export.ts:63    NOT in the diff — still passes one argument
 ```
 
-## `disagreement` — two columns
+## `ordering`: two lanes
+
+Time to the right, one lane per actor, and the mark where the interleaving goes
+wrong. Use it only when the order is the finding: if any order fails, it is `hops`.
+
+```
+req A   read bal ─────────────┐            ┌── write bal
+req B          read bal ──────┴── write ───┘
+                                          ▲ A writes over B, from a stale read
+```
+
+## `disagreement`: two columns
 
 Both sides, one row per property, the disagreement on its own line.
 
@@ -58,18 +67,7 @@ rounding          truncates             half-up            ← disagree
 Also the form for a value against a schema, a constant against its test, or a
 migration against the column it writes.
 
-## `ordering` — two lanes
-
-Time to the right, one lane per actor, and the mark where the interleaving goes
-wrong. Only when the order is the finding — if any order fails, it is `hops`.
-
-```
-req A   read bal ─────────────┐            ┌── write bal
-req B          read bal ──────┴── write ───┘
-                                          ▲ A writes over B, from a stale read
-```
-
-## `location` — the case grid
+## `location`: the case grid
 
 Code is not two-dimensional, so this fires as a grid: the inputs down one axis,
 the states across, and the empty cell as the finding.
@@ -121,8 +119,8 @@ stateDiagram-v2
 
 About 20 arrows at most: merge states that act the same before hiding steps,
 and never merge two states that break different rules. No variable or function
-names on states or arrows — each step's `file:line` goes in the finding's path,
-not on the chart.
+names on states or arrows. Each step's `file:line` belongs in the finding's
+path, not on the chart.
 
 ## Drawing them
 
@@ -135,5 +133,5 @@ not on the chart.
 ## What none of these do
 
 They do not carry evidence. A map shows where a finding is, not that anyone
-looked — the grade beside the finding says that, and a beautifully drawn
+looked. The grade beside the finding says that, and a beautifully drawn
 `asserted` is still `asserted`.

@@ -7,7 +7,7 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 
 ## Owns
 
-The mechanism that catches a defect — choosing which cases are worth writing,
+The mechanism that catches a defect: choosing which cases are worth writing,
 writing them so they fail for the right reason, repairing tests that lie
 (flaky, tautological, or asserting the wrong thing), and getting a red suite
 green honestly.
@@ -21,29 +21,29 @@ green honestly.
   imperfect consistent one
 - **Run the tests that reach what you will touch first** (a `.verify/baseline-<sha>`
   for this commit is read instead). A failure found after your change looks like yours
-- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
-  checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
+- A handoff received is checked first (the seven receiver
+  checks in `_coding/HANDOFF.md`); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before the first write**, first match wins. `T0` — one skill owns it,
-  reversible, under three files, acceptance in one sentence: act and report in
-  one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
-- **A dialogue comes first** when the deliverable's shape is not uniquely
+- Size it before the first write, first match wins. `T0`: one skill owns it,
+  reversible, under three files, acceptance in one sentence. Act and report in
+  one line; it needs no brief and no handoff. `T1`: a `T0` condition fails, so
+  settle the brief first. `T2`: two or more skills own parts of it, or it spans
+  phases, so route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
+- A dialogue comes first when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
-- **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the brief's
+- A term with two meanings, or a concept with two names, is a question, never
+  a silent choice: one question with its default, the answer into the brief's
   `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
   write it, else `open`), and only those names from then on (`_coding/SIZING.md`)
 <!-- /deliver:sizing -->
 <!-- deliver:predict -->
-- **Register the prediction before the run** — ideally before the edit: what
-  will be run, and what observable result changes — a named test, an exit code, a
-  value at a path. After it, report `hit`, `miss`, or `void` (it turned out
-  unobservable). **A `miss` costs nothing; an unrecorded `miss` costs the run.**
+- Register the prediction before the run, ideally before the edit: what will
+  be run, and what observable result changes (a named test, an exit code, a
+  value at a path). After it, report `hit`, `miss`, or `void` (it turned out
+  unobservable). A `miss` costs nothing; an unrecorded `miss` costs the run.
   Two consecutive misses in one area mean the model of it is wrong: stop editing
   and read. `executed` with nothing registered supports "it ran", never "it
   works because X" (`_coding/PREDICTION.md`)
@@ -51,49 +51,49 @@ green honestly.
 
 ## Decide first
 
-- **Here the tie usually goes to §2 mechanism over intent** — a rule that cannot
+- Here the tie usually goes to §2 mechanism over intent: a rule that cannot
   fail is not a check
 
 | Situation | How to proceed |
 |---|---|
-| Choosing which cases to write | [cases](playbooks/cases.md) — derive from behaviour and boundaries, not from lines |
+| Choosing which cases to write | [cases](playbooks/cases.md). Derive from behaviour and boundaries, not from lines |
 | A test passes sometimes | [flaky](playbooks/flaky.md). Never fix it with a retry or a longer sleep |
-| Deciding what the expected value should be | [oracles](reference/oracles.md) — ask where it came from. A value copied from the output asserts that the code equals itself |
+| Deciding what the expected value should be | [oracles](reference/oracles.md). Ask where it came from. A value copied from the output asserts that the code equals itself |
 | Writing a regression test for a fixed bug | Write it so it fails on the pre-fix code. Verify by removing only the fix, recoverably ([oracles](reference/oracles.md) § The regression-test rule), running it, and restoring |
-| The code is hard to test | That is information about the code, not about testing. Usually a missing seam — hand it to `coding-refactor` rather than building elaborate mocks |
+| The code is hard to test | That is information about the code, not about testing. Usually a missing seam: hand it to `coding-refactor` rather than building elaborate mocks |
 | A test needs six mocks to run | The unit is wrong. Test a level up, where fewer things need faking |
-| The suite is slow | Find the few slow tests before optimising the many fast ones — `.verify/timings` names the slow check, the runner's durations report the test. Slow suites stop being run, and an unrun suite catches nothing |
-| A test fails after a change | Classify it **before** editing either. If the code may be wrong, the cause is `coding-debug`'s (`registry/capabilities.yaml`); repair only what is shown to be the test's fault |
+| The suite is slow | Find the few slow tests before optimising the many fast ones: `.verify/timings` names the slow check, the runner's durations report the test. Slow suites stop being run, and an unrun suite catches nothing |
+| A test fails after a change | Classify it before editing either. If the code may be wrong, the cause is `coding-debug`'s (`registry/capabilities.yaml`); repair only what is shown to be the test's fault |
 | Asked to raise coverage to a number | Say what the number will and will not buy, then cover the behaviour that would break silently |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
-| About to run a new test | **Predict the failure first** — which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing. For behaviour that already works, get the red by breaking the code under test on purpose, then restore it |
+| A claim here would be expensive to get wrong | [refute](refute.py). Ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which). Read each verdict. `STANDS` is n engines finding nothing, never proof |
+| About to run a new test | Predict the failure first: which assert, what message. A test that passes on its first run predicted nothing, and may be asserting nothing. For behaviour that already works, get the red by breaking the code under test on purpose, then restore it |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
   the better shape · what lasts over what helps today · the human decides what,
-  the agent decides how. Against all of them: **a harness that is correct and
-  avoided has failed** — when the ceremony costs more than the change, say so
+  the agent decides how. Against all of them, a harness that is correct and
+  avoided has failed: when the ceremony costs more than the change, say so
   rather than performing it
 <!-- /deliver:values -->
 
 ## Always / Never
 
-- Always: see a new test **fail first**, for the reason it claims, before making
+- Always: see a new test fail first, for the reason it claims, before making
   it pass. An assertion never observed failing proves nothing
-- Always: assert on behaviour the caller depends on — the returned value, the
+- Always: assert on behaviour the caller depends on: the returned value, the
   persisted state, the message sent. Not on how the code got there
 - Always: name the test after the case it pins: what, under what condition,
   expecting what
-- Always: keep tests independent — no shared mutable state, no ordering
+- Always: keep tests independent: no shared mutable state, no ordering
   dependency, no leakage between runs
 - Never: make a test pass by weakening it. Loosening an assertion, adding a
   retry, extending a timeout, marking it skipped, or asserting only that it did
-  not raise — each of these deletes the evidence and leaves the suite reporting green
+  not raise. Each of these deletes the evidence and leaves the suite reporting green
 - Never: mock the thing under test, or assert that a mock was called as the only
   assertion. That tests the wiring of the test
-- Never: put **branching** logic in a test. A conditional means the test asserts
+- Never: put branching logic in a test. A conditional means the test asserts
   different things on different runs and no longer names one case. Parameterised
-  cases and property-based generators are not this — they run the same assertion
+  cases and property-based generators are not this: they run the same assertion
   over many inputs, which keeps one case per assertion
 - Never: commit a test that depends on the wall clock, the network, the
   filesystem outside a temp dir, or a specific machine
@@ -107,26 +107,26 @@ Both halves are required — a test that was never seen red is `inspected` at
 best, and the entry says why it could not be made to fail.
 
 - **`DONE` here**: cases written, each seen red then green, the tests reaching
-  the change green, the full set green or delegated (`_coding/CONTRACT.md`) — or, where repairing it was not the task, each remaining failure shown by the
-  baseline to pre-date the change and recorded `OUT-OF-SCOPE` — and the sweep balances
+  the change green, the full set green or delegated (`_coding/CONTRACT.md`), and the sweep balances. Where repairing the full set was not the task, each remaining failure is shown by the
+  baseline to pre-date the change and recorded `OUT-OF-SCOPE`
 - A skipped or quarantined test is `UNVERIFIED` for whatever it covered, and
   leaves a marker naming what is no longer guarded
 - **Report what is still uncovered.** A test report without its gaps reads as
   proof of correctness, which no suite has ever been
 <!-- deliver:report -->
-- **Grade every claim**: `executed` (it was run) supports completion;
+- Grade every claim: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says
-  why; `asserted` never does. **The unit is the file written to** — each carries
+  why; `asserted` never does. The unit is the file written to: each carries
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
-- **`status`**: `DONE` (every criterion met, every file evidenced, zero
+- `status`: `DONE` (every criterion met, every file evidenced, zero
   `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
-- **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
+- Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report
   closes and is gone; the marker stays
-- **Never omit the sweep** — markers in this run's diff against `open`, files
-  written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
+- Never omit the sweep: markers in this run's diff against `open`, files
+  written against files evidenced (`swept, 0 markers; 7 changed / 7 evidenced`).
   While either pair disagrees the status is not `DONE` (`_coding/CONTRACT.md`)
 <!-- /deliver:report -->
 
@@ -136,21 +136,21 @@ Each new case was observed failing for its stated reason and then passing, the
 tests reaching the change are green, the full set is green or delegated to a required check, or, where repairing it was not the task, each remaining failure is shown to pre-date the change,
 no assertion was weakened to get there, and the behaviours still unguarded are named.
 <!-- deliver:surface -->
-- **Say what the moment needs.** Start: what will be done and what is excluded.
-  Mid-run: a line when the reader must act — a divergence from what was agreed,
-  a path found blocked, work that would grow the scope — or when the run changes
+- Say what the moment needs. Start: what will be done and what is excluded.
+  Mid-run: a line when the reader must act (a divergence from what was agreed,
+  a path found blocked, work that would grow the scope) or when the run changes
   course; tool calls are already visible and are not replayed. A question names
   the decision it unblocks and the default taken if nobody answers
-- **End with the answer in one line** — status and what changed; then the sweep
+- End with the answer in one line: status and what changed; then the sweep
   line, then one line per residual a human must decide, then what is next. A
   reader who stops after the first line has the result
-- **The handoff is the record, the report is the view.** The brief, the per-file
+- The handoff is the record, the report is the view. The brief, the per-file
   grades and the `open` list travel in the handoff and are shown when asked
-- **Sized to the tier**, the deliverable linked, never pasted: `T0` is one line
+- Sized to the tier, the deliverable linked, never pasted: `T0` is one line
   with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next.
-  Trimming cuts what the reader already has — request, files, path (`_coding/REPORT.md`)
-- **Not bigger than it is.** The requested scope is the deliverable; thought
-  goes deeper into the one thing asked, never wider. **A real problem is the
-  exception** — something that would break, is unsafe, or rests on a false
+  Trimming cuts what the reader already has: request, files, path (`_coding/REPORT.md`)
+- Not bigger than it is. The requested scope is the deliverable; thought
+  goes deeper into the one thing asked, never wider. A real problem is the
+  exception: something that would break, is unsafe, or rests on a false
   premise is explained in full (`_coding/REPORT.md`)
 <!-- /deliver:surface -->

@@ -29,18 +29,18 @@ reviewer nothing they did not already have.
 ```
 
 Drop any section with nothing to say. An empty heading is worse than a missing
-one — it teaches the reader the headings are decorative.
+one: it teaches the reader the headings are decorative.
 
 ## What belongs in it that the diff cannot show
 
-- **The order of operations** — this must deploy before that; this needs the
+- The order of operations: this must deploy before that; this needs the
   migration applied first
-- **The manual step** — a flag to set, a cache to clear, a job to run once
-- **What was deliberately not done**, and why. This prevents the review finding
+- The manual step: a flag to set, a cache to clear, a job to run once
+- What was deliberately not done, and why. This prevents the review finding
   it as a gap
-- **The rollback story** — can this be reverted after it has run? Anything that
+- The rollback story: can this be reverted after it has run? Anything that
   writes data usually cannot, and the reviewer needs to know before approving
-- **Where to start reading.** For anything past a few files, naming the first
+- Where to start reading. For anything past a few files, naming the first
   file changes the quality of the review you get
 
 ## Verification, stated honestly
@@ -57,24 +57,6 @@ one — it teaches the reader the headings are decorative.
 **The uncovered line is the important one.** A PR that lists only successes
 reads as complete, and the gap is discovered in production instead of in review.
 
-## Release notes and changelogs
-
-Different reader, different rules. A user does not care that a function was
-extracted.
-
-- **Group by what changed for the user**: added, changed, fixed, removed
-- **Write the effect, not the mechanism.** "Exports no longer time out on
-  accounts with more than 50k rows", not "increased worker timeout"
-- **The version follows the change**: a breaking change is a major bump (a minor
-  one while the major is 0); a deprecation is a minor bump that names the
-  release removing it
-- **Breaking changes first**, with the exact migration step required. Anything a
-  reader must act on goes above anything they may merely enjoy
-- **Omit internal changes entirely** unless they change behaviour, performance,
-  or a security posture the reader can observe
-- Follow the repo's existing format exactly — its parser or its release tooling
-  may depend on it
-
 ## Before opening
 
 - The body says something the diff does not
@@ -82,4 +64,22 @@ extracted.
 - Verification names commands and results, including what was not covered
 - Every `#TODO(agent):` this change introduced is mentioned
 - No session URLs, agent metadata, or tool attribution anywhere in it
-- **Permission to open it was given.** A PR is a publish
+- Permission to open it was given. A PR is a publish
+
+## Release notes and changelogs
+
+Different reader, different rules. A user does not care that a function was
+extracted.
+
+- Group by what changed for the user: added, changed, fixed, removed
+- Write the effect, not the mechanism. "Exports no longer time out on
+  accounts with more than 50k rows", not "increased worker timeout"
+- The version follows the change: a breaking change is a major bump (a minor
+  one while the major is 0); a deprecation is a minor bump that names the
+  release removing it
+- Breaking changes first, with the exact migration step required. Anything a
+  reader must act on goes above anything they may merely enjoy
+- Omit internal changes entirely unless they change behaviour, performance,
+  or a security posture the reader can observe
+- Follow the repo's existing format exactly. Its parser or its release tooling
+  may depend on it

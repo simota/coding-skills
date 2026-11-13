@@ -8,12 +8,12 @@ proving the result from the place the next agent will run it.
 ## The gate
 
 A script is kept only when every row holds. One that fails a row is named in the
-report and let go — a toolbox is not an archive.
+report and let go; a toolbox is not an archive.
 
 | Question | Kept when | Otherwise |
 |---|---|---|
 | Was it costly to derive? | It encodes something that was discovered: a flag, a port, an order of steps, where the logs land | A one-liner any agent would write in a minute is cheaper to rewrite than to find |
-| Will it be derived again? | The job recurs — every reproduction, every local start, every release | Useful to this change only: it dies with the change |
+| Will it be derived again? | The job recurs: every reproduction, every local start, every release | Useful to this change only: it dies with the change |
 | Does the index already hold it? | No tool does this job | Fix the existing tool. A second one is how neither gets maintained |
 | Does it run from a clean checkout? | It needs only what the repo's own setup provides, or the header says what else | It leans on this session's scratch files, shell state or an open process |
 | Is anything pinned? | Every path, port, commit, account and date is an argument or read from the environment | Make it an argument first. A pinned value passes today and fails silently later |
@@ -45,19 +45,19 @@ language. `toolbox.py` reads them and builds the index from them.
 
 ## The steps
 
-1. **Pass the gate**, row by row. Stop at the first row that fails
-2. **Generalise** — every pinned value becomes an argument with no default that
+1. Pass the gate, row by row. Stop at the first row that fails
+2. Generalise: every pinned value becomes an argument with no default that
    only works here. A missing argument fails loudly with the usage line
-3. **Move it** to `.agents/toolbox/tools/<name>`, named for the job in the words
+3. Move it to `.agents/toolbox/tools/<name>`, named for the job in the words
    of `Use when`, and make it executable
-4. **Write the header**, `Verified` last and still empty
-5. **Predict, then run it from there** as its `Run` line says, in a state as
+4. Write the header, `Verified` last and still empty
+5. Predict, then run it from there as its `Run` line says, in a state as
    close to a clean checkout as this run can reach. The prediction is the
-   `Proves` line. A miss is a fix to the tool or to the line — never to both at
+   `Proves` line. A miss is a fix to the tool or to the line, never to both at
    once, or nothing was tested
-6. **Fill `Verified`**, then run `toolbox.py index` and `toolbox.py check`
-7. **First keep in this project**: with the human's go-ahead, add the pointer to
-   the host's agent instructions — one line saying to read
+6. Fill `Verified`, then run `toolbox.py index` and `toolbox.py check`
+7. First keep in this project: with the human's go-ahead, add the pointer to
+   the host's agent instructions, one line saying to read
    `.agents/toolbox/INDEX.md` before writing a script, and to keep what would be
    derived again. Refused or not writable: it goes in `open`, because a toolbox
    nothing points at is read by nobody

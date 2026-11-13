@@ -8,7 +8,7 @@ runs, and what was actually asked for drifts out of reach.
 
 | Trap | What it looks like | Instead |
 |---|---|---|
-| Happy path only | Every route that succeeds is written; every route that fails is not | Name what can fail at each boundary, then decide which are worth handling — decide, do not forget |
+| Happy path only | Every route that succeeds is written; every route that fails is not | Name what can fail at each boundary, then decide which are worth handling. Decide, do not forget |
 | Two sources of truth | The same state lives in two places, kept in step by hand | One owner. Everything else derives from it |
 | Depth before width | One layer is finished properly before the path exists end to end | Get the thinnest end-to-end path running first; otherwise nothing is demonstrable until the last day, and every interface between layers is a guess |
 | Configurability for one caller | An option appears so the single caller can choose | Inline it. Add the option when the second caller exists |
@@ -37,7 +37,7 @@ Most defects live where code meets something it does not control.
 |---|---|---|
 | Demonstrated once, by hand | It worked when it was tried | Leave behind something that can be run again |
 | Green on the wrong thing | The check passes without exercising the change | Make it fail first, then make it pass. An assertion that never failed proves nothing |
-| The unfinished edge | The last case is left as a comment and the work is reported complete | Finish it. An in-scope gap left behind is a `DEFERRED` residual — marker, `open` entry, resume condition — and the status is `PARTIAL`. Never a comment and `DONE` |
+| The unfinished edge | The last case is left as a comment and the work is reported complete | Finish it. An in-scope gap left behind is a `DEFERRED` residual (marker, `open` entry, resume condition), and the status is `PARTIAL`. Never a comment and `DONE` |
 | The note instead of the guard | A comment says "must be sorted" or "workaround for X" | A comment binds nobody and the next agent copies it. Make it a type, a test, or a lint rule; a workaround is fixed or marked as a residual |
 | Scope discovered late | Work outside the brief is absorbed because it was found while building | It was not agreed. Mark it and hand the decision back |
 | The tidy-up rider | A rename or reformat rides along in the diff | Behaviour change plus cleanup is unreviewable. Separate commits, or separate work |
@@ -46,7 +46,7 @@ Most defects live where code meets something it does not control.
 
 1. Make the thinnest end-to-end path run, with most of it stubbed
 2. Replace one stub at a time, keeping the path runnable throughout
-3. Handle the failures worth handling — named, not caught broadly
+3. Handle the failures worth handling: named, not caught broadly
 4. Confirm by running it, not by reading it
 
 The point of this order is that interfaces are proved by use before anything is

@@ -24,16 +24,16 @@ Rewriting a tool until it passes against a broken app deletes the evidence.
 
 ## The pass
 
-1. **Check the index** — run `toolbox.py check` and fix what it names. This is
+1. Check the index: run `toolbox.py check` and fix what it names. This is
    the cheap half; it says nothing about whether any tool works
-2. **Sort by side effect.** `read-only` and `scratch` tools are run without
+2. Sort by side effect. `read-only` and `scratch` tools are run without
    asking. `mutates` tools are listed to the human with what each changes, and
    run only on a go-ahead for this pass
-3. **Run each tool as its `Run` line says**, with `Proves` as the prediction.
-   One tool, one run, one grade. A tool whose prerequisite is absent — a
-   service, a credential, another platform — is not failed: it is unreached,
+3. Run each tool as its `Run` line says, with `Proves` as the prediction.
+   One tool, one run, one grade. A tool whose prerequisite is absent (a
+   service, a credential, another platform) is not failed: it is unreached,
    with the prerequisite named. A header that omits that prerequisite is drift
-4. **Triage each miss**
+4. Triage each miss
 
    | What was seen | It is | Do |
    |---|---|---|
@@ -43,12 +43,12 @@ Rewriting a tool until it passes against a broken app deletes the evidence.
    | Nothing in the repo's recent history would have reached for it | Dead weight | Delete it. Git keeps it for whoever wants it back |
    | Two tools do one job | A fork | Keep the one with the better header, fold in what the other knew, delete the other |
 
-5. **Look for what is missing** — only from evidence: a script in the recent
+5. Look for what is missing, only from evidence: a script in the recent
    history of the repo that was written twice, or an instruction in the host's
    agent files that a tool would replace. A guess at what might be useful is not
    a reason to add one
-6. **Regenerate and check** — `toolbox.py index`, then `toolbox.py check`
-7. **Confirm the pointer** — the host's agent instructions still tell a reader to
+6. Regenerate and check: `toolbox.py index`, then `toolbox.py check`
+7. Confirm the pointer: the host's agent instructions still tell a reader to
    open the index. Missing and not writable in this run: it goes in `open`
 
 ## Three things that hold for the whole pass
@@ -61,7 +61,7 @@ Rewriting a tool until it passes against a broken app deletes the evidence.
 
 ## What it leaves behind
 
-The coverage — tools run, tools unreached and why, tools deleted and why — and
+The coverage (tools run, tools unreached and why, tools deleted and why) and
 `Verified` refreshed on exactly the tools that were run in this pass. A date
 moved forward on a tool nobody ran is the one edit a tend must never make.
 

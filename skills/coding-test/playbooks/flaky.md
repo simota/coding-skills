@@ -19,43 +19,43 @@ Something differs between the pass and the fail. Work the list:
 | Test order | Passes alone, fails in the suite (or vice versa) | Run the file alone; run the suite with a fixed seed and then a different one |
 | Shared state | Fails only after certain other tests ran in the same process; passes alone in a fresh one | Look for module-level state, class attributes, caches, singletons, an unclean DB |
 | Time | Fails near midnight, month end, or at a specific hour | Freeze the clock and re-run at the boundary |
-| Timezone or locale | Fails in CI, passes locally | Re-run under a 45-minute, DST-observing zone and a non-ASCII locale — `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`, after `locale -a` confirms the locale is installed: a missing one silently leaves a C program in the C locale unless it checks what `setlocale` returned (Python 3.7+ coerces it to `C.UTF-8`, or under `LC_ALL` stays in `C` with UTF-8 mode; its own `locale.setlocale(LC_ALL, "")` raises either way). Note `TZ=` with no value means UTC, which is what CI already runs |
+| Timezone or locale | Fails in CI, passes locally | Re-run under a 45-minute, DST-observing zone and a non-ASCII locale. Use `TZ=Pacific/Chatham LC_ALL=tr_TR.UTF-8`, after `locale -a` confirms the locale is installed: a missing one silently leaves a C program in the C locale unless it checks what `setlocale` returned (Python 3.7+ coerces it to `C.UTF-8`, or under `LC_ALL` stays in `C` with UTF-8 mode; its own `locale.setlocale(LC_ALL, "")` raises either way). Note `TZ=` with no value means UTC, which is what CI already runs |
 | Concurrency | Fails under load or on a machine with more cores | Run repeatedly with parallelism forced |
 | Real I/O | Fails when the network is slow or absent | Cut the network and see |
-| Unordered collections | Fails on some runs with the same data | Look for a set, a Go map, a JSON object round-trip, or a query without `ORDER BY`. Python dicts have kept insertion order since 3.7 — they are not the culprit |
+| Unordered collections | Fails on some runs with the same data | Look for a set, a Go map, a JSON object round-trip, or a query without `ORDER BY`. Python dicts have kept insertion order since 3.7 and are not the culprit |
 | Randomness | Fails roughly one run in N | Seed it and find the failing seed |
 | Unawaited async | Fails in whichever test runs next; errors appear after the test finished | Await or return every promise; fail on open handles (Jest's `--detectOpenHandles`) and on unawaited-coroutine warnings |
 | Duration assertion | Fails only on slow or loaded machines | Look for asserts on elapsed time, or timeouts tighter than CI needs. Assert on a fake clock instead |
 | Resource limits | Fails only in CI | Ports, file handles, memory, disk, or a leftover container |
 
-Reproduce it before fixing: a repeat flag (pytest-repeat's `--count=100`), a
+A flake fixed without being reproduced is a flake with a delay on it, so
+reproduce it before fixing: a repeat flag (pytest-repeat's `--count=100`), a
 loop, a shuffled order (pytest-random-order's `--random-order`), or CI re-runs.
-**A flake fixed without being reproduced is a flake with a delay on it.**
 
 ## Fixing by cause
 
 | Cause | Fix |
 |---|---|
 | Waiting on a fixed sleep | Wait for the condition, with a timeout. Never a bare sleep |
-| Unordered result compared to an ordered expectation | Sort explicitly, or compare as sets — say which you mean |
+| Unordered result compared to an ordered expectation | Sort explicitly, or compare as sets (say which you mean) |
 | Leaked state | Tear down in a fixture that runs even on failure. Prefer a fresh instance per test over cleanup |
 | Real clock | Inject the time. Take `now` as a parameter |
 | Real network | Stub it at the boundary, and check the stub against reality once |
 | Shared fixture mutated by one test | Make it per-test, or make it immutable |
-| Race in the code, not the test | **This is a real bug.** The test found it. Hand it to `coding-debug` — do not stabilise the test |
+| Race in the code, not the test | This is a real bug. The test found it. Hand it to `coding-debug` instead of stabilising the test |
 
-That last row is the one worth pausing on. A flaky test is sometimes the only
-evidence of a genuine race, and "fixing the test" destroys it.
+A flaky test is sometimes the only evidence of a genuine race, and "fixing the
+test" destroys it.
 
 ## Repairing a red suite honestly
 
-1. Run it and **classify each failure** before touching anything: real defect,
+1. Run it and classify each failure before touching anything: real defect,
    wrong test, environmental, or flaky
 2. Fix by class, not by file. Silencing failures one at a time hides the pattern
 3. For each failure, establish whether the code or the test is wrong. The test
-   was written by someone who believed something — find out what before overruling them
-4. Anything genuinely unfixable now is **quarantined with a `#TODO(agent):
-   UNVERIFIED` marker naming what is no longer covered**, and it counts as
+   was written by someone who believed something, so find out what before overruling them
+4. Anything genuinely unfixable now is quarantined with a `#TODO(agent):
+   UNVERIFIED` marker naming what is no longer covered, and it counts as
    `PARTIAL`. A skipped test is not a passing test
 
 ## Before calling a flake fixed

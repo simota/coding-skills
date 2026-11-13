@@ -12,7 +12,7 @@ named difficulty, apply it, run the tests, commit. One move per commit.
 | You must read the body to know what it does | Extract and name the parts, or fix the name |
 | A comment explains what the next block does | Extract that block, and the comment becomes the name |
 | A page describes the structure being moved | Delete the description and leave a pointer to the new path. Updating a copy keeps a copy |
-| The same fix has to be applied in several places | Deduplicate — but only once you have confirmed they are the same thing |
+| The same fix has to be applied in several places | Deduplicate, but only once you have confirmed they are the same thing |
 | A magic value appears in more than one place | Name it once, at the level where it is meaningful |
 | Nested conditionals past three levels | Guard clauses, early return, or invert the condition |
 | A boolean parameter switches the whole body | Two functions with honest names |
@@ -24,43 +24,43 @@ named difficulty, apply it, run the tests, commit. One move per commit.
 ## Duplication needs a judgement first
 
 Three similar blocks may be one thing repeated or three things that currently
-coincide. Ask what makes them change:
+coincide. A wrong abstraction costs more than duplication, so ask what makes
+them change:
 
-- **They change together, for the same reason** → the same thing. Deduplicate
-- **They would change separately** → coincidence. Leave them apart
+- They change together, for the same reason → the same thing. Deduplicate
+- They would change separately → coincidence. Leave them apart
 
-**A wrong abstraction costs more than duplication**, because every future case
-now bends around it and each bend adds a parameter. Duplication is visible and
-cheap to fix; the wrong abstraction is invisible and expensive to undo. When
-unsure, wait for the third real case.
+Every future case bends around a wrong abstraction, and each bend adds a
+parameter. Duplication is visible and cheap to fix; the wrong abstraction is
+invisible and expensive to undo. When unsure, wait for the third real case.
 
 ## Deleting
 
-The highest-value move and the one most often skipped.
+The highest-value move and the one most often skipped. Dead code covers more
+than unused functions: flags whose branch is never taken, config nobody reads,
+dependencies nobody imports, tests asserting nothing, and compatibility shims
+for versions no longer running.
 
 1. Grep the symbol across the whole repo, including tests, config, docs, and
    generated files
 2. Check what grep cannot see: reflection, string-keyed registries, config
    naming a class, DI, re-exports, framework conventions, other repos
-3. Check the history — was it added for something not yet launched?
-4. Delete it. **Do not comment it out**: version control already remembers, and
+3. Check the history. Was it added for something not yet launched?
+4. Delete it. Do not comment it out: version control already remembers, and
    commented code is read as intentional by the next person
-
-Dead code is not just unused functions. Also: flags whose branch is never taken,
-config nobody reads, dependencies nobody imports, tests asserting nothing, and
-compatibility shims for versions no longer running.
 
 ## Renaming
 
-- The name states **what**, not how, and matches the codebase's word for the concept
+- The name states what, not how, and matches the codebase's word for the concept
 - Units and nullability belong in the name where the type does not carry them
-- A rename crossing a public boundary is not a refactor — it breaks callers you
+- A rename crossing a public boundary is not a refactor. It breaks callers you
   cannot see, and needs the add-migrate-remove sequence
-- **A name that is also data is not renamed by a refactor** — a class or field
+- A name that is also data is not renamed by a refactor: a class or field
   name written into pickles, JSON, an ORM column, a stored enum name, a message
   schema, or a reflection or config string. Check whether it is persisted or
-  serialised first; if it is, the rename is a migration — sequenced per
-  `coding-plan` (data and deployed clients), built by `coding-implement`. The same holds for reordering enum members whose ordinal is stored
+  serialised first; if it is, the rename is a migration, sequenced per
+  `coding-plan` (data and deployed clients) and built by `coding-implement`
+- Reordering enum members whose ordinal is stored is the same kind of migration
 - Rename with the tool, not by hand. A regex rename catches a substring in an
   unrelated identifier, and the resulting bug looks nothing like a rename
 
@@ -80,4 +80,4 @@ property, and it is only ever one merge conflict from being thrown away.
 - Tests were green before and are green now, with the same cases and assertions
 - The diff contains exactly one kind of move
 - Something is smaller: fewer lines, fewer branches, fewer call sites, fewer concepts
-- No behaviour changed — including error messages, ordering, and exception types
+- No behaviour changed, including error messages, ordering, and exception types

@@ -10,8 +10,8 @@ others handle.
 Before any line-level reading:
 
 - Is the change what was asked for? Does anything in it belong to a different task?
-- Does it mix a refactor with a behaviour change? Say so now — everything below
-  is compromised by the noise
+- Does it mix a refactor with a behaviour change? Say so now, because everything
+  below is compromised by the noise
 - Is there a much smaller change that solves the same problem?
 - Does it duplicate something the codebase already does?
 
@@ -23,19 +23,19 @@ time. Stop here and say so if the answer is bad.
 The pass that justifies the review. For each changed function, ask what input
 makes it wrong:
 
-- **Boundaries**: empty, zero, one, maximum, over maximum, negative, null versus absent
-- **Off-by-one** at every index, slice, range, and loop bound
-- **The branch not taken**: is the `else` right? Is a case missing? Is a new enum
+- Boundaries: empty, zero, one, maximum, over maximum, negative, null versus absent
+- Off-by-one at every index, slice, range, and loop bound
+- The branch not taken: is the `else` right? Is a case missing? Is a new enum
   value handled everywhere it is switched on?
-- **Early return**: does it skip cleanup, a commit, or a release that the normal
+- Early return: does it skip cleanup, a commit, or a release that the normal
   path performs?
-- **The error path**: it is the least-tested code in any change. Read it as
+- The error path: the least-tested code in any change, so read it as
   carefully as the happy path
-- **Types and units**: seconds versus milliseconds, cents versus dollars, string
+- Types and units: seconds versus milliseconds, cents versus dollars, string
   versus number, timezone-aware versus naive
-- **Mutation**: is a caller's object modified? Is a default argument mutable? Is
+- Mutation: is a caller's object modified? Is a default argument mutable? Is
   something being iterated while modified?
-- **Idempotency**: what happens if this runs twice — retried, replayed, double-clicked?
+- Idempotency: what happens if this runs twice, whether retried, replayed or double-clicked?
 
 ## Pass 2 — boundaries and failure
 
@@ -45,46 +45,46 @@ Everything the code does not control:
 - Every input from outside: validated at the entrance, once?
 - Concurrency: read-modify-write without protection? Two requests hitting this
   simultaneously?
-- Resources: file handles, connections, locks — released on the failure path too?
+- Resources: file handles, connections, locks. Released on the failure path too?
 - Is an exception caught too broadly, swallowing the errors you needed to see?
 
 ## Pass 3 — security
 
 Short, mechanical, non-negotiable:
 
-- Any string reaching an interpreter — and the defence is sink-specific, not one
-  rule: SQL wants **parameterised queries** (not escaping); a shell wants an
-  **argv array**, never a built command line; a path wants **canonicalise then
-  allowlist**; a URL wants a **host allowlist checked on the resolved IP** —
-  private, loopback and link-local denied, the connection made to that IP, and
-  redirects re-checked or off (SSRF); markup wants **context-aware output
-  encoding**. SQL identifiers — a sort column, a direction, a table — cannot be
-  bound; they go through an allowlist
+- Any string reaching an interpreter, with the defence its sink wants rather
+  than one rule. SQL wants parameterised queries (not escaping), and its
+  identifiers (a sort column, a direction, a table) cannot be bound, so they go
+  through an allowlist. A shell wants an argv array, never a built command line.
+  A path wants canonicalise then allowlist. A URL wants a host allowlist checked
+  on the resolved IP: private, loopback and link-local denied, the connection
+  made to that IP, and redirects re-checked or off (SSRF). Markup wants
+  context-aware output encoding
 - Untrusted bytes into a deserialiser that can instantiate types (`pickle`,
   `yaml.load`, `ObjectInputStream`, `BinaryFormatter`) or an XML parser with
   external entities on. A data-only format or a safe loader, nothing else
 - AuthZ checked on the new path, not just authentication? Object-level, not just route-level?
 - Secrets in the diff, in a fixture, in a log line, in an error message returned to a user?
-- New dependency — what is it, who publishes it, what does it pull in?
+- New dependency: what is it, who publishes it, what does it pull in?
 - Does an error message reveal internals to someone who should not see them?
 
 ## Pass 4 — cost and clarity
 
-- **Subtraction**: what could be deleted and still solve the problem? A flag with
+- Subtraction: what could be deleted and still solve the problem? A flag with
   one caller, a parameter never varied, an abstraction with one implementation
-- **Loops**: a query or a network call inside a loop over unbounded data
-- **Consistency**: does it follow the codebase's existing idiom, or introduce a
+- Loops: a query or a network call inside a loop over unbounded data
+- Consistency: does it follow the codebase's existing idiom, or introduce a
   second one?
-- **Naming**: would a reader who does not know this change guess right?
-- **The comment that lies**: a stale comment above changed code is worse than none
-- **The comment that says what**: cover it and read the code. Nothing lost means
+- Naming: would a reader who does not know this change guess right?
+- The comment that lies: a stale comment above changed code is worse than none
+- The comment that says what: cover it and read the code. Nothing lost means
   the comment is deletable; something lost means the code should have said it
-- **The comment that excuses or warns**: a workaround, an apology, a "do not
+- The comment that excuses or warns: a workaround, an apology, a "do not
   call before X". Agents copy what is nearby, so it spreads. Name the type,
   test, or lint rule that would enforce it instead
-- **The page that restates**: a README, guide or plan in the diff describing what
-  the code does. Cover it and read the code. Nothing lost means it is deletable
-  down to a pointer; a why or an outside constraint lost means that part stays
+- The page that restates: a README, guide or plan in the diff describing what
+  the code does. The same cover test: nothing lost means it is deletable down
+  to a pointer; a why or an outside constraint lost means that part stays
 
 ## Pass 5 — the checks
 
@@ -92,14 +92,14 @@ Short, mechanical, non-negotiable:
 - Is there a case for each new branch, especially the failure ones?
 - Does each new assertion touch a value or path that exists only in this diff? A
   test that would pass verbatim against the base is not guarding the change. Say
-  so — proving it by reverting is `coding-test`'s job, not a review's
+  so, and leave proving it by reverting to `coding-test`
 - Was anything skipped, quarantined, or loosened in this diff?
 
 ## Order and stopping
 
-Run 0, then 1, then 2 and 3, then 4 and 5. **Stop and report early** if pass 0
-finds a shape problem or pass 1 finds a defect that will change the whole
-approach — the rest of the review will be rewritten anyway.
+Run 0, then 1, then 2 and 3, then 4 and 5. Stop and report early if pass 0
+finds a shape problem, or if pass 1 finds a defect that will change the whole
+approach, since the rest of the review will be rewritten anyway.
 
 ## Before reporting
 

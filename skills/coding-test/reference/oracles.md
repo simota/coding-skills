@@ -10,10 +10,8 @@ Source: git — only the regression-test rule's recipe depends on it, and it is 
 Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. Both halves of the git recipe are re-run by `make figures` on every commit — the stash with a newly created fix file, and the revert with staged and unstaged test edits; the catalogue has no automated check.
 
 To test something you must already know the right answer. Where that answer came
-from decides whether the test is evidence or decoration — and a decorative test
+from decides whether the test is evidence or decoration, and a decorative test
 is worse than none, because it reports green.
-
----
 
 ## The disqualifying question
 
@@ -26,8 +24,6 @@ the behaviour is wrong. It is `asserted` evidence wearing an `executed` grade.
 
 This is the dominant failure of machine-written tests and of tests written after
 a fix, precisely because in both cases working code is sitting right there.
-
----
 
 ## 1. Specification
 
@@ -48,7 +44,7 @@ the defect. Say so rather than inventing a threshold and reporting it verified.
 
 ## 2. Independent computation
 
-The value is derived by a route that shares no code with the implementation — by
+The value is derived by a route that shares no code with the implementation: by
 hand, from a table, by a slow obviously-correct version, or by a trusted library.
 
 Fits anything with a closed form: money, dates, encodings, geometry, parsing.
@@ -65,7 +61,7 @@ No single expected value; an invariant that must hold for every input.
 - ordering: the result of `sort` is non-decreasing and a permutation of the input
 
 A property finds the case nobody thought of, which is exactly the case that
-reaches production. It cannot tell you the value is *right* — only consistent —
+reaches production. It cannot tell you the value is *right*, only consistent,
 so pair it with one specification case.
 
 ## 4. Metamorphic relation
@@ -85,11 +81,9 @@ once and said so**, and only for output whose shape matters more than its value.
 // reviewed 2026-08-21 against the spec's example payload — do not re-record blind
 ```
 
-Without that line it is the first shape below — an expected value copied from
-the output — with a filename. A snapshot updated by
+Without that line it is the first shape below (an expected value copied from
+the output) with a filename. A snapshot updated by
 re-running the tool records the bug and turns it green.
-
----
 
 ## Shapes that assert nothing
 
@@ -97,7 +91,7 @@ re-running the tool records the bug and turns it green.
 |---|---|
 | Expected value copied from the output | Asserts the code equals itself |
 | `assertDoesNotThrow` as the only assertion | A function returning the wrong answer quietly passes |
-| Asserting an internal collaborator was called, or any mock without its arguments | Tests the test's own wiring. A call across an outbound boundary — the email sent, the event published — with its arguments asserted is the behaviour, not this |
+| Asserting an internal collaborator was called, or any mock without its arguments | Tests the test's own wiring. A call across an outbound boundary (the email sent, the event published) with its arguments asserted is the behaviour, not this |
 | Mocking the unit under test | Nothing under test remains |
 | A conditional around the assertion | Different runs assert different things; the test names no case |
 | Comparing against a constant that also lives in the implementation | One edit changes both |
@@ -116,12 +110,12 @@ Remove only the fix, and only recoverably:
   restoring the saved index can conflict with those already-staged edits. On
   failure the stash is kept; do not drop it before recovering the fix
 - **Committed**: `git revert --no-commit <sha>`, run, `git revert --abort`, with
-  the test edits committed or left unstaged — `--abort` resets the index, so a
+  the test edits committed or left unstaged, because `--abort` resets the index, so a
   staged test edit is discarded with it. When `<sha>` also holds the test, as a
   fix and its test committed together do, the revert removes it too: put it back
   with `git checkout HEAD -- <test paths>` before running, or the red run is a
   missing test, not the bug
 
 Both observations are `executed` evidence and both belong in the report. A
-regression test that was never observed red is a guess with a filename — it may
+regression test that was never observed red is a guess with a filename. It may
 be pinning the bug rather than its absence, and nothing downstream can tell.

@@ -11,7 +11,7 @@ is a wish, and an unregistered expectation is unfalsifiable.
 An agent that runs a change and then reads the result writes the explanation
 afterwards, and the explanation always fits. Every observed output has a story
 that accommodates it, so a story produced after the output is not evidence that
-the mechanism was understood — it is evidence that language is flexible.
+the mechanism was understood. It is evidence that language is flexible.
 
 **The prediction is the only part of a run that cannot be revised in hindsight.**
 Registering it is what makes `executed` mean "the model of this code was right"
@@ -27,8 +27,8 @@ predict: <what will be run> -> <what observable result changes>
 
 The right-hand side names something a second person could read off the same
 screen: a named test moving from red to green, an exit code, a count, a value
-at a path, a log line that appears or stops appearing. **"It will work" is not
-a prediction** — it names no observation, so no result can contradict it.
+at a path, a log line that appears or stops appearing. "It will work" is not
+a prediction: it names no observation, so no result can contradict it.
 
 | Well formed | Not |
 |---|---|
@@ -47,9 +47,9 @@ Report exactly one after the run, in the same words every time.
 |---|---|---|
 | `hit` | The observation matched what was registered | The claim rests on `executed` evidence *and* on a model that predicted it |
 | `miss` | It ran, and the observation differed | Say what happened instead, in one line. The change is not defended; the model is corrected |
-| `void` | The prediction turned out unobservable — the command could not run, or it named something the run cannot see | Re-register one that can be observed, or record why none can |
+| `void` | The prediction turned out unobservable: the command could not run, or it named something the run cannot see | Re-register one that can be observed, or record why none can |
 
-**A `miss` costs nothing. An unrecorded `miss` costs the run** — it is the
+**A `miss` costs nothing. An unrecorded `miss` costs the run.** It is the
 moment a wrong model of the code becomes invisible, and every later step
 inherits it.
 
@@ -66,18 +66,18 @@ being tested working exactly as intended. Register which one it is.
 ## What a run without a prediction may claim
 
 An `executed` grade earned with nothing registered beforehand still supports
-**"this ran and produced that output"**. It never supports **"it works because
-X"**, and never supports a cause. A causal claim with no prediction behind it
+"this ran and produced that output". It never supports "it works because
+X", and never supports a cause. A causal claim with no prediction behind it
 is `asserted` wearing the output of a command.
 
 ## Boundary cases
 
-- **A prediction written after reading the output** is not a prediction. If the
+- A prediction written after reading the output is not a prediction. If the
   run has already happened, register one for the *next* observation instead
-- **A prediction the run makes true by construction** — asserting on a value the
-  edit just wrote — is `void`, not `hit`. It observes the edit, not its effect
-- **Mid-run correction is allowed and is recorded**: superseding a prediction is
+- A prediction the run makes true by construction, such as asserting on a value
+  the edit just wrote, is `void`, not `hit`. It observes the edit, not its effect
+- Mid-run correction is allowed and is recorded: superseding a prediction is
   written down with what prompted it. A silently replaced prediction is a `miss`
   that was renamed
-- **A `T0` run predicts too.** Dropping the paperwork never drops the evidence,
+- A `T0` run predicts too. Dropping the paperwork never drops the evidence,
   and one line is not paperwork

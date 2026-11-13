@@ -25,6 +25,14 @@ searched the wrong axis and returned a confident, incomplete list.
 occurrences* of the string changed. `-G<regex>` matches commits whose diff
 contains *any line* matching the pattern.
 
+Choose by the question:
+
+| Question | Use |
+|---|---|
+| When was this symbol introduced or removed | `-S<symbol>`: it is asking about existence |
+| When did this value / call / config change | `-G<regex>`: it is asking about edits |
+| When did this exact line last change | `-L<start>,<end>:<file>`: it follows the range |
+
 A commit that changes `b=2` to `b=3` adds one line containing `b` and removes
 one line containing `b`. The occurrence count is unchanged, so **`-S` does not
 see it**:
@@ -41,14 +49,6 @@ $ git log --oneline -Gb        # commits whose diff touches a line matching "b"
 36258b7 c1
 ```
 
-Choose by the question:
-
-| Question | Use |
-|---|---|
-| When was this symbol introduced or removed | `-S<symbol>` — it is asking about existence |
-| When did this value / call / config change | `-G<regex>` — it is asking about edits |
-| When did this exact line last change | `-L<start>,<end>:<file>` — it follows the range |
-
 `-S` with `--pickaxe-regex` takes a pattern but keeps counting semantics; it
 still misses an equal-count edit. Add `--all` when the change may live on a
 branch that was never merged into the current one.
@@ -61,9 +61,13 @@ return plausible output.
 | Command | Means | Use it for |
 |---|---|---|
 | `git log A..B` | commits reachable from B but not A | **the branch's own commits** |
-| `git log A...B` | symmetric difference — commits on *either* side | comparing two divergent lines |
+| `git log A...B` | symmetric difference: commits on *either* side | comparing two divergent lines |
 | `git diff A..B` | endpoint against endpoint | almost never during review |
 | `git diff A...B` | merge-base of A and B, against B | **the branch's own changes** |
+
+So reviewing a branch means **`git diff main...feat` with three dots and
+`git log main..feat` with two**. Same intent, different spelling. Getting either
+one wrong changes what is reported, not whether the command succeeds.
 
 Measured on a fixture where `main` moved after `feat` branched:
 
@@ -75,18 +79,14 @@ $ git diff --stat main...feat
  1 file changed, 1 insertion(+)                    # feat's actual contribution
 ```
 
-So reviewing a branch means **`git diff main...feat` with three dots and
-`git log main..feat` with two**. Same intent, different spelling. Getting either
-one wrong changes what is reported, not whether the command succeeds.
-
 The dot table is stated in both coding-explore's history reference and coding-review's
 diff-scoping reference, because a skill cannot read another skill's directory
 once installed. `make figures` re-runs both pages' printed counts against git, so the figures
-cannot drift apart; the prose around them is not checked — re-read the other page when editing this one.
+cannot drift apart. The prose around them is not checked, so re-read the other page when editing this one.
 
 ## Blame, and the three flags that stop it lying
 
-Plain `git blame` attributes a line to the last commit that touched it — which
+Plain `git blame` attributes a line to the last commit that touched it, which
 is frequently a reformat, a rename, or a whitespace sweep.
 
 ```
@@ -109,10 +109,10 @@ Deleted code is not gone; it is unreachable from the working tree.
 
 | Goal | Command |
 |---|---|
-| Which commit deleted this file | `git log --diff-filter=D --name-only -- ':(glob)**/<name>'` — without `:(glob)`, `**/` misses a file at the top level |
+| Which commit deleted this file | `git log --diff-filter=D --name-only -- ':(glob)**/<name>'`. Without `:(glob)`, `**/` misses a file at the top level |
 | Where did this function go | `git log --all -S'<name>' --oneline` then read the diff |
-| Grep the whole history | `git rev-list --all`, piped to `xargs git grep -n '<pattern>'` — no trailing `--`: xargs appends the revisions, and after `--` they are read as paths and nothing matches |
-| See the file as it was | `git show <commit>^:<path>` — note the `^`; at the deleting commit the path no longer exists |
+| Grep the whole history | `git rev-list --all`, piped to `xargs git grep -n '<pattern>'`, with no trailing `--`: xargs appends the revisions, and after `--` they are read as paths and nothing matches |
+| See the file as it was | `git show <commit>^:<path>`. Note the `^`: at the deleting commit the path no longer exists |
 | A commit you cannot reach any more | `git reflog` first, `git fsck --lost-found` second |
 
 `git log -- <path>` alone stops at a rename unless `--follow` is given, and

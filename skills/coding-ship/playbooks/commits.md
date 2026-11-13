@@ -12,27 +12,27 @@ changes for another. Practical consequences:
 - A rename and a logic change are two commits. Together, the logic change is
   invisible in a wall of renamed lines
 - A dependency bump and the code adapting to it are two commits, unless the tree
-  is not green — build **and** tests — without both
+  is not green (build and tests) without both
 - Reformatting is always its own commit, and ideally its own PR
-- A fix and its regression test belong together — the test is the fix's evidence,
+- A fix and its regression test belong together. The test is the fix's evidence,
   and separating them breaks the revert
 
 ## Every commit stands alone
 
 Check by actually doing it: check out each commit, build, run the tests.
 
-- **It builds.** A commit that does not is a bisect that lands on it and tells you nothing
-- **It passes.** Same reason
-- **It is revertible on its own.** If reverting commit 3 requires also reverting
+- It builds and it passes. A commit that does not is a bisect that lands on it
+  and tells you nothing
+- It is revertible on its own. If reverting commit 3 requires also reverting
   2, they were one commit
-- **It makes sense from the message alone**, to someone who was not there
+- It makes sense from the message alone, to someone who was not there
 
 "I'll fix it in the next commit" produces a history that cannot be bisected,
 which is the one thing history is uniquely good for.
 
 ## Messages
 
-The subject says what changed, in the repo's convention. The body says **why**,
+The subject says what changed, in the repo's convention. The body says why,
 because the diff already says what.
 
 ```
@@ -49,7 +49,7 @@ Worth writing in the body:
 
 - The reason the obvious approach was not taken
 - A constraint that forced an odd-looking choice
-- A consequence not visible in the diff — an ordering requirement, a flag, a
+- A consequence not visible in the diff: an ordering requirement, a flag, a
   manual step
 - The behaviour before, when the diff only shows after
 
@@ -60,15 +60,15 @@ anything about the tools used.
 
 When it is already one large working tree:
 
-1. **By layer** — schema, then data access, then logic, then interface. Each
+1. By layer: schema, then data access, then logic, then interface. Each
    layer's commit should still leave the tree green
-2. **By file group**, when the layers are genuinely independent
-3. **By behaviour** — the mechanism first, then each case that uses it
-4. **Refactor out first** — extract every behaviour-preserving move into its own
+2. By file group, when the layers are genuinely independent
+3. By behaviour: the mechanism first, then each case that uses it
+4. Refactor out first: extract every behaviour-preserving move into its own
    earlier commit, then the remaining diff is the real change and it is small
 
-Mechanically, and without an interactive prompt — `git add -p` is interactive
-and fragile to drive from a script:
+Mechanically, and without an interactive prompt (`git add -p` is interactive
+and fragile to drive from a script):
 
 - **Split by path** where the groups are whole files: `git add <paths>`, commit,
   repeat. This covers most cases
@@ -78,7 +78,7 @@ and fragile to drive from a script:
   and `git reset -q -- <new files left for later>`. An intent-to-add entry the
   patch did not stage makes `git stash` refuse ("not uptodate. Cannot merge");
   unstaged, it is untracked and `--include-untracked` sets it aside
-- **Set the rest aside** with `git stash push --keep-index --include-untracked` —
+- Set the rest aside with `git stash push --keep-index --include-untracked`.
   `--keep-index` is what leaves the staged change in place, and without
   `--include-untracked` a later commit's new files stay in the tree. A bare
   `git stash` takes the index too
@@ -86,19 +86,19 @@ and fragile to drive from a script:
 Run the tests at each step. Anything still in the worktree is something the
 commit does not contain, and a test passing on it is a test of the wrong tree.
 
-**If it cannot be split, say why.** A genuinely atomic change is rare but real —
+**If it cannot be split, say why.** A genuinely atomic change is rare but real,
 and a reviewer told "this is atomic because X" reviews it better than one left
 to wonder.
 
 ## Order of merge
 
 - Anything others are blocked on goes first
-- **An additive migration** — a new column, table, or index — merges and deploys
-  **before** the code that reads it, provided the running code's writes still
+- An additive migration (a new column, table, or index) merges and deploys
+  before the code that reads it, provided the running code's writes still
   succeed: the column is nullable or defaulted, and no new `NOT NULL`, `UNIQUE`,
   `CHECK` or foreign key rejects them. Run DDL with a short lock timeout and
-  retry — a queued `ALTER` blocks every query behind it — and build indexes
-  without blocking writes (`CREATE INDEX CONCURRENTLY`, or an online schema tool). **A destructive one is the reverse**:
+  retry (a queued `ALTER` blocks every query behind it), and build indexes
+  without blocking writes (`CREATE INDEX CONCURRENTLY`, or an online schema tool). A destructive one is the reverse:
   deploying a `DROP` ahead of the code that stopped using the column takes the
   running version down. Anything destructive follows the expand/contract order
   `coding-plan` sequences, never a single ordering rule
@@ -110,7 +110,7 @@ to wonder.
 ## Before pushing anything
 
 - Each commit was checked out, built, and passed
-- The diff was read hunk by hunk — no debug prints, no commented code, no stray files
+- The diff was read hunk by hunk: no debug prints, no commented code, no stray files
 - No secrets, tokens, `.env`, internal hostnames, or personal data
 - Messages say why, in the repo's convention
-- **Permission to push was given.** Finishing the work is not permission to publish it
+- Permission to push was given. Finishing the work is not permission to publish it

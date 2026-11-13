@@ -17,7 +17,7 @@ replace it is deleted. A shape copied whole is a set of claims nobody checked.
 ## The verify script
 
 `scripts/verify.sh`, made executable. Each `run` line wraps one command the host already has.
-Output goes to `.verify/`; the same change adds it to the host's ignore file.
+Output goes to `.verify/`, which the same change adds to the host's ignore file.
 
 ```sh
 #!/usr/bin/env bash

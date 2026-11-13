@@ -7,74 +7,74 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 
 ## Owns
 
-The shape of the change as other people receive it — how it is divided into
+The shape of the change as other people receive it: how it is divided into
 commits, what those commits say, the order things merge in, and what the PR,
 changelog, or release notes tell a reader. It moves code between commits and
 branches; it does not fix code to make a commit tidy.
 
 ## Before starting
 
-- **Confirm the work is actually done** — from the incoming handoff; with none,
-  scan the diff for markers and run the full suite — the required CI check, or
+- **Confirm the work is actually done**, from the incoming handoff. With none,
+  scan the diff for markers and run the full suite: the required CI check, or
   `verify.sh --full` where there is none. Tests green, sweep
   balanced, no `UNVERIFIED` residual. Shipping is not the place to discover an unrun file
-- **Read the repository's existing convention** — `git log --oneline -30`, the
+- **Read the repository's existing convention**: `git log --oneline -30`, the
   most recent merged PRs, `CONTRIBUTING`, and any commit template. Follow it,
   including where you would have chosen differently
 - **Read the whole diff yourself**, hunk by hunk, before writing anything about
   it. Almost every stray debug line and unintended file is caught here
-- A handoff received is checked first (`_coding/HANDOFF.md` — seven receiver
+- A handoff received is checked first (`_coding/HANDOFF.md`, seven receiver
   checks); every `T1`/`T2` run returns one, a `T0` one line. Owner unclear? `_coding/ROUTING.md`
 <!-- deliver:sizing -->
-- **Size it before the first write**, first match wins. `T0` — one skill owns it,
-  reversible, under three files, acceptance in one sentence: act and report in
-  one line, **no brief, no handoff**. `T1` — a `T0` condition fails: settle the
-  brief first. `T2` — two or more skills own parts of it, or it spans phases:
-  route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
-- **A dialogue comes first** when the deliverable's shape is not uniquely
+- Size it before the first write, first match wins. `T0`: one skill owns it,
+  reversible, under three files, acceptance in one sentence. Act and report in
+  one line; it needs no brief and no handoff. `T1`: a `T0` condition fails, so
+  settle the brief first. `T2`: two or more skills own parts of it, or it spans
+  phases, so route it. `T0` drops the paperwork, never the evidence. Mis-sized: re-size and say so
+- A dialogue comes first when the deliverable's shape is not uniquely
   determined, acceptance does not fit in one sentence, the request carries a
   word with no achievement condition ("improve", "clean up"), or the work is
   expensive to undo. Reading to find out is not executing. `excludes` may not be
   empty and execution waits on an empty `open_questions` (`_coding/SIZING.md`)
-- **A term with two meanings, or a concept with two names, is a question, never
-  a silent choice** — one question with its default, the answer into the brief's
+- A term with two meanings, or a concept with two names, is a question, never
+  a silent choice: one question with its default, the answer into the brief's
   `terms` (at `T1`+ also the host project's `.agents/glossary.md`, if this run can
   write it, else `open`), and only those names from then on (`_coding/SIZING.md`)
 <!-- /deliver:sizing -->
 
 ## Decide first
 
-- **Here the tie usually goes to §4 the existing shape over the better shape** —
+- Here the tie usually goes to §4 the existing shape over the better shape:
   the repo's convention wins over the one you would have picked
 
 | Situation | How to proceed |
 |---|---|
-| Deciding how to divide the work | [commits](playbooks/commits.md) — one reason to change per commit |
+| Deciding how to divide the work | [commits](playbooks/commits.md): one reason to change per commit |
 | The change is large or mixed | [commits](playbooks/commits.md) § Splitting an oversized change. A refactor and a behaviour change never share a commit |
 | Writing the PR or the release notes | [pr](playbooks/pr.md) |
 | A commit does not build or test green on its own | It is not a commit. Reorder or squash until each one stands alone |
 | The diff contains something you did not intend | Remove it before anything else. Do not explain it in the description |
-| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md) — ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u` restored with `git stash pop --index` (a plain `pop` drops the staging of tracked edits). Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work is not |
+| Tempted to rewrite pushed history, or to run any command that discards state | [recovery](reference/recovery.md). Ask first, and make the state recoverable before it: a commit on a scratch branch, or `git stash -u` restored with `git stash pop --index` (a plain `pop` drops the staging of tracked edits). Never `git add -A` over a curated index. Committed work is almost always recoverable; uncommitted work usually is not |
 | A generated file is in the diff | Separate commit, and say why it changed |
-| A lockfile is in the diff | **Same commit as the manifest change that caused it.** Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
-| The branch conflicts with the base | Rebase or merge per the repo's convention, then **re-run the tests**. A clean merge is not a passing build |
-| A claim here would be expensive to get wrong | [refute](refute.py) — ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which) — read each verdict. `STANDS` is n engines finding nothing, never proof |
+| A lockfile is in the diff | Same commit as the manifest change that caused it. Split apart, neither commit installs cleanly, and "every commit builds" is already broken |
+| The branch conflicts with the base | Rebase or merge per the repo's convention, then re-run the tests. A clean merge is not a passing build |
+| A claim here would be expensive to get wrong | [refute](refute.py). Ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which). Read each verdict. `STANDS` is n engines finding nothing, never proof |
 <!-- deliver:values -->
 - Ties break by `_coding/VALUES.md`, read top to bottom: honesty over speed ·
   mechanism over intent · subtraction over addition · the existing shape over
   the better shape · what lasts over what helps today · the human decides what,
-  the agent decides how. Against all of them: **a harness that is correct and
-  avoided has failed** — when the ceremony costs more than the change, say so
+  the agent decides how. Against all of them, a harness that is correct and
+  avoided has failed: when the ceremony costs more than the change, say so
   rather than performing it
 <!-- /deliver:values -->
 
 ## Always / Never
 
-- Always: get permission before anything that leaves the machine — push,
-  force-push, opening or merging a PR, tagging, publishing, deploying. Being
+- Always: get permission before anything that leaves the machine (push,
+  force-push, opening or merging a PR, tagging, publishing, deploying). Being
   asked to "finish the work" is not permission to push it
-- Always: state in the message **why**, not what. The diff already says what
-- Always: verify each commit stands alone — builds, passes, and makes sense read
+- Always: state in the message why, not what. The diff already says what
+- Always: verify each commit stands alone: it builds, passes, and makes sense read
   by itself in six months
 - Always: check the diff for secrets, credentials, tokens, `.env` files, internal
   hostnames, and personal data before any push. **A secret pushed is a secret
@@ -96,24 +96,24 @@ passes (evidence: `executed`), and the diff was read hunk by hunk (evidence:
 - **`DONE` here**: history shaped, each commit green, description written,
   nothing pushed without permission
 - Any `#TODO(agent):` introduced by this change and not mentioned in the PR is a
-  residual that just went invisible — the sweep catches it, the PR body names it.
+  residual that just went invisible. The sweep catches it and the PR body names it.
   Ship adds no markers to the diff it ships: its residuals go in `open` and the PR
-- **State what a reviewer needs to know that the diff does not show** — the
+- **State what a reviewer needs to know that the diff does not show**: the
   migration ordering, the flag that must be set, the deploy that must go first
 <!-- deliver:report -->
-- **Grade every claim**: `executed` (it was run) supports completion;
+- Grade every claim: `executed` (it was run) supports completion;
   `inspected` (read back) only where nothing could be run and the entry says
-  why; `asserted` never does. **The unit is the file written to** — each carries
+  why; `asserted` never does. The unit is the file written to: each carries
   a grade or sits in the residuals as `UNVERIFIED`, and a file in neither is how
   an unverified change leaves
-- **`status`**: `DONE` (every criterion met, every file evidenced, zero
+- `status`: `DONE` (every criterion met, every file evidenced, zero
   `UNVERIFIED`, `BLOCKED` or `DEFERRED` residuals) / `PARTIAL` / `BLOCKED` (say what was tried)
-- **Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`**
+- Every residual is `BLOCKED` / `OUT-OF-SCOPE` / `DEFERRED` / `UNVERIFIED`
   and appears in the handoff's `open` (a `T0`: in its line); a run that may write
   that file also leaves a `#TODO(agent):` marker carrying that class. The report
   closes and is gone; the marker stays
-- **Never omit the sweep** — markers in this run's diff against `open`, files
-  written against files evidenced: `swept, 0 markers; 7 changed / 7 evidenced`.
+- Never omit the sweep: markers in this run's diff against `open`, files
+  written against files evidenced (`swept, 0 markers; 7 changed / 7 evidenced`).
   While either pair disagrees the status is not `DONE` (`_coding/CONTRACT.md`)
 <!-- /deliver:report -->
 
@@ -123,21 +123,21 @@ Every commit stands alone and is green, the messages say why, the description
 tells a reviewer what they cannot see in the diff, nothing left the machine
 without permission, and the residuals are visible to whoever picks this up next.
 <!-- deliver:surface -->
-- **Say what the moment needs.** Start: what will be done and what is excluded.
-  Mid-run: a line when the reader must act — a divergence from what was agreed,
-  a path found blocked, work that would grow the scope — or when the run changes
+- Say what the moment needs. Start: what will be done and what is excluded.
+  Mid-run: a line when the reader must act (a divergence from what was agreed,
+  a path found blocked, work that would grow the scope) or when the run changes
   course; tool calls are already visible and are not replayed. A question names
   the decision it unblocks and the default taken if nobody answers
-- **End with the answer in one line** — status and what changed; then the sweep
+- End with the answer in one line: status and what changed; then the sweep
   line, then one line per residual a human must decide, then what is next. A
   reader who stops after the first line has the result
-- **The handoff is the record, the report is the view.** The brief, the per-file
+- The handoff is the record, the report is the view. The brief, the per-file
   grades and the `open` list travel in the handoff and are shown when asked
-- **Sized to the tier**, the deliverable linked, never pasted: `T0` is one line
+- Sized to the tier, the deliverable linked, never pasted: `T0` is one line
   with the sweep folded in, `T1` adds evidence and residuals, `T2` what is next.
-  Trimming cuts what the reader already has — request, files, path (`_coding/REPORT.md`)
-- **Not bigger than it is.** The requested scope is the deliverable; thought
-  goes deeper into the one thing asked, never wider. **A real problem is the
-  exception** — something that would break, is unsafe, or rests on a false
+  Trimming cuts what the reader already has: request, files, path (`_coding/REPORT.md`)
+- Not bigger than it is. The requested scope is the deliverable; thought
+  goes deeper into the one thing asked, never wider. A real problem is the
+  exception: something that would break, is unsafe, or rests on a false
   premise is explained in full (`_coding/REPORT.md`)
 <!-- /deliver:surface -->

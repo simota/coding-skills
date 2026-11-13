@@ -10,8 +10,8 @@ Source: git — only the example of `git <subcommand> -h` under check 1 depends 
 Verified: 2026-08-21 — catalogue of defect classes and their checks; the checks are runnable, the frequency claims are deliberately absent — no automated check.
 
 Generated code fails differently from hand-written code. It is fluent, locally
-consistent, and matches the surrounding style, so the usual review signals —
-awkward naming, obvious copy-paste, a comment that trails off — are absent. What
+consistent, and matches the surrounding style. The usual review signals, such as
+awkward naming, obvious copy-paste or a comment that trails off, are absent. What
 remains wrong is wrong at the level of *fact*: a symbol that does not exist, a
 value nobody derived, a guard for a state that cannot occur.
 
@@ -19,27 +19,26 @@ value nobody derived, a guard for a state that cannot occur.
 produced the mistake produces the confidence that it is fine. That is what this
 list is for: it replaces judgement with a check that can be run.
 
----
-
 ## 1. Symbols that do not exist
 
 A method, flag, config key, or environment variable that reads exactly like the
 real API and is not in it. Fluency is not evidence of existence.
 
-**Check:** resolve every non-local symbol in the diff to a definition — grep the
-dependency, open the type, or run the call. Not "it looks like the right name".
+**Check:** resolve every non-local symbol in the diff to a definition by
+grepping the dependency, opening the type, or running the call. Not "it looks
+like the right name".
 An import that resolves does not vouch for the attribute after the dot.
 
 **The check is only as good as what it resolves against.** Abbreviated help
 output, a summary page, and a README list a subset and say nothing about the
 rest, so absence there is not evidence of absence. A run of this check against
 `git <subcommand> -h` reported nine flags missing that all exist and all run.
-Resolve against the definition, the type, or the executed call — never against a
+Resolve against the definition, the type, or the executed call, not against a
 list that was never meant to be complete.
 
 ## 2. The API of a different version
 
-The shape is real but belongs to another major version — a renamed parameter, a
+The shape is real but belongs to another major version: a renamed parameter, a
 return type that changed, a helper that moved.
 
 **Check:** read the installed version from the lockfile or manifest, then check
@@ -67,7 +66,7 @@ volume: every branch is a thing later readers must consider and tests must cover
 ## 5. Tests written from observed output
 
 The expected value was produced by running the code. The test then asserts that
-the code does what the code does — it passes forever, including while the
+the code does what the code does, so it passes forever, including while the
 behaviour is wrong.
 
 **Check:** ask where each expected value came from. A snapshot with no provenance
@@ -78,8 +77,8 @@ and a regression test never seen to fail on the pre-fix code are the same defect
 Written rather than found, because searching was skipped. The result is two
 helpers that drift apart, and the newer one has no callers but this diff.
 
-**Check:** grep for the concept — not the new function's name, which is by
-construction unique — before accepting any new utility.
+**Check:** grep for the concept before accepting any new utility, not for the
+new function's name, which is by construction unique.
 
 ## 7. The precedent's flaw, copied forward
 
@@ -92,7 +91,7 @@ finding there is a finding in every copy, and it outranks anything line-level.
 
 ## 8. Scope that grew without being asked
 
-Files touched that no acceptance criterion named — a reformat, a rename, an
+Files touched that no acceptance criterion named: a reformat, a rename, an
 "improvement while I was here", a dependency bump.
 
 **Check:** map every changed file to a stated criterion. Anything unmapped is
@@ -116,11 +115,9 @@ one defect whose evidence is outside the diff.
 its output. Absent that, the grade is `asserted`, and the change is `UNVERIFIED`
 regardless of how the report reads.
 
----
-
 ## Order
 
 Run 1 and 2 first. They are cheap, they are decidable, and each of them
-invalidates the rest of the review when it fires — code that calls a symbol that
+invalidates the rest of the review when it fires: code that calls a symbol that
 does not exist has no line-level findings worth writing. Run 5 early too: it is
 just as cheap, though it invalidates only the tests.

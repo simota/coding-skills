@@ -15,6 +15,19 @@ A review is bounded by what was read. Every command in this area succeeds on a
 partial change set and prints no warning, so an incomplete review looks exactly
 like a clean one. Establish the scope first, then judge.
 
+## Before judging, establish two things
+
+1. **The base.** Name it explicitly in the report (`main` at `<sha>`, or the PR
+   number). A review whose base is implicit cannot be reproduced.
+2. **The coverage.** Which files were read in full, which were skimmed, which
+   were skipped. Half of what matters in a diff is outside it: the caller that
+   breaks, the second copy of the pattern, the convention departed from.
+
+Both belong in the report. A finding is `inspected` evidence; a finding
+demonstrated by running the case is `executed` and worth far more. When neither
+is possible, the finding is `asserted` and goes in only as a `Question`, never
+with a defect's label.
+
 ---
 
 ## What each command actually shows
@@ -45,8 +58,8 @@ empty tree) and untracked ones from `git status --porcelain`. Check
 
 | Intent | Command |
 |---|---|
-| The branch's own changes | `git diff <base>...HEAD` — **three** dots |
-| The branch's own commits | `git log <base>..HEAD` — **two** dots |
+| The branch's own changes | `git diff <base>...HEAD`, **three** dots |
+| The branch's own commits | `git log <base>..HEAD`, **two** dots |
 | Files it touched | `git diff --name-status <base>...HEAD` |
 
 Three-dot `diff` means *merge-base against HEAD*. Two-dot `diff` compares the
@@ -65,7 +78,7 @@ difference and includes the base's commits too. Fix the base explicitly with
 The dot table is stated in both coding-explore's history reference and coding-review's
 diff-scoping reference, because a skill cannot read another skill's directory
 once installed. `make figures` re-runs both pages' printed counts against git, so the figures
-cannot drift apart; the prose around them is not checked — re-read the other page when editing this one.
+cannot drift apart; the prose around them is not checked. Re-read the other page when editing this one.
 
 ## Scope decisions worth making deliberately
 
@@ -73,20 +86,7 @@ cannot drift apart; the prose around them is not checked — re-read the other p
 |---|---|
 | The diff is dominated by a reformat | Re-read with `-w`, review the real change, and report the mixing as its own finding |
 | Files were renamed | `-M` (usually on by default) shows a rename as a rename; `-C` also detects copies. Without them a move reads as a large delete plus a large add, and the review drowns |
-| A lockfile or generated file is present | Confirm it matches its source of truth. Do not read it line by line — but check that no `resolved` URL or integrity hash changed for a version that did not, which is where lockfile injection hides |
+| A lockfile or generated file is present | Confirm it matches its source of truth. Do not read it line by line. Do check that no `resolved` URL or integrity hash changed for a version that did not: that is where lockfile injection hides |
 | A submodule pointer moved | `git diff --submodule=log` names the commits. The diff otherwise shows only a hash, and a hash review is not a review |
 | Binary or vendored paths | State that they were excluded and why. Silent exclusion is the failure this whole page is about |
 | The PR is the unit | Read the PR diff, not the local branch. They differ whenever the base moved or a maintainer pushed |
-
-## Before judging, establish two things
-
-1. **The base.** Name it explicitly in the report — `main` at `<sha>`, or the PR
-   number. A review whose base is implicit cannot be reproduced.
-2. **The coverage.** Which files were read in full, which were skimmed, which
-   were skipped. Half of what matters in a diff is outside it: the caller that
-   breaks, the second copy of the pattern, the convention departed from.
-
-Both belong in the report. A finding is `inspected` evidence; a finding
-demonstrated by running the case is `executed` and worth far more. When neither
-is possible, the finding is `asserted` and goes in only as a `Question`, never
-with a defect's label.

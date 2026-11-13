@@ -12,15 +12,15 @@ should be able to put a finger on the mark that is wrong.
   invented plan: the style block, the marks, and every view drawn once
 - **Write a new file beside the plan** with that style block and those marks,
   and this plan's content. The template is never edited, and none of its
-  example content survives — search the result for the template's plan name
-- **One file that opens from disk.** No script, no image file, nothing fetched —
+  example content survives. Search the result for the template's plan name
+- **One file that opens from disk.** No script, no image file, nothing fetched:
   opening a sheet sends nothing anywhere. A sheet that needs a server is not read
 - **Both themes.** Every colour is a token from the top of the style block. A
   literal colour in a drawing is unreadable in one theme or the other
 
 ## Order
 
-Title block — the plan, the revision read, run status, the loop's cycle when
+Title block: the plan, the revision read, run status, the loop's cycle when
 in one, who is next, the verdict. The index of views, each dotted by its worst
 mark: red for a flaw of rank 1–3 or a breaking cell, amber for a lower flaw or
 a `?`, green when clean, no dot when not owed; each view's header says the
@@ -35,7 +35,7 @@ hunt lists, the flaw register, and what the sheet covers.
 | Mark | Means | Never |
 |---|---|---|
 | Plain box | Exists today; its `file:line` is in the sources under the drawing | A box nobody opened |
-| Green box, tagged new | Built by this plan | Something that exists and is changed — say changed in the label |
+| Green box, tagged new | Built by this plan | Something that exists and is changed (say changed in the label) |
 | Dashed amber, `?` | The plan does not say | A guess in its place |
 | Red box or arrow | On the path to a broken rule | Emphasis |
 | Dotted box | Outside this team's control | — |
@@ -48,13 +48,13 @@ Red wins: a box on a breaking path is red, and its label keeps the `?` or new.
 
 ## Drawing
 
-- **Place boxes on a grid** — fixed columns and rows — and draw each arrow
+- Place boxes on a grid (fixed columns and rows) and draw each arrow
   straight or with one elbow. No arrow through a box, no label on top of one
-- **Graphs are inline drawings; grids and matrices are tables.** A table drawn
+- Graphs are inline drawings; grids and matrices are tables. A table drawn
   as a picture cannot be searched or copied
-- **Under each drawing**: the flaws whose marks are on it, one sentence each,
+- Under each drawing: the flaws whose marks are on it, one sentence each,
   then the sources. A picture separated from its claim is a puzzle
-- **A wide drawing scrolls in its own frame.** The page never scrolls sideways
+- A wide drawing scrolls in its own frame. The page never scrolls sideways
 
 ## Counts are computed
 
@@ -67,12 +67,12 @@ disagrees with its own page is the first thing a reader stops trusting.
 
 The run's status says whether the preflight finished. The verdict says whether
 the plan may be built: not cleared while a flaw of rank 1–3 stands, cleared
-when none does — with the lower ranks listed for the human to accept or not.
+when none does, with the lower ranks listed for the human to accept or not.
 A finished preflight of a broken plan is `DONE`, and not cleared.
 
 ## Before handing over
 
 - Every flag links to a card, and every card names the views it is seen in
 - Every count on the page was counted from the page
-- It was opened and looked at in both themes — or the report says it was not,
+- It was opened and looked at in both themes, or the report says it was not
   and the file's grade is `inspected`
