@@ -124,7 +124,7 @@ class RegistryLoading(unittest.TestCase):
         original = harness.read_text(encoding="utf-8")
         old = "# the next addition retires one"
         self.assertIn(old, original)
-        harness.write_text(original.replace(old, "# V11 counts them for py311 and py3.11, see §3, §3.2 and #23; " + old[2:], 1),
+        harness.write_text(original.replace(old, "# V11 counts them for py311 and py3.11 as max_147, see §3, §3.2 and #23; " + old[2:], 1),
                            encoding="utf-8")
         result = self.run_validator()
         self.assertNotIn("V39", result.stdout)

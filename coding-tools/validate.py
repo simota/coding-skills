@@ -1347,7 +1347,7 @@ def v38_enumerations_declared():
 # word (a rule id such as V11, a target such as py311 or py3.11) or after `#`
 # or `§` (an issue, a section) names something; it does not measure it. ASCII,
 # because Python's \w is Unicode and would hide a figure written after CJK text.
-FIGURE = re.compile(r"(?<![A-Za-z0-9_#§])(?<![A-Za-z0-9]\.)\d+")
+FIGURE = re.compile(r"(?<![A-Za-z0-9_#§])(?<!\d\.)\d+")
 
 
 def v39_budget_comments_carry_no_figure():
