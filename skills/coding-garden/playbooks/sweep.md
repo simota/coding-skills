@@ -8,8 +8,9 @@ what the host already has. Nothing here installs, edits or regenerates.
 
 ## The order
 
-1. **The gate.** The host's verify command on the untouched tree. Red: stop,
-   and the pass is one finding for `coding-debug`
+1. **The gate**, read before it runs, on the untouched tree. It cannot run, or
+   fails in the area about to change: stop, one finding for `coding-debug`. It
+   fails only elsewhere: record that failure with its area and go on
 2. **The checks are alive.** For each check the gate wraps (format, lint,
    types, tests), confirm that it ran over the paths in scope. Proving a check
    red by planting a break writes to the tree; that proof belongs to
@@ -18,17 +19,18 @@ what the host already has. Nothing here installs, edits or regenerates.
    the suppressions in scope (`eslint-disable`, `# noqa`, `@ts-ignore`,
    `#[allow(`) and compare with the count a month of history back: a count
    that only grows is a finding
-3. **The tests.** Run the suite in scope. A red test is `coding-debug`'s. A
-   skipped or disabled test is listed with the reason it gives, or as giving
-   none. A test that asserts nothing goes to `coding-test`
+3. **The tests** in scope that the gate did not run. A red test is
+   `coding-debug`'s. A skipped or disabled test is listed with its reason, or
+   as giving none. A test that asserts nothing goes to `coding-test`
 4. **The docs.** Every path the agent rules and the feature map name exists.
    Every read-only command they give runs as written; one that changes state is
    listed, not run. Generated docs (an API schema, a CLI's help, an API report)
-   are regenerated in a throwaway copy and diffed against the committed ones.
-   Doc examples run where the host has a runner for them
+   are regenerated in a copy of the checkout made outside it and diffed against
+   the committed ones; where the copy cannot run the generator, the category is
+   unchecked. Doc examples run where the host has a runner for them
 5. **The architecture.** The host's declared boundary rules run, and cycles are
-   counted. No declared rules is a finding of its own for `coding-setup`, not a
-   licence to infer the architecture and judge against the guess
+   counted. No declared rules is a finding for `coding-plan`, which decides
+   boundaries, never a licence to infer them and judge against the guess
 6. **What has grown.** Dead code, unused exports and dependencies,
    duplication, complexity above the host's own threshold, and comments: code
    left commented out, a workaround or excuse left as a note, a TODO with no
@@ -53,28 +55,26 @@ The human may move a row between lists. The pass may not, in either direction.
 | Finding | Goes to |
 |---|---|
 | The gate or a test is red | `coding-debug`, then `coding-test` once the cause is known |
-| A check is silent, broken or missing; a category has no tool | `coding-setup` |
-| A boundary violation or a cycle | `coding-refactor`; the boundary itself in question goes to `coding-plan` |
-| Dead code, duplication, complexity over threshold, a comment that binds nobody | `coding-refactor` |
-| More code than the problem needed, or prose that reads out of date | `coding-review`, as a Question |
-| A doc that disagrees with the code | The skill that next changes that code; documentation travels with it |
+| A check silent, broken or missing; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
+| A boundary violation, a cycle, dead code, duplication, complexity over threshold | `coding-refactor` |
+| No declared boundaries, or a boundary itself in question | `coding-plan` |
+| A doc that disagrees with the code, or a comment that binds nobody | The skill that next changes that code; documentation and comments travel with it |
+| More code than the problem needed, or prose that may read out of date | The human, as a Question: judging the tree is nobody's standing work |
 | An outdated dependency | `coding-implement`, after the human agrees to the upgrade |
-| A helper script in the toolbox that no longer runs | `coding-toolbox` |
-| The same kind of finding fixed once before | `coding-setup`, to lay a check, together with the owner above |
 
 ## The second sighting
 
 Before a finding is filed, search the history for the same kind already fixed:
-`git log -S` or `-G` on its pattern, and `git log --grep` on revert and fix
-messages. A hit makes it a second sighting. Fixing it again only clears this
-copy, so it also goes to `coding-setup`, which closes it on the highest rung
-the host allows: a structure that cannot express it, then a check that fails
-on it, then a written rule.
+`git log -S` or `-G` on its pattern, `git log --grep` on revert and fix
+messages. A hit is a second sighting. Fixing it again clears only this copy,
+so a second finding, with its own owner, closes it on the highest rung the
+host allows: a structure that cannot express it (`coding-refactor`, or
+`coding-plan` while the boundary is undecided), else a check that fails on it
+or a written rule (`coding-setup`).
 
 ## The report
 
-The first line says whether the start is clear or blocked, and by how many. The
-blocking findings follow, one line each: owner, what, evidence. Then the
-recorded findings counted by owner, then each category left unchecked with its
-reason. The fixes come before the new work, blocking ones first, one commit
-each.
+The first line says whether the start is clear or blocked, and by how many.
+Then the blocking findings, one line each (owner, what, evidence); the recorded
+ones counted by owner; each category left unchecked, with its reason. The fixes
+come before the new work, blocking ones first, one commit each.

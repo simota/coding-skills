@@ -45,7 +45,7 @@ its class and the `file:line` a marker belongs at, one per residual, not per fil
 Who writes the marker depends on what the run may write. A run that may
 edit the file in question places the `#TODO(agent): <CLASS> <action>` marker
 itself, where a reader would next look, and names it in `open`. A run that may
-not (`coding-explore` and `coding-review` anywhere, `coding-plan` in a file it
+not (`coding-explore`, `coding-review` and `coding-garden` anywhere, `coding-plan` in a file it
 did not create, `coding-ship` in the diff it ships) records the entry in `open`
 alone and leaves the writing to whoever receives the handoff. **A report-only
 skill never edits the tree to satisfy this rule**: doing so would break the

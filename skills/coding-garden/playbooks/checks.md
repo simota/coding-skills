@@ -21,7 +21,7 @@ run; a missing one is reported, never installed.
 |---|---|---|
 | Structure | Package-private directories (Go `internal/`), a package `exports` map, crate-private modules | Rules between modules the language treats as equals |
 | Declared rule | dependency-cruiser, eslint-plugin-boundaries, Nx module boundaries (JS/TS); import-linter layers and forbidden contracts (Python); ArchUnit, Konsist (JVM); depguard, go-arch-lint (Go) | A rule nobody declared. No contract is a finding, not a licence to guess one |
-| Cycles | dependency-cruiser, madge, import-linter; the compiler, where cycles do not build | Cycles through runtime lookup: reflection, a registry keyed by string |
+| Cycles | dependency-cruiser, madge; the compiler, where cycles do not build | Cycles through runtime lookup: reflection, a registry keyed by string |
 
 ## What has grown
 
@@ -31,7 +31,7 @@ run; a missing one is reported, never installed.
 | Duplication | jscpd, PMD CPD | Two shapes that do one job with different text |
 | Complexity over a budget | ESLint `complexity`, `max-lines`, `max-params`; xenon (Python); gocognit (Go); lizard (many languages) | Whether the budget is right. A host with none has no finding here, only a missing check |
 | Comments that bind nobody | ruff `ERA` (commented-out code) and `TD`/`FIX` (TODO notes); ESLint `no-warning-comments`; an ast-grep or semgrep rule for the host's own phrasings ("workaround", "temporary", "just in case") | Whether the note is still true |
-| More code than the problem needed | Symptoms only: an interface with one implementation, an abstraction with one caller, a parameter always passed the same value. An ast-grep rule lists candidates | The judgement itself. Candidates go to `coding-review` as Questions |
+| More code than the problem needed | Symptoms only: an interface with one implementation, an abstraction with one caller, a parameter always passed the same value. An ast-grep rule lists candidates | The judgement itself. Candidates go to the human as Questions |
 
 ## Drift between code and docs
 
@@ -41,7 +41,7 @@ run; a missing one is reported, never installed.
 | Code inside docs | doctest (Python), rustdoc tests, Go `Example` functions | Prose around the example |
 | Paths, links and commands | Path existence; lychee for links; each read-only command in the agent rules run as written | Whether the command still does what the sentence says |
 | Docstrings against signatures | pydoclint; eslint-plugin-jsdoc `check-param-names` | Whether the description is still true |
-| Meaning | Nothing mechanical. A reading, as a Question for `coding-review` | |
+| Meaning | Nothing mechanical. A reading, as a Question for the human | |
 
 ## Checks that have gone quiet
 
@@ -54,8 +54,8 @@ run; a missing one is reported, never installed.
 
 ## Dependencies
 
-The package manager's own report of outdated packages (`npm outdated`, `pip
-list --outdated`, `cargo outdated`, `go list -m -u all`) and its advisory audit.
-Each asks a registry over the network, so the go-ahead comes first. An outdated
-package is recorded; an advisory is recorded with its severity, and the human
-says whether it blocks.
+The package manager's report of outdated packages or an installed equivalent
+(`npm outdated`, `pip list --outdated`, `cargo outdated`, `go list -m -u all`),
+and the host's advisory audit if it has one. Both ask a registry, so the
+go-ahead comes first. An outdated package is recorded; an advisory is recorded
+with its severity, and the human says whether it blocks.
