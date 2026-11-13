@@ -33,7 +33,7 @@ HOST_DIRS  := "$$CLAUDE_DIR" "$$CODEX_DIR" "$$AGY_DIR"
 
 help:
 	@echo "make check     deps + lint + validate + test + figures + render drift (what CI runs)"
-	@echo "make deps      fail unless the interpreter has exactly the pinned packages"
+	@echo "make deps      fail unless each pinned package is installed at its pinned version"
 	@echo "make lint      ruff over the tools, with the rules in coding-tools/ruff.toml"
 	@echo "make validate  static rules over the corpus"
 	@echo "make test      prove every rule still fires, and test the tools"

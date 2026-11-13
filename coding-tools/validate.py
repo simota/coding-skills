@@ -1344,9 +1344,9 @@ def v38_enumerations_declared():
 
 
 # A number that starts a word: `116.`, `2x`, `3.11`. A digit inside a word (a
-# rule id such as V11, a target such as py311) names something; it does not
-# measure it.
-FIGURE = re.compile(r"(?<!\w)(?<!\d\.)\d+(?:\.\d+)?")
+# rule id such as V11, a target such as py311) or after `#` or `§` (an issue, a
+# section) names something; it does not measure it.
+FIGURE = re.compile(r"(?<![\w#§])(?<!\d\.)\d+(?:\.\d+)?")
 
 
 def v39_budget_comments_carry_no_figure():
@@ -1354,8 +1354,8 @@ def v39_budget_comments_carry_no_figure():
     drifts: these comments were corrected by hand twice and drifted a third
     time. The use is printed beside each limit on a green run instead (`usage`).
     Every comment in the block is read, at any indent. A comment at column zero
-    belongs to what follows it: above a limit it is read, above the next key it
-    introduces that key and is not."""
+    belongs to what follows it: above `limits:` or a limit it is read, above
+    another key it introduces that key and is not."""
     def check(i: int, line: str) -> None:
         if FIGURE.search(line.split("#", 1)[1]):
             fail("V39", f"coding-registry/harness.yaml:{i} writes a figure into a budget "
@@ -1363,19 +1363,20 @@ def v39_budget_comments_carry_no_figure():
     inside, pending = False, []
     for i, line in enumerate(read(ROOT / "coding-registry" / "harness.yaml").splitlines(), 1):
         if line.startswith("#"):
-            if inside:
-                pending.append((i, line))
+            pending.append((i, line))
             continue
         if line.strip() and not line.startswith(" "):
-            inside, pending = line.startswith("limits:"), []
-        elif line.strip() and inside:
-            for held in pending:
-                check(*held)
+            inside = line.startswith("limits:")
+        if line.strip():
+            if inside:
+                for held in pending:
+                    check(*held)
             pending = []
         if inside and "#" in line:
             check(i, line)
-    for held in pending:          # the block ran to the end of the file
-        check(*held)
+    if inside:                    # the block ran to the end of the file
+        for held in pending:
+            check(*held)
 
 
 def usage() -> str:

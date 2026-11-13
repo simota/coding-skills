@@ -42,7 +42,7 @@ class Pins(unittest.TestCase):
     def test_every_line_of_the_repository_file_is_read_as_a_pin(self):
         # Against an interpreter with nothing installed, a line read as a pin is
         # reported missing; a line the parser refuses would be reported refused.
-        found = pins.mismatches(pins.REQUIREMENTS.read_text(encoding="utf-8"), installed({}))
+        found = pins.mismatches(pins.REQUIREMENTS.read_text(encoding="utf-8-sig"), installed({}))
         self.assertTrue(found)
         for line in found:
             self.assertRegex(line, r"^\S+ missing, pinned \S+$")
