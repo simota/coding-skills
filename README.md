@@ -66,9 +66,9 @@ rule fails if any copy has drifted. The longer prose stays in `skills/_coding/`.
 
 **Budgets are enforced, not intended.** `coding-registry/harness.yaml` holds every
 threshold — line counts, skill count, description length. `coding-tools/validate.py`
-decides them and CI fails on a violation. Nothing is exempt for being
-important, because a gate that a person can argue past is a gate the person
-who wants to grow the set will argue past.
+decides them, prints each one's measured use, and CI fails on a violation. Nothing
+is exempt for being important, because a gate that a person can argue past is a
+gate the person who wants to grow the set will argue past.
 
 ## Three rules that follow from it
 
@@ -215,9 +215,9 @@ another skill's playbook — which should name the skill, not reach into it.
 ## Working on it
 
 ```sh
-python3 -m pip install -r coding-tools/requirements.txt   # PyYAML, markdown-it-py
-make check      # what CI runs: the rules, proof they still fire, the tool tests,
-                # the git figures, and that every delivered block is current
+python3 -m pip install -r coding-tools/requirements.txt   # PyYAML, markdown-it-py, ruff
+make check      # what CI runs: the pins, the lint, the rules, proof they still fire,
+                # the tool tests, the git figures, and that every delivered block is current
 make drift      # check delivered blocks without changing any files
 make render     # after editing anything in coding-registry/delivered/
 make hooks      # run the rules on every commit

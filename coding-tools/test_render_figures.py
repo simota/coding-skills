@@ -13,8 +13,8 @@ from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
-import figures_check
-import render
+import figures_check                               # noqa: E402
+import render                                      # noqa: E402
 
 
 class SafeRender(unittest.TestCase):

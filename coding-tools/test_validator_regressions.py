@@ -104,7 +104,7 @@ class RegistryLoading(unittest.TestCase):
         harness = self.registry("harness.yaml")
         original = harness.read_text(encoding="utf-8")
         edits = [("  skill_md_lines: 156\n", "", "limits.skill_md_lines is missing"),
-                 ("  route_stages_max: 6 ", "  unused_max: 6 ", "limits.route_stages_max is missing"),
+                 ("  route_stages_max: 6\n", "  unused_max: 6\n", "limits.route_stages_max is missing"),
                  ("  residual_classes: [", "  unused_classes: [", "vocabulary.residual_classes is missing"),
                  ('    tools: "Read, Grep, Glob, Bash"\n', "", "permission_classes.read-only.tools is missing"),
                  ("  own_word: redict", '  own_word: ""', "signature.own_word must be a non-empty string"),

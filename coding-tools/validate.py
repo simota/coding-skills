@@ -1335,6 +1335,45 @@ def v38_enumerations_declared():
                                 "which harness.yaml vocabulary does not declare")
 
 
+def v39_budget_comments_carry_no_figure():
+    """A figure in a budget comment is a measurement, and a written measurement
+    drifts: these comments were corrected by hand twice and drifted a third
+    time. The use is printed beside each limit on every run instead (`usage`)."""
+    inside = False
+    for i, line in enumerate(read(ROOT / "coding-registry" / "harness.yaml").splitlines(), 1):
+        if line.strip() and not line.startswith((" ", "#")):
+            inside = line.startswith("limits:")
+        elif inside and line.startswith(" ") and "#" in line \
+                and re.search(r"\d", line.split("#", 1)[1]):
+            fail("V39", f"coding-registry/harness.yaml:{i} writes a figure into a budget "
+                        "comment; the measured use is printed by make validate")
+
+
+def usage() -> str:
+    """Each limit beside what uses most of it, measured now: the figures the
+    budget comments used to carry, and let drift."""
+    def lines(p: Path) -> int:
+        return len(read(p).splitlines())
+    shared = [(lines(f), f.name) for f in sorted((SKILLS_ROOT / SHARED).glob("*.md"))]
+    use = {
+        "skill_md_lines": max((lines(d / "SKILL.md"), d.name) for d in SKILL_DIRS),
+        "description_chars": max((len(frontmatter(read(d / "SKILL.md"), d.name)
+                                      .get("description", "")), d.name) for d in SKILL_DIRS),
+        "playbook_lines": max([(lines(p), f"{d.name}/{p.name}") for d in SKILL_DIRS
+                               for p in d.glob("playbooks/*.md")], default=(0, "none")),
+        "playbooks_per_skill": max((len(list(d.glob("playbooks/*.md"))), d.name)
+                                   for d in SKILL_DIRS),
+        "shared_file_lines": max(shared),
+        "shared_lines_total": (sum(n for n, _ in shared), SHARED),
+        "skills_max": (len(SKILLS), "skills"),
+        "routes_max": (len(ROUTES), "routes"),
+        "route_stages_max": max((len(r.get("chain", [])), name) for name, r in ROUTES.items()),
+        "repo_md_lines_total": (sum(lines(f) for f in ROOT.rglob("*.md")
+                                    if ".git" not in f.parts), "markdown"),
+    }
+    return "\n".join(f"  {k} {use[k][0]}/{LIM[k]} ({use[k][1]})" for k in LIMITS)
+
+
 RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
          v5_playbook_budget, v6_budgets, v7_routes_real, v8_links, v9_signals,
          v10_fixtures, v11_count, v12_prefix, v13_route_budget, v14_patterns,
@@ -1350,7 +1389,8 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
          v35_signature,
          v36_finding_visuals,
          v37_source_pins_the_rot,
-         v38_enumerations_declared]
+         v38_enumerations_declared,
+         v39_budget_comments_carry_no_figure]
 
 
 def _earlier_hook(installed: Path) -> bool:
@@ -1403,6 +1443,8 @@ def main() -> int:
                  if _earlier_hook(installed) else "foreign — not this repo's pre-commit")
         hooks = f" · hooks {state}"
     print(f"{len(RULES)} rules · {len(SKILLS)} skills{hooks}")
+    if not FAILURES:
+        print(usage())
     if FAILURES:
         for f in sorted(FAILURES):
             print(f"  {f}")
