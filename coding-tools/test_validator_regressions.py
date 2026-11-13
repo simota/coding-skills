@@ -124,22 +124,28 @@ class RegistryLoading(unittest.TestCase):
         original = harness.read_text(encoding="utf-8")
         old = "# the next addition retires one"
         self.assertIn(old, original)
-        harness.write_text(original.replace(old, "# V11 counts them for py311 too, see §3 and #23; " + old[2:], 1),
+        harness.write_text(original.replace(old, "# V11 counts them for py311 and py3.11, see §3, §3.2 and #23; " + old[2:], 1),
                            encoding="utf-8")
         result = self.run_validator()
         self.assertNotIn("V39", result.stdout)
         self.assertEqual(result.returncode, 0, result.stdout)
 
-    def test_a_comment_introducing_the_next_key_is_not_a_budget_comment(self):
+    def test_a_comment_introducing_another_key_is_not_a_budget_comment(self):
+        # Above a key after `limits:`, and above one before it: neither comment
+        # is the block's, and neither may be carried into it.
         harness = self.registry("harness.yaml")
         original = harness.read_text(encoding="utf-8")
-        self.assertIn("\npermission_classes:", original)
-        harness.write_text(original.replace(
-            "\npermission_classes:", "\n# Three classes, granted by the 3 tools below.\npermission_classes:", 1),
-            encoding="utf-8")
-        result = self.run_validator()
-        self.assertNotIn("V39", result.stdout)
-        self.assertEqual(result.returncode, 0, result.stdout)
+        for key in ("\npermission_classes:", "\nskills_dir:"):
+            with self.subTest(key=key):
+                self.assertIn(key, original)
+                harness.write_text(original.replace(
+                    key, "\n# 3 kinds of thing live under it." + key, 1), encoding="utf-8")
+                try:
+                    result = self.run_validator()
+                finally:
+                    harness.write_text(original, encoding="utf-8")
+                self.assertNotIn("V39", result.stdout)
+                self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_the_gate_leaves_presence_and_emptiness_to_the_rules(self):
         # Forms the rules document as valid, or judge in their own words.

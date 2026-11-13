@@ -41,8 +41,12 @@ def mismatches(text: str, installed: Callable[[str], str] = metadata.version) ->
     return found
 
 
+def requirements(path: Path = REQUIREMENTS) -> str:
+    return path.read_text(encoding="utf-8-sig")    # pip accepts a BOM, so this does
+
+
 def main() -> int:
-    found = mismatches(REQUIREMENTS.read_text(encoding="utf-8-sig"))   # pip accepts a BOM
+    found = mismatches(requirements())
     for line in found:
         print(f"pins: {line}")
     if found:

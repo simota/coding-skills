@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from importlib import metadata
 from pathlib import Path
@@ -39,10 +40,16 @@ class Pins(unittest.TestCase):
                                  [f"{line} is not a plain name==version pin, "
                                   "so no version can be checked"])
 
+    def test_a_file_saved_with_a_bom_reads_as_pins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "requirements.txt"
+            path.write_bytes("\ufeffa==1.0\n".encode("utf-8"))
+            self.assertEqual(pins.mismatches(pins.requirements(path), installed({"a": "1.0"})), [])
+
     def test_every_line_of_the_repository_file_is_read_as_a_pin(self):
         # Against an interpreter with nothing installed, a line read as a pin is
         # reported missing; a line the parser refuses would be reported refused.
-        found = pins.mismatches(pins.REQUIREMENTS.read_text(encoding="utf-8-sig"), installed({}))
+        found = pins.mismatches(pins.requirements(), installed({}))
         self.assertTrue(found)
         for line in found:
             self.assertRegex(line, r"^\S+ missing, pinned \S+$")

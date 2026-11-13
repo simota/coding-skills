@@ -1343,10 +1343,11 @@ def v38_enumerations_declared():
                                 "which harness.yaml vocabulary does not declare")
 
 
-# A number that starts a word: `116.`, `2x`, `3.11`. A digit inside a word (a
-# rule id such as V11, a target such as py311) or after `#` or `§` (an issue, a
-# section) names something; it does not measure it.
-FIGURE = re.compile(r"(?<![\w#§])(?<!\d\.)\d+(?:\.\d+)?")
+# A number that starts a word: `116.`, `2x`, `120行`. A digit inside an ASCII
+# word (a rule id such as V11, a target such as py311 or py3.11) or after `#`
+# or `§` (an issue, a section) names something; it does not measure it. ASCII,
+# because Python's \w is Unicode and would hide a figure written after CJK text.
+FIGURE = re.compile(r"(?<![A-Za-z0-9_#§])(?<![A-Za-z0-9]\.)\d+")
 
 
 def v39_budget_comments_carry_no_figure():

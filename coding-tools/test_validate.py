@@ -379,6 +379,11 @@ def _(r):
     f.write_text(t[:a] + t[b + 1:] + "\n" + t[a:b] + "\n# measured max: 147\n", encoding="utf-8")
 
 
+@case("V39-after-cjk")
+def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
+              "  playbook_lines: 300   # 上限は120行\n")
+
+
 @case("V39-on-the-key")
 def _(r): sub(r / "coding-registry/harness.yaml", "limits:\n", "limits:   # 10 in use\n")
 
