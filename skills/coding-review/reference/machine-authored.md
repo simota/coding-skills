@@ -18,7 +18,7 @@ value nobody derived, a guard for a state that cannot occur.
 **Reviewing one's own output is the weakest case.** The same process that
 produced the mistake produces the confidence that it is fine. That is what this
 list is for: it replaces judgement with a check that can be run.
-
+<!-- render:slop -->
 ## 1. Symbols that do not exist
 
 A method, flag, config key, or environment variable that reads exactly like the
@@ -114,7 +114,7 @@ one defect whose evidence is outside the diff.
 **Check:** for each claim of a passing test, build, or run, find the command and
 its output. Absent that, the grade is `asserted`, and the change is `UNVERIFIED`
 regardless of how the report reads.
-
+<!-- /render:slop -->
 ## Order
 
 Run 1 and 2 first. They are cheap, they are decidable, and each of them

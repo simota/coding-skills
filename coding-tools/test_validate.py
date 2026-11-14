@@ -352,6 +352,14 @@ def _(r): sub(r / f"{S}coding-review/SKILL.md",
 def _(r): sub(r / "coding-registry/harness.yaml", "finding_visuals:", "unused_visuals:")
 
 
+@case("V40")
+def _(r): sub(r / "coding-registry/slop.yaml", "**Check:** name an input", "Name an input")
+
+
+@case("V40-tools")
+def _(r): sub(r / "coding-registry/slop.yaml", "    tools: []\n", "")
+
+
 @case("V39")
 def _(r): sub(r / "coding-registry/harness.yaml", "  playbook_lines: 300\n",
               "  playbook_lines: 300           # measured max: 147\n")

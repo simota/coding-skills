@@ -15,7 +15,6 @@ runs, and what was actually asked for drifts out of reach.
 | Fighting the framework | The framework's shape is worked around rather than used | Use the framework's extension point. A workaround becomes permanent and every upgrade breaks it |
 | A dependency for a function | A package arrives for something small | Weigh install, upgrade, audit, and supply chain against the lines saved |
 | Cleverness where it is hardest | The densest code sits where the domain is most complex | That is exactly where it will be read under pressure. Put the cleverness elsewhere, or nowhere |
-| Defensive noise | Null checks and try/except around calls that cannot fail | Trust internal callers. Validate where data enters from outside, once |
 | The premature interface | An abstraction with one implementation, "for testing" | If the real thing cannot be constructed in a test, fix that. One implementation needs no interface |
 
 ## At the boundaries
@@ -57,4 +56,4 @@ built on them.
 - The path was run, and what running it produced is stated
 - Failure routes were chosen deliberately; the unhandled ones were decided, not overlooked
 - Nothing works only because it has not been exercised yet
-- The diff contains the change and nothing else
+- The diff passes each **Check:** in `registry/slop.yaml`; a class that fires is fixed first

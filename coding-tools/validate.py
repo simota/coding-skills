@@ -1380,6 +1380,28 @@ def v39_budget_comments_carry_no_figure():
             check(*held)
 
 
+def v40_slop_classes():
+    """coding-implement runs each class's **Check:** before a handoff, and
+    coding-setup gates a class through its `tools`. A class without the one, or
+    whose `tools` is not a list of names, reads as a check and runs as nothing."""
+    path = "coding-registry/slop.yaml"
+    classes = yaml.safe_load(read(ROOT / path)).get("classes") or []
+    if not classes:
+        fail("V40", f"{path} lists no classes; implement and setup would check nothing")
+    for n, c in enumerate(classes, 1):
+        title = c.get("title") if isinstance(c, dict) else None
+        if not title:
+            fail("V40", f"{path} class {n} is not a mapping with a title")
+            continue
+        if "**Check:**" not in str(c.get("body", "")):
+            fail("V40", f"{path} class {n} ({title}) has no **Check:** in its body; "
+                        "implement runs that line before a handoff")
+        tools = c.get("tools")
+        if not isinstance(tools, list) or not all(isinstance(t, str) and t.strip() for t in tools):
+            fail("V40", f"{path} class {n} ({title}) needs `tools`: a list of names, "
+                        "empty when no tool decides any part of it")
+
+
 def usage() -> str:
     """Each limit beside what uses most of it, measured now: the figures the
     budget comments used to carry, and let drift."""
@@ -1420,7 +1442,8 @@ RULES = [v1_sizes, v2_description_terms, v3_roster, v4_playbook_orphans,
          v36_finding_visuals,
          v37_source_pins_the_rot,
          v38_enumerations_declared,
-         v39_budget_comments_carry_no_figure]
+         v39_budget_comments_carry_no_figure,
+         v40_slop_classes]
 
 
 def _earlier_hook(installed: Path) -> bool:

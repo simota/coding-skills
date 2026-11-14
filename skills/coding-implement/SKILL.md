@@ -64,7 +64,7 @@ adjacent work is defined in `registry/capabilities.yaml`.
 | The change spans more than about three files | Split it into steps that each leave the tree green |
 | The code meets something you do not control: network, filesystem, another service, user input | [boundaries](playbooks/boundaries.md) |
 | Tempted to add a dependency | Check the standard library and current dependencies first. Weigh install, upgrade, audit, and supply chain against the lines saved |
-| Nothing runs end to end yet, or progress feels fast and unverifiable | [traps](playbooks/traps.md) |
+| Nothing runs end to end yet, progress feels fast and unverifiable, or a diff is about to be handed off | [traps](playbooks/traps.md) |
 | The change would also tidy something nearby | Do not. Behaviour change and cleanup in one diff is unreviewable. Mark it and hand it to `coding-refactor` |
 | A test fails and the quickest fix is to change the test | Establish which is wrong first. Changing the test to match the code deletes the only evidence you had |
 | A claim here would be expensive to get wrong | [refute](refute.py). Ask first: it sends the claim and the code it cites to the other engines. Run this skill's `refute.py` with `--running <engine>` (claude, codex or agy) and the path to a JSON file listing `{id, claim, evidence?, where?}`; they are asked to break it, not agree, and a non-zero exit means at least one claim went unchecked, or the input or `--running` was refused (stderr says which). Read each verdict. `STANDS` is n engines finding nothing, never proof |

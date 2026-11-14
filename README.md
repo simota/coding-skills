@@ -114,6 +114,7 @@ when a row points at it.
 | [`coding-registry/capabilities.yaml`](coding-registry/capabilities.yaml) | Per skill: permission class, what it does, `not:`, and its signals |
 | [`coding-registry/routes.yaml`](coding-registry/routes.yaml) | The chains that recur, with their control structure |
 | [`coding-registry/fixtures.yaml`](coding-registry/fixtures.yaml) | A record of misroutes, grown from accidents |
+| [`coding-registry/slop.yaml`](coding-registry/slop.yaml) | The classes of slop, each with the check that decides it; rendered into review, read by implement |
 | [`coding-registry/delivered/`](coding-registry/delivered) | The blocks copied verbatim into each `SKILL.md` that owes them |
 
 ## Layout
