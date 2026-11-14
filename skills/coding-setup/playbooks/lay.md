@@ -49,7 +49,7 @@ the report says so.
 | A schema change needs a person | CODEOWNERS on the migration paths |
 | A new dependency needs a person | CODEOWNERS on the manifests and lockfiles |
 | A test is not deleted or skipped to pass | Review. A count of tests in the pull request's evidence makes a drop visible |
-| A type error or lint warning is fixed, never silenced | The linter's own rule against suppressions, where it has one |
+| A type error, a lint warning, or a slop class a tool can decide is fixed, never silenced | The linter's own rule against suppressions, where it has one. For slop, the verify script runs a tool from that class's `tools` in `registry/slop.yaml` that the host already has; a class with none stays discipline, and the report names it |
 | A pull request with a failing required check is not merged | Branch protection |
 
 ## Risk classes

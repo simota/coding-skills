@@ -420,6 +420,29 @@ class Render(unittest.TestCase):
                     render.render(p)
 
 
+    def test_the_slop_classes_replace_only_the_region_between_their_markers(self):
+        open_m, close_m = render.SLOP_MARKERS
+        with tempfile.TemporaryDirectory() as tmp:
+            p = pathlib.Path(tmp) / "page.md"
+            p.write_text(f"Intro.\n{open_m}\nstale\n{close_m}\n## Order\n", encoding="utf-8")
+            text, changed = render.prepared_slop(p)
+            self.assertTrue(changed)
+            self.assertNotIn("stale", text)
+            first = render.SLOP["classes"][0]["title"]
+            self.assertTrue(text.startswith(f"Intro.\n{open_m}\n## 1. {first}\n"))
+            self.assertTrue(text.endswith(f"\n{close_m}\n## Order\n"))
+            p.write_text(text, encoding="utf-8")
+            self.assertFalse(render.prepared_slop(p)[1])
+
+    def test_unpaired_slop_markers_stop_the_render(self):
+        open_m, close_m = render.SLOP_MARKERS
+        for broken in (f"{open_m}\n", f"{close_m}\n{open_m}\n", f"{open_m}\n{close_m}\n" * 2):
+            with tempfile.TemporaryDirectory() as tmp, self.subTest(broken=broken):
+                p = pathlib.Path(tmp) / "page.md"
+                p.write_text(broken, encoding="utf-8")
+                with self.assertRaises(render.Malformed):
+                    render.prepared_slop(p)
+
 class Markdown(unittest.TestCase):
     """Every construct a review found misread, now read by the parser.
 

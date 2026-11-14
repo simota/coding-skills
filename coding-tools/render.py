@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Write the delivered blocks back into every SKILL.md.
+"""Write the delivered blocks back into every SKILL.md, and the slop classes
+into every page that carries them.
 
 A contract kept only in the shared directory is not read on most launches, so the operative
 part is carried verbatim in each skill. That only stays true if changing one
@@ -24,6 +25,8 @@ from fences import h2_lines, marker_lines          # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 H = yaml.safe_load((ROOT / "coding-registry" / "harness.yaml").read_text(encoding="utf-8"))
 PREFIX = H["prefix"]
+SLOP = yaml.safe_load((ROOT / "coding-registry" / "slop.yaml").read_text(encoding="utf-8"))
+SLOP_MARKERS = ("<!-- render:slop -->", "<!-- /render:slop -->")
 SKILLS_ROOT = ROOT / H["skills_dir"] if H.get("skills_dir") else ROOT
 
 
@@ -129,6 +132,24 @@ def prepared(path: Path) -> tuple[str, bool]:
     return text, text != original
 
 
+def slop_block() -> str:
+    """The classes as a page reads them: numbered, each under its own heading."""
+    return "\n\n".join(f"## {n}. {c['title']}\n\n{c['body'].rstrip()}"
+                       for n, c in enumerate(SLOP["classes"], 1))
+
+
+def prepared_slop(path: Path) -> tuple[str, bool]:
+    text = read_text(path)
+    lines = text.split("\n")
+    opens, closes = (marker_lines(lines, m) for m in SLOP_MARKERS)
+    if len(opens) != 1 or len(closes) != 1 or opens[0] > closes[0]:
+        raise Malformed(f"{path.parent.name}/{path.name}: expected one pair of slop markers, "
+                        f"found {len(opens)} open and {len(closes)} close; fix by hand")
+    lines[opens[0] + 1:closes[0]] = slop_block().split("\n")
+    new = "\n".join(lines)
+    return new, new != text
+
+
 def staged(path: Path, text: str) -> Path:
     """The new text, complete on disk beside `path` and not yet in its place."""
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
@@ -174,6 +195,11 @@ def render(path: Path) -> bool:
     return changed
 
 
+def label(path: Path) -> str:
+    """A skill by its name, any other page by its path."""
+    return path.parent.name if path.name == "SKILL.md" else str(path.relative_to(ROOT))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true", help="fail on stale blocks without writing")
@@ -186,9 +212,14 @@ def main(argv: list[str] | None = None) -> int:
                 text, changed = prepared(path)
                 if changed:
                     updates.append((path, text))
+        for rel in SLOP["into"]:
+            path = ROOT / rel
+            text, changed = prepared_slop(path)
+            if changed:
+                updates.append((path, text))
         if args.check:
             if updates:
-                print("stale delivered blocks: " + ", ".join(path.parent.name for path, _ in updates)
+                print("stale delivered blocks: " + ", ".join(label(path) for path, _ in updates)
                       + "; run: make render")
                 return 1
             print("delivered blocks current")
@@ -199,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     except (Malformed, OSError) as e:
         print(f"  {e}", file=sys.stderr)
         return 1
-    changed = [path.parent.name for path, _ in updates]
+    changed = [label(path) for path, _ in updates]
     print(f"rendered: {len(changed)} changed" + (f" ({', '.join(changed)})" if changed else ""))
     return 0
 
