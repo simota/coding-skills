@@ -30,7 +30,7 @@ run; a missing one is reported, never installed.
 | Dead code, unused exports and dependencies | knip (JS/TS); vulture, deptry (Python); deadcode, staticcheck (Go); cargo-machete, the compiler's dead-code warnings (Rust) | Code reached by reflection, a plugin loader, or a string |
 | Duplication | jscpd, PMD CPD | Two shapes that do one job with different text |
 | Complexity over a budget | ESLint `complexity`, `max-lines`, `max-params`; xenon (Python); gocognit (Go); lizard (many languages) | Whether the budget is right. A host with none has no finding here, only a missing check |
-| Comments that bind nobody | ruff `ERA` (commented-out code) and `TD`/`FIX` (TODO notes, a `#TODO(agent):` marker excluded); ESLint `no-warning-comments`; an ast-grep or semgrep rule for the host's own phrasings ("workaround", "temporary", "just in case") | Whether the note is still true |
+| Comments the contract does not keep | ruff `ERA` (commented-out code) and `TD`/`FIX` (TODO notes, a `#TODO(agent):` marker excluded); ESLint `no-warning-comments`, `no-inline-comments`; an ast-grep or semgrep rule for the host's own phrasings ("workaround", "temporary", "just in case"); a comment count by file (cloc, tokei, scc) for the rest | Whether a comment left standing cites a constraint that is real |
 | More code than the problem needed | Symptoms only: an interface with one implementation, an abstraction with one caller, a parameter always passed the same value. An ast-grep rule lists candidates | The judgement itself. Candidates go to the human as Questions |
 
 ## Drift between code and docs

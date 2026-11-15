@@ -16,19 +16,17 @@ replace it is deleted. A shape copied whole is a set of claims nobody checked.
 
 ## The verify script
 
-`scripts/verify.sh`, made executable. Each `run` line wraps one command the host already has.
+`scripts/verify.sh`, made executable. Each `run` line wraps one command the host already has, quickest first.
 Output goes to `.verify/`, which the same change adds to the host's ignore file.
 
 ```sh
 #!/usr/bin/env bash
-# One command for a person, an agent and CI. Default: the checks that reach what
-# changed since the base; --full: every check, as CI runs it. Exit 1 names what failed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p .verify && : >.verify/timings
 
 failed=()
-run() {                       # run <name> <command> [args...]
+run() {
   local name=$1 start=$SECONDS log=".verify/$1.log"; shift
   printf '== %s\n' "$name"
   if "$@" >"$log" 2>&1; then
@@ -41,7 +39,6 @@ run() {                       # run <name> <command> [args...]
   printf '%s\t%ss\n' "$name" "$((SECONDS - start))" >>.verify/timings
 }
 
-# A changed path matching this, or a deleted one, reaches code no related test names.
 widens='^(scripts/verify\.sh|\.github/|<dependency manifests>|<lockfiles>|<build and test config>|<shared code>)'
 full=0 changed=(); [ "${1:-}" = "--full" ] && full=1
 [ "$full" = 0 ] && while IFS= read -r path; do
@@ -49,7 +46,6 @@ full=0 changed=(); [ "${1:-}" = "--full" ] && full=1
   changed+=("$path")
 done < <({ git diff --name-only "${VERIFY_BASE:-$(git merge-base HEAD <default branch>)}" --; git ls-files --others --exclude-standard; } | sort -u)
 
-# Every run, quickest first. Use the host's own commands:
 # run format  <format check>
 # run lint    <lint>
 # run types   <type check>
@@ -88,6 +84,7 @@ Every check runs even after one fails, so all failures are repaired in one pass.
 - New behaviour comes with a test for it
 - No existing test is deleted or skipped without a person agreeing
 - A type error or lint warning is fixed, never silenced
+- No comment in code, except a cited outside constraint (ticket, spec, upstream issue), a directive a tool reads, a `#TODO(agent):` marker, a licence or provenance header, or a test's oracle identifier. What a comment would excuse is fixed in the code
 - <the host's own conventions that a linter does not hold>
 
 ## Verification
@@ -191,14 +188,12 @@ first and the guarded paths follow it.
 ```text
 *                         <the team that reviews by default>
 
-# A person, always
 <migrations path>         <owner>
 <dependency manifests>    <owner>
 <lockfiles>               <owner>
 <auth paths>              <owner>
 <infrastructure paths>    <owner>
 
-# The gate's own files
 /AGENTS.md                <owner>
 /scripts/verify.sh        <owner>
 /.github/                 <owner>

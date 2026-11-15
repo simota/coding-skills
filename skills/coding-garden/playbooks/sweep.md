@@ -29,9 +29,9 @@ what the host already has. Nothing here installs, edits or regenerates.
    counted. No declared rules is a finding for `coding-setup`, which declares the
    ones the code keeps, never a licence to infer them and judge against the guess
 6. **What has grown.** Dead code, unused exports and dependencies, duplication,
-   complexity above the host's threshold, and comments: code left commented out,
-   a workaround or excuse left as a note, a TODO with no owner (a `#TODO(agent):`
-   marker is an open residual, never clutter). [checks](checks.md) finds each
+   complexity above the host's threshold, and every comment `_coding/CONTRACT.md`
+   does not keep: code commented out, a what the name should say, an excuse for a
+   workaround, a TODO with no owner (not a `#TODO(agent):` marker). [checks](checks.md) finds each
 7. **Dependencies.** Outdated packages and published advisories, only on a
    go-ahead, because the registry learns the dependency list
 
@@ -57,7 +57,7 @@ Anything on neither list is recorded. The human may move a row; the pass may not
 | A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` if behaviour is unchanged, else `coding-implement` |
 | No declared boundary rules | `coding-setup`, declaring the boundaries the code already keeps |
 | A boundary itself in question | `coding-plan` |
-| A doc that disagrees with the code, or a comment that binds nobody | The skill that next changes that code; documentation and comments travel with it |
+| A doc that disagrees with the code, or a comment the contract does not keep | The skill that next changes that code; documentation and comments travel with it |
 | More code than the problem needed, or prose that may read out of date | The human, as a Question: judging the tree is nobody's standing work |
 | An outdated dependency or an advisory | `coding-implement`, after the human agrees to the upgrade |
 | Edits not yet committed | Whoever is making them; the human says whose they are |

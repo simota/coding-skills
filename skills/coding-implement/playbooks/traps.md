@@ -57,3 +57,4 @@ built on them.
 - Failure routes were chosen deliberately; the unhandled ones were decided, not overlooked
 - Nothing works only because it has not been exercised yet
 - The diff passes each **Check:** in `registry/slop.yaml`; a class that fires is fixed first
+- Every comment line the diff adds was listed, and each is one `_coding/CONTRACT.md` keeps or is gone

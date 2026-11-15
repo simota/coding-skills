@@ -11,7 +11,7 @@ The state of the tree as it stands, read before new work goes on top of it:
 whether the checks still run and still cover what they claim to, whether the
 docs still say what the code does, whether the architecture still keeps its
 declared rules, and what has grown that nothing needs: dead code, duplicates,
-comments that bind nobody, dependencies left behind. It reports and routes.
+comments excusing the code, dependencies left behind. It reports and routes.
 Every finding names the skill that takes it, and finding something wrong never
 authorises fixing it here. Ownership of adjacent work is defined in
 `registry/capabilities.yaml`.

@@ -97,10 +97,10 @@ adjacent work is defined in `registry/capabilities.yaml`.
   `--no-verify` to make a failure disappear. The failure is the information
 - Never: leave commented-out code, a stray debug print, or a `TODO` without the
   `#TODO(agent):` class marker
-- Never: write a comment by default. Agents copy their neighbours, so a
-  workaround or caution in prose spreads. A what becomes a name; a caution
-  becomes a type, a test, or a lint rule. Only a cited outside constraint stays
-  (`_coding/CONTRACT.md`)
+- Never: write a comment. Nine in ten excuse the code: a name that does not say
+  what, a workaround not fixed, a case not handled. Fix that and nothing is left
+  to say: a what becomes a name; a caution a type, a test, or a lint rule. Only a
+  cited outside constraint or a directive a tool reads stays (`_coding/CONTRACT.md`)
 - Never: leave a page saying what the code now says (a plan step just built, a
   README passage on this behaviour). Delete the copy; keep the pointer and the why
 

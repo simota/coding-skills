@@ -94,9 +94,9 @@ command) and holds only what no structure can: the outside constraint, cited by
 its identifier (ticket, spec, upstream issue), and the why that would be
 re-derived wrongly without it. Deleting those costs more, because a `why` in one
 head is unrecoverable. A plan is scaffolding: what the code now says leaves it.
-Never trimmed: a `#TODO(agent):` marker, a licence or provenance header, a test's
-oracle identifier. Nothing checks this: a reading pass over the files this
-run wrote, before the sweep, binding those alone; a nearby workaround is not copied.
+Never trimmed: a cited outside constraint, a `#TODO(agent):` marker, a directive a tool
+reads, a licence or provenance header, a test's oracle identifier. Nothing checks this: a reading
+pass over the files this run wrote, before the sweep, binding those alone; a nearby workaround is not copied.
 
 ## Boundary cases
 

@@ -50,6 +50,7 @@ the report says so.
 | A new dependency needs a person | CODEOWNERS on the manifests and lockfiles |
 | A test is not deleted or skipped to pass | Review. A count of tests in the pull request's evidence makes a drop visible |
 | A type error, a lint warning, or a slop class a tool can decide is fixed, never silenced | The linter's own rule against suppressions, where it has one. For slop, the verify script runs a tool from that class's `tools` in `registry/slop.yaml` that the host already has; a class with none stays discipline, and the report names it |
+| Code carries no comment but a cited outside constraint (ticket, spec, upstream issue), a directive a tool reads, a `#TODO(agent):` marker, a licence or provenance header, or a test's oracle identifier. An excuse is fixed in the code, never written beside it | The host linter's comment rules (ruff `ERA`, `FIX001`, `FIX003`, `FIX004`, `TD001`, `TD002`, or another linter's like), set so every kept kind passes: proved red by a planted excuse and green by a planted marker. They see commented-out code and warning notes only; every other comment is discipline, and the report names it. Red on the untouched tree, they are not wired: the count is a finding for `coding-refactor`, and the ban is discipline until it is green |
 | A pull request with a failing required check is not merged | Branch protection |
 
 ## Risk classes

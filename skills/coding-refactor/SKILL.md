@@ -85,11 +85,11 @@ messages, ordering, and timing that anything depends on.
   begun on a red tree cannot be told apart from the thing that was already broken
 - Always: take one move at a time, running the tests after each
 - Always: keep the tree green at every commit
-- Always: turn a comment that says what the next block does into that block's
-  name: extract, rename, delete the comment. It changes no behaviour, so it is
-  this skill's work. A caution in a comment becomes a test that fails when it
-  is ignored; a type or lint rule that narrows what callers may pass is
-  `coding-implement`'s. A cited outside constraint is left alone
+- Always: leave no comment in the code a move touches, and add none. A what
+  becomes the block's name: extract, rename, delete. A caution becomes a test
+  that fails when it is ignored; a type or lint rule narrowing what callers may
+  pass is `coding-implement`'s. An excuse is deleted, and the workaround under it
+  marked `OUT-OF-SCOPE`. A cited outside constraint, like all `_coding/CONTRACT.md` never trims, is left alone
 - Always: get permission before any change spanning ten or more files. The only
   exception is one substitution applied identically everywhere
 - Never: change behaviour. Not the return value in an edge case, not an error
