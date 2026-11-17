@@ -1,6 +1,6 @@
 ---
 name: coding-garden
-description: "Garden pass before work starts: tree health, doc drift, silent checks, red tests, over-implementation, unnecessary comments, outdated dependencies. Report-only, each finding routed to its owner."
+description: "Garden pass on a repo before work starts, or when resuming or inheriting one: tree health, red tests, silent checks, doc drift, stale dependencies, over-implementation. Report-only, routed."
 allowed-tools: Read, Grep, Glob, Bash
 ---
 <!-- coding:contract -->

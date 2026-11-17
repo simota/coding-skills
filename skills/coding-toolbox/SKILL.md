@@ -1,6 +1,6 @@
 ---
 name: coding-toolbox
-description: "Sharing the scripts agents write between runs: find a helper script before writing one, keep a throwaway script in the project toolbox so the next agent can reuse it, and prune stale tools."
+description: "Reuse helper scripts between runs: check the project toolbox before writing a throwaway script, keep any script rewritten each time for the next agent to reuse, and prune stale tools."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->

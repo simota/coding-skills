@@ -1,6 +1,6 @@
 ---
 name: coding-setup
-description: "Making a repo agent-ready, so an agent proves each change: AGENTS.md, a feature map, a verify script, CI gates, CODEOWNERS, a PR template (pull request template), branch protection, required checks."
+description: "Making a repo agent-ready: AGENTS.md, feature map, verify script, CI gates that block merges or check nothing, CODEOWNERS, PR template (pull request template), branch protection, required checks."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->
