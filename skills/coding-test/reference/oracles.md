@@ -7,7 +7,7 @@ Read when: writing any assertion, reviewing a suite that passes while behaviour 
 
 Source: git — only the regression-test rule's recipe depends on it, and it is run against whatever is installed; the catalogue itself is this set's own.
 
-Verified: 2026-10-09 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. Both halves of the git recipe are re-run by `make figures` on every commit — the stash with a newly created fix file, and the revert with staged and unstaged test edits; the catalogue has no automated check.
+Verified: 2026-11-18 — catalogue of oracle kinds and their failure modes; the examples are illustrative, the disqualifying question is the operative rule. Both halves of the git recipe are re-run by `make figures` on every commit — the stash with a newly created fix file, and the revert with staged and unstaged test edits; the catalogue has no automated check.
 
 To test something you must already know the right answer. Where that answer came
 from decides whether the test is evidence or decoration, and a decorative test
@@ -51,28 +51,29 @@ Fits anything with a closed form: money, dates, encodings, geometry, parsing.
 The cost is real work per case, so use it on the boundaries and use a property
 for the interior.
 
-## 3. Property
+## 3. Property — a relation that holds for every generated input
 
-No single expected value; an invariant that must hold for every input.
+| Relation | Holds when |
+|---|---|
+| Round-trip, idempotence | `decode(encode(x)) == x`; `f(f(x)) == f(x)` |
+| Conservation, order | totals and counts match before and after; `sort` returns a non-decreasing permutation of its input |
+| Metamorphic | two runs related by a known transformation agree: a query and its synonym, a total under shuffled input. The oracle for output nobody can write down |
+| Differential | the code agrees with a reference that shares none of it: §2's slow version, the tool it replaces, the last release |
 
-- round-trip: `decode(encode(x)) == x`
-- idempotence: `f(f(x)) == f(x)`
-- conservation: sums, counts, and balances before and after
-- ordering: the result of `sort` is non-decreasing and a permutation of the input
+A property finds the case nobody thought of, the one that reaches production.
+Short of a differential it shows consistency, not that the value is *right*:
+pair it with one specification case. It is evidence only when built to fail:
 
-A property finds the case nobody thought of, which is exactly the case that
-reaches production. It cannot tell you the value is *right*, only consistent,
-so pair it with one specification case.
+| Rule | Because |
+|---|---|
+| Generate hostile, not uniform: the boundaries in [cases](../playbooks/cases.md), keys like `__proto__`, escapes, combining Unicode, small domains (`-3..3`) | Uniform draws rarely land where the code branches, and only a small domain makes values collide |
+| Count accepted and rejected inputs, and assert a floor for each | A generator whose every input is refused at the first guard passes vacuously |
+| Seed and run count from the environment, a default cheap enough for every run, the library pinned, the seed in the failure message | A failure nobody can replay is a flake report |
+| Shrink, then pin: the smallest failing input, in the code's terms, becomes a plain regression case | It keeps guarding after the generator changes. Without a shrinker, swap one part at a time for a plain value while the same failure remains |
+| Never narrow the generator to lose a counterexample, unless the contract excludes that input; name the clause | Narrowing the domain is weakening the assertion |
+| Generate inputs for the real code, with the property library the repo already carries | A hand model of the function tests the model; a new library is a dependency change, reported as one |
 
-## 4. Metamorphic relation
-
-Two runs related by a known transformation, when no absolute answer exists.
-Search results for a query and its synonym; a total that must not change when
-the input order is shuffled; a render at two densities.
-
-The standard oracle for anything whose correct output nobody can write down.
-
-## 5. Golden / snapshot — only with provenance
+## 4. Golden / snapshot — only with provenance
 
 A recorded output is a legitimate oracle **when someone verified the recording
 once and said so**, and only for output whose shape matters more than its value.
