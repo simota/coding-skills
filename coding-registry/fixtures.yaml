@@ -66,13 +66,13 @@
 - ask: "write the PR description"
   expect: coding-ship
 
-# Added with coding-preflight: a plan that exists is attacked, not re-planned.
+# Added with coding-plan-review: a plan that exists is attacked, not re-planned.
 - ask: "visualise the implementation plan and find every design flaw before we build"
-  expect: coding-preflight
+  expect: coding-plan-review
 - ask: "preflight this: draw the data flow and the failure paths"
-  expect: coding-preflight
+  expect: coding-plan-review
 - ask: "draw a diagram of the written plan and try to break it"
-  expect: coding-preflight
+  expect: coding-plan-review
 
 # Added with coding-toolbox: a script worth keeping is kept, not rewritten.
 - ask: "keep this throwaway script so the next agent can reuse it"

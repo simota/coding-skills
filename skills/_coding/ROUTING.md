@@ -16,7 +16,7 @@ is a reading of that file, not a second copy of it.
 |---|---|---|
 | `coding-explore` | Where things are, how a path works, what a change would touch | No |
 | `coding-plan` | The shape before code exists: interfaces, data model, build order | No |
-| `coding-preflight` | A written plan drawn in every view and attacked for design flaws before it is built | No |
+| `coding-plan-review` | A written plan drawn in every view and attacked for design flaws before it is built | No |
 | `coding-implement` | Producing working code: features, endpoints, screens, logic | Yes |
 | `coding-debug` | Why something is broken: reproduced, root-caused, then fixed | Yes |
 | `coding-refactor` | Changing structure while behaviour stays identical | Yes |

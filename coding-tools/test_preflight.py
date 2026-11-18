@@ -16,7 +16,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
 import refute                                       # noqa: E402
 
-SKILL = pathlib.Path(__file__).resolve().parent.parent / "skills" / "coding-preflight"
+SKILL = pathlib.Path(__file__).resolve().parent.parent / "skills" / "coding-plan-review"
 SHEET = (SKILL / "sheet.html").read_text(encoding="utf-8")
 HUNT = (SKILL / "playbooks" / "hunt.md").read_text(encoding="utf-8")
 

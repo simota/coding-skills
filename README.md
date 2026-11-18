@@ -10,7 +10,7 @@ through. Each skill owns one phase and returns evidence rather than assurances.
 |---|---|---|
 | [`coding-explore`](skills/coding-explore/SKILL.md) | Where things are, how a path works, what a change would touch | No |
 | [`coding-plan`](skills/coding-plan/SKILL.md) | The shape before code exists: interfaces, data model, build order | No |
-| [`coding-preflight`](skills/coding-preflight/SKILL.md) | A written plan drawn in every view, and its design flaws hunted before it is built | No |
+| [`coding-plan-review`](skills/coding-plan-review/SKILL.md) | A written plan drawn in every view, and its design flaws hunted before it is built | No |
 | [`coding-implement`](skills/coding-implement/SKILL.md) | Producing working code | Yes |
 | [`coding-debug`](skills/coding-debug/SKILL.md) | Reproducing, proving a cause, fixing minimally | Yes |
 | [`coding-refactor`](skills/coding-refactor/SKILL.md) | Structure changed, behaviour identical | Yes |

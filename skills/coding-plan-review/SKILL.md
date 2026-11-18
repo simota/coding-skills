@@ -1,5 +1,5 @@
 ---
-name: coding-preflight
+name: coding-plan-review
 description: "Preflight of an implementation plan before it is built: visualise every view as a diagram — dependencies, data flow, sequence, failure paths — and hunt each design flaw to zero. Use on a written plan."
 allowed-tools: Read, Grep, Glob, Bash, Write
 ---
