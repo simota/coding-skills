@@ -119,7 +119,7 @@ classes:
       regardless of how the report reads.
   - title: A proof that proves nothing
     tools:
-      - "Lean #print axioms on each changed theorem: sorryAx, or an axiom absent from its output at the base commit, other than propext, Classical.choice and Quot.sound"
+      - "Lean #print axioms on each changed theorem: an axiom, sorryAx included, in neither its own output at the base commit nor the base commit's own declarations, other than propext, Classical.choice and Quot.sound"
     body: |
       The checker accepts it and nothing was shown: a `sorry`, `admit`, `Admitted`,
       `axiom`, `assume` or `#[verifier::external_body]` closing what the proof could

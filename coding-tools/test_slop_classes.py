@@ -4,13 +4,15 @@
 coding-implement runs each class's **Check:** before a handoff and coding-setup
 gates a class through its `tools`, so a check that points the wrong way passes
 the defect it names. Nothing here runs a prover: what is tested is the wording
-an agent and a gate act on.
+an agent and a gate act on, and each reading is shown rejecting the wording
+that points the other way.
 
 Run: make test
 """
 from __future__ import annotations
 
 import pathlib
+import re
 import unittest
 
 import yaml
@@ -21,6 +23,18 @@ CLASSES = yaml.safe_load((ROOT / "coding-registry" / "slop.yaml").read_text(enco
 
 def _class(title: str) -> dict:
     return next(c for c in CLASSES if c["title"] == title)
+
+
+def exempts_lean_builtins(tool: str) -> bool:
+    return re.search(r"other than propext, Classical\.choice and Quot\.sound", tool) is not None
+
+
+def judges_sorry_against_the_base(tool: str) -> bool:
+    return "sorryAx included" in tool and re.search(r"sorryAx,? or\b", tool) is None
+
+
+def gives_a_new_theorem_a_baseline(tool: str) -> bool:
+    return "the base commit's own declarations" in tool
 
 
 class ProofThatProvesNothing(unittest.TestCase):
@@ -43,8 +57,22 @@ class ProofThatProvesNothing(unittest.TestCase):
 
     def test_the_axioms_lean_itself_supplies_do_not_fire_the_gate(self):
         """`simp`, classical reasoning and quotients print these for a sound proof."""
-        for builtin in ("propext", "Classical.choice", "Quot.sound"):
-            self.assertIn(builtin, self.axioms_tool)
+        self.assertTrue(exempts_lean_builtins(self.axioms_tool))
+        self.assertFalse(exempts_lean_builtins(
+            "Lean #print axioms: sorryAx, or propext, Classical.choice and Quot.sound"))
+
+    def test_a_sorry_already_at_the_base_does_not_fire_the_gate(self):
+        """The check fires on an escape hatch the diff adds, not one it touches."""
+        self.assertTrue(judges_sorry_against_the_base(self.axioms_tool))
+        self.assertFalse(judges_sorry_against_the_base(
+            "Lean #print axioms: sorryAx, or an axiom absent at the base commit"))
+
+    def test_a_new_theorem_is_judged_against_the_axioms_the_base_declared(self):
+        """A theorem the diff adds or renames has no output at the base; using an
+        axiom the repo already declared adds no escape hatch."""
+        self.assertTrue(gives_a_new_theorem_a_baseline(self.axioms_tool))
+        self.assertFalse(gives_a_new_theorem_a_baseline(
+            "Lean #print axioms: an axiom absent from its output at the base commit"))
 
     def test_the_tool_and_the_check_judge_a_new_axiom_alike(self):
         """The check fires on an escape hatch the diff adds, so the tool must too:
