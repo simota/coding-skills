@@ -114,6 +114,18 @@ one defect whose evidence is outside the diff.
 **Check:** for each claim of a passing test, build, or run, find the command and
 its output. Absent that, the grade is `asserted`, and the change is `UNVERIFIED`
 regardless of how the report reads.
+
+## 11. A proof that proves nothing
+
+The checker accepts it and nothing was shown: a `sorry`, `admit`, `Admitted`,
+`axiom`, `assume` or `#[verifier::external_body]` closing what the proof could
+not; a precondition narrowed until the failing inputs are excluded; a
+postcondition weakened in the same diff as the proof that now meets it.
+
+**Check:** diff the specification apart from the proof. An escape hatch it
+adds, a `requires` it narrows or an `ensures` it weakens is the defect, whatever
+the checker printed. The `requires` must still admit every input the
+requirement covers, and one wrong output must fail the `ensures`.
 <!-- /render:slop -->
 ## Order
 

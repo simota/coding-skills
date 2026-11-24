@@ -164,7 +164,7 @@ and when it was last checked against the tool.
 | [`coding-explore/reference/history.md`](skills/coding-explore/reference/history.md) | `-S` vs `-G`, the `..`/`...` inversion between `log` and `diff`, blame that stops lying, finding deleted code |
 | [`coding-review/reference/diff-scoping.md`](skills/coding-review/reference/diff-scoping.md) | Getting the whole change set, and the commands that silently return a subset |
 | [`coding-review/reference/diagram-forms.md`](skills/coding-review/reference/diagram-forms.md) | The copy-paste ASCII form for each finding a reader would otherwise reassemble |
-| [`coding-review/reference/machine-authored.md`](skills/coding-review/reference/machine-authored.md) | The ten defect classes that concentrate in generated code, each with a runnable check |
+| [`coding-review/reference/machine-authored.md`](skills/coding-review/reference/machine-authored.md) | The defect classes that concentrate in generated code, each with a runnable check |
 | [`coding-ship/reference/recovery.md`](skills/coding-ship/reference/recovery.md) | What git can undo, what nothing can, and the one command that makes the difference |
 | [`coding-setup/reference/templates.md`](skills/coding-setup/reference/templates.md) | A starting shape for the agent rules, the feature map, the verify script, the CI workflow, the pull request template and CODEOWNERS |
 | [`coding-test/reference/oracles.md`](skills/coding-test/reference/oracles.md) | Where an expected value may come from, and the shapes that assert nothing |
@@ -187,17 +187,9 @@ fails if they stop agreeing.
 `_coding`, with only the directories in `platform_dirs` (`.git`, `.github`,
 `.claude`, `skills`, `docs`) exempt. A rule enforces it.
 
-The weaker rule is tempting: prefix only what gets installed, and leave
-`registry/` and `tools/` generic since they never leave the repo. It fails on
-its premise. "Never leaves the repo" is a claim about every future install
-script, every copy command, and every consolidation of these sets into one
-tree — and the sibling set's `cp -R … _common` line is exactly what that claim
-looks like once it is wrong. A name that cannot collide beats a name that is
-not supposed to.
-
-**Being prefixed is not what makes something installable.** `coding-registry/`
-and `coding-tools/` share the prefix and are never installed; a skill is a
-directory holding a `SKILL.md`, and that is what `make link` links.
+Prefixing only what gets installed fails on its premise: "never leaves the
+repo" is a claim about every future copy command, and the `cp -R … _common`
+line above is that claim once wrong.
 
 **Everything a skill reads lives inside the skill.** The contracts and the
 registry are reached through symlinks in each skill directory — named `_coding`
@@ -208,10 +200,7 @@ not travel back through the install symlink. A shell follows the link and finds
 the file, which is what makes this fail quietly rather than loudly. A rule
 rejects any backticked path containing `..` and any link that climbs out of the
 skill directory, and checks that every path named in a `SKILL.md`, a playbook,
-**or a shared contract** resolves from a skill directory. Extending that check
-past `SKILL.md` found two live breaks: a contract pointing at
-`registry/capabilities.yaml` from the wrong base, and a playbook pointing into
-another skill's playbook — which should name the skill, not reach into it.
+**or a shared contract** resolves from a skill directory.
 
 ## Working on it
 
@@ -244,8 +233,7 @@ file before any is renamed into place: a write that fails leaves every skill as 
 and only a failed rename, once every new text is on disk, can stop partway.
 
 Adding a rule means adding a deliberate violation to `coding-tools/test_validate.py`
-and watching it fail. A check only ever seen passing may be checking nothing —
-building that test found one rule that could not fail at all.
+and watching it fail. A check only ever seen passing may be checking nothing.
 
 Nearing a playbook cap is not a reason to split a skill. Merge the duplicates,
 delete what nothing reads, compress it into a `Decide first` row, move it to the
