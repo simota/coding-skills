@@ -58,7 +58,7 @@ green honestly.
 |---|---|
 | Choosing which cases to write | [cases](playbooks/cases.md). Derive from behaviour and boundaries, not from lines |
 | A test passes sometimes | [flaky](playbooks/flaky.md). Never fix it with a retry or a longer sleep |
-| Deciding what the expected value should be | [oracles](reference/oracles.md). Ask where it came from. A value copied from the output asserts that the code equals itself. No single value exists: a property over generated inputs (§ 3. Property) |
+| Deciding what the expected value should be | [oracles](reference/oracles.md). Ask where it came from. A value copied from the output asserts that the code equals itself. No single value exists: a property over generated inputs (§ 3. Property). It must hold for every input, or a prover is in the repo: [proofs](reference/proofs.md) |
 | Writing a regression test for a fixed bug | Write it so it fails on the pre-fix code. Verify by removing only the fix, recoverably ([oracles](reference/oracles.md) § The regression-test rule), running it, and restoring |
 | The code is hard to test | That is information about the code, not about testing. Usually a missing seam: hand it to `coding-refactor` rather than building elaborate mocks |
 | A test needs six mocks to run | The unit is wrong. Test a level up, where fewer things need faking |

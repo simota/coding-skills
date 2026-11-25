@@ -32,8 +32,9 @@ limits:
   routes_max: 12
   route_stages_max: 6
   # reference/ has no budget of its own and is counted here. Each raise has
-  # been one new skill's measured size; how each was derived is in git history.
-  repo_md_lines_total: 6061
+  # been one new skill's measured size, or one reference page's (coding-test
+  # proofs.md); how each was derived is in git history.
+  repo_md_lines_total: 6105
 
 permission_classes:
   read-only:
