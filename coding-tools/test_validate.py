@@ -66,8 +66,8 @@ def _(r): sub(r / f"{S}coding-test/SKILL.md", "## Owns", "## Owns\n" + "x\n" * 2
 
 
 @case("V2")
-def _(r): sub(r / f"{S}coding-test/SKILL.md", "Building the checks",
-              "Not for coding-debug. Building the checks")
+def _(r): sub(r / f"{S}coding-test/SKILL.md", "Building checks",
+              "Not for coding-debug. Building checks")
 
 
 @case("V3")
@@ -430,8 +430,8 @@ def _(r): sub(r / "coding-registry/harness.yaml", "source_authorities:", "unused
 @case("V1-multiline")
 def _(r):
     """A quoted description continued onto a second line is one long value."""
-    sub(r / f"{S}coding-test/SKILL.md", "Use for standalone test work or an unreliable suite.\"",
-        "Use for standalone test work or an unreliable suite.\n  " + "y" * 250 + "\"")
+    sub(r / f"{S}coding-test/SKILL.md", "Use for standalone tests or an unreliable suite.\"",
+        "Use for standalone tests or an unreliable suite.\n  " + "y" * 250 + "\"")
 
 
 @case("V2-case")

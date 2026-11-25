@@ -82,7 +82,7 @@ coding-test:
       go: coding-debug
     - what: "checks of the current implementation, diagnosis, or refactor, including retained guards"
       go: "the skill making that run"
-  signals: [test cases, coverage, regression test, regression tests, assert, flaky, unreliable suite]
+  signals: [test cases, coverage, regression test, regression tests, assert, flaky, unreliable suite, formal verification]
 
 coding-review:
   class: read-only

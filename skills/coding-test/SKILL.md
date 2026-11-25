@@ -1,6 +1,6 @@
 ---
 name: coding-test
-description: "Building the checks that catch defects: test cases, coverage of untested behaviour, regression tests, flaky repair, and what to assert. Use for standalone test work or an unreliable suite."
+description: "Building checks that catch defects: test cases, coverage of untested behaviour, regression tests, flaky repair, formal verification, what to assert. Use for standalone tests or an unreliable suite."
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 <!-- coding:contract -->

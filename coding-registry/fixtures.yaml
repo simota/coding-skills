@@ -61,6 +61,8 @@
   expect: coding-refactor
 - ask: "add a regression test for last week's checkout fix"
   expect: coding-test
+- ask: "add formal verification to the ledger's balance rule"
+  expect: coding-test
 - ask: "review this pull request for defects"
   expect: coding-review
 - ask: "write the PR description"
