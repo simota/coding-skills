@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 5
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: The page has to exist before it is published
@@ -43,5 +43,18 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
+      # The artifact service can list a just-finalized artifact as absent, and
+      # deploy-pages looks once, a few hundred milliseconds after the upload
+      # (actions/deploy-pages#451). Re-running the job cannot recover: the new
+      # attempt uploads a second `github-pages` and the lookup then finds two.
+      # So the lookup is retried inside this attempt, where there is only one.
+      # The first try fails before any deployment is created.
       - id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Give the artifact listing time to catch up
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
