@@ -7,7 +7,7 @@ Read when: about to write one of those files into a host that has none, or check
 
 Source: none — these are this set's own shapes. The verify script finds the change with git (`diff --name-only`, `merge-base`, `ls-files --others`). The workflow names two hosted actions by major version as an example; the host's own pins replace them.
 
-Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored; the default run is shown to run only the related check, to widen to every check on a widening or deleted path, to write the timings, and to leave a baseline only from a full run over a tree with nothing uncommitted. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
+Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored; the default run is shown to run only the related check, to widen to every check on a widening or deleted path, to write the timings, to report a default run over its budget without failing on it, and to leave a baseline only from a full run over a tree with nothing uncommitted. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
 
 Every `<…>` is replaced by what the host does, and a line with nothing to
 replace it is deleted. A shape copied whole is a set of claims nobody checked.
@@ -40,7 +40,7 @@ run() {
 }
 
 widens='^(scripts/verify\.sh|\.github/|<dependency manifests>|<lockfiles>|<build and test config>|<shared code>)'
-full=0 changed=(); [ "${1:-}" = "--full" ] && full=1
+full=0 changed=() budget=${VERIFY_BUDGET:-<seconds a default run may take>}; [ "${1:-}" = "--full" ] && full=1
 [ "$full" = 0 ] && while IFS= read -r path; do
   if [ ! -e "$path" ] || [[ $path =~ $widens ]]; then echo "verify: $path widens the change"; full=1; break; fi
   changed+=("$path")
@@ -50,7 +50,7 @@ done < <({ git diff --name-only "${VERIFY_BASE:-$(git merge-base HEAD <default b
 # run lint    <lint>
 # run types   <type check>
 if [ "$full" = 1 ]; then
-  : # run unit        <unit tests>
+  : # run unit        <unit tests, each test's time written under .verify/>
   : # run build       <build>
   : # run integration <integration tests>
   : # run e2e         <end-to-end tests>
@@ -60,6 +60,8 @@ fi
 
 summary="verify: ok"; [ "${#failed[@]}" -gt 0 ] && summary="verify: FAILED: ${failed[*]}"
 [ "$full" = 1 ] && [ -z "$(git status --porcelain)" ] && echo "$summary" >".verify/baseline-$(git rev-parse HEAD)"
+[ "$full" = 0 ] && rm -f .verify/over-budget && [ "$SECONDS" -gt "$budget" ] &&
+  echo "verify: ${SECONDS}s, over the ${budget}s budget: see .verify/timings" | tee .verify/over-budget
 echo "not covered: <what the host has no check for>"
 echo "$summary"
 [ "${#failed[@]}" -eq 0 ]
@@ -67,6 +69,7 @@ echo "$summary"
 
 Every check runs even after one fails, so all failures are repaired in one pass.
 `related` is the host's related-tests command: `jest --findRelatedTests`, `pytest --testmon`, the feature map's narrowest one.
+The budget is reported, never failed: [suite-cost](suite-cost.md) says why, and what to cut.
 
 ## The agent rules
 
@@ -89,7 +92,7 @@ Every check runs even after one fails, so all failures are repaired in one pass.
 
 ## Verification
 - After every change: `./scripts/verify.sh` (the checks that reach it; slow ones
-  in `.verify/timings`). Before a pull request: `./scripts/verify.sh --full`
+  in `.verify/timings`, a run over budget in `.verify/over-budget`). Before a pull request: `./scripts/verify.sh --full`
 - A change to <the UI paths> also runs <the end-to-end command>
 - A failing check is investigated and repaired. Its log is under `.verify/`
 - To find a feature's code and tests: `docs/feature-map.md`

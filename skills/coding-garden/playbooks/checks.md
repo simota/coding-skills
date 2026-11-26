@@ -52,6 +52,15 @@ run; a missing one is reported, never installed.
 | Thresholds | A threshold at the tool's maximum, or raised in the history without a reason in the message |
 | Skipped tests | The runner's skip count, each skip with its stated reason |
 
+## What the suite costs
+
+| Kind | What checks it | What it cannot see |
+|---|---|---|
+| The default run over its budget | `.verify/over-budget` where a default run left one; the slow checks in `.verify/timings` from the gate's `--full` run or CI's kept `.verify/` | The right budget. No `VERIFY_BUDGET` set is a finding for `coding-setup` |
+| Slow tests | The runner's per-test durations (`pytest --durations=0`, `jest --json`, `go test -json`), slowest first | Whether the time buys anything |
+| A slow test in the default run | The default run on a one-file change, in a `cp -R` copy: each `==` check it runs that holds none of the feature map's tests for that file | A test reached only at runtime |
+| A test that buys nothing alone | Mutants killed per test (mutmut, Stryker, PIT, cargo-mutants), else coverage per test (coverage.py `--cov-context=test`), run in a `cp -R` copy over the slowest tests only | A defect no mutation operator makes. Coverage alone, or a test that never failed, sends a Question, never a retirement |
+
 ## Dependencies
 
 The package manager's report of outdated packages or an installed equivalent

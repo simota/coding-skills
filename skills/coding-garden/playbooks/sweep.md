@@ -18,7 +18,8 @@ what the host already has. Nothing here installs, edits or regenerates.
    rule is disabled wholesale. Count the suppressions in scope (`eslint-disable`,
    `# noqa`, `@ts-ignore`, `#[allow(`) now and a month of history back: more now is a finding
 3. **The tests** in scope that the gate did not run. A skipped or disabled test
-   is listed with its reason, or as giving none
+   is listed with its reason, or as giving none. Then what the suite costs: the
+   gate's run against its budget, the slowest tests, and what each buys alone ([checks](checks.md))
 4. **The docs.** Every path the agent rules and the feature map name exists.
    Every read-only command they give runs as written; one that changes state is
    listed, not run. Generated docs (an API schema, a CLI's help, an API report)
@@ -39,7 +40,7 @@ what the host already has. Nothing here installs, edits or regenerates.
 
 | Blocks the start | Only recorded |
 |---|---|
-| The gate absent, or red in the area about to change; a check silent | Dead code, duplication, complexity, comments; suppressions grown, a threshold raised |
+| The gate absent, or red in the area about to change; a check silent | Dead code, duplication, complexity, comments; suppressions grown, a threshold raised; a default run over its budget, a test that buys nothing alone |
 | A test red in the area about to change | A test red elsewhere, with its area; a test skipped |
 | A command or path in the agent rules that fails: the next agent follows it | Drift in docs written for people |
 | A boundary violation in the area about to change | Violations elsewhere, and cycles |
@@ -54,6 +55,7 @@ Anything on neither list is recorded. The human may move a row; the pass may not
 | The gate or a test is red | `coding-debug`; `coding-test` once the cause is the test itself |
 | The gate absent; a check silent, broken or missing; a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
 | A test skipped, disabled, or asserting nothing | `coding-test` |
+| A default run over its budget, a slow test, a test that buys nothing alone | `coding-test`: made cheaper first, retired only on mutation evidence, each one agreed by the human. No budget, no per-test times, or no slow tier to move it to: `coding-setup` |
 | A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` if behaviour is unchanged, else `coding-implement` |
 | No declared boundary rules | `coding-setup`, declaring the boundaries the code already keeps |
 | A boundary itself in question | `coding-plan` |

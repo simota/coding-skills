@@ -93,7 +93,9 @@ class Proof(unittest.TestCase):
         script = shape("The verify script") \
             .replace("<default branch>", "HEAD") \
             .replace("<shared code>", "shared/") \
-            .replace("  : # run unit        <unit tests>", "  run unit grep -q ok product.txt") \
+            .replace("<seconds a default run may take>", "60") \
+            .replace("  : # run unit        <unit tests, each test's time written under .verify/>",
+                     "  run unit grep -q ok product.txt") \
             .replace("  : # run integration <integration tests>",
                      "  run integration grep -q ok product.txt") \
             .replace('  : # run related <the host\'s command for the tests that reach these files> "${changed[@]}"',
@@ -205,6 +207,26 @@ class Proof(unittest.TestCase):
         timings = (self.repo / ".verify" / "timings").read_text()
         self.assertEqual([line.split("\t")[0] for line in timings.splitlines()],
                          ["unit", "integration"])
+
+    def test_a_default_run_over_its_budget_is_reported_and_not_failed(self) -> None:
+        """A gate red on time is turned green by deleting tests, so the budget
+        only reports, and a later run inside it clears the report."""
+        self.script.chmod(0o755)
+        self.commit_all()
+        (self.repo / "product.txt").write_text("ok, edited\n")
+        over = subprocess.run(["./scripts/verify.sh"], cwd=self.repo, text=True, capture_output=True,
+                              env={**os.environ, "VERIFY_BUDGET": "-1"})
+        self.assertEqual(over.returncode, 0, over.stdout)
+        self.assertIn("over the -1s budget", over.stdout)
+        self.assertTrue((self.repo / ".verify" / "over-budget").exists())
+        within = self.verify()
+        self.assertEqual(within.returncode, 0, within.stdout)
+        self.assertNotIn("budget", within.stdout)
+        self.assertFalse((self.repo / ".verify" / "over-budget").exists())
+        (self.repo / "product.txt").write_text("planted\n")
+        red = subprocess.run(["./scripts/verify.sh"], cwd=self.repo, text=True, capture_output=True,
+                             env={**os.environ, "VERIFY_BUDGET": "-1"})
+        self.assertEqual(red.returncode, 1, red.stdout)
 
     def test_a_baseline_comes_only_from_a_full_run_over_a_committed_tree(self) -> None:
         """A baseline taken over uncommitted work is not the commit's, and a

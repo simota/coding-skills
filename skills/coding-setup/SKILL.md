@@ -64,6 +64,7 @@ in `registry/capabilities.yaml`.
 | About to write one of the files | [templates](reference/templates.md): a starting shape for each. Every line is replaced by what this host does, or deleted |
 | The file already exists | Merge into it and keep its rules; never replace it. Where it and the code disagree, that is a question for the human |
 | The verify script is red on the untouched tree | Stop laying on top of it. The failing check is the audit's first finding, and repairing the product is not this run's work |
+| The suite is too slow to run after every change, or a test is proposed as redundant | [suite-cost](reference/suite-cost.md): a budget the run reports against, the cheapest move first, and a test retired only on evidence a person agrees to |
 | The host has no command for a check (no types, no linter, no tests) | The verify script runs what exists and prints what it does not cover. Adopting a tool adds a dependency: the human's call |
 | The host's rules allow comments in code, or say nothing | The ban goes into `AGENTS.md`, and into the gate where the host's linter can hold it and the untouched tree passes it ([lay](playbooks/lay.md) § The safety rules every host gets). No script, workflow or config this run writes carries one. Comments already in product code are `coding-refactor`'s |
 | A rule no command can check | It stays in `AGENTS.md`, under the heading that says it is discipline. Never dressed as enforced |
@@ -106,10 +107,9 @@ in `registry/capabilities.yaml`.
 
 ## Verify with
 
-`scripts/verify.sh` exits zero on the untouched tree, with `--full` too, and
-for each check it wraps one planted break made it exit non-zero naming that
-check (evidence: `executed`), the status afterwards as it was before. Every
-path in the feature map exists and every command in `AGENTS.md` was run as written.
+`scripts/verify.sh` exits zero on the untouched tree, with `--full` too, and for each check it wraps one planted
+break made it exit non-zero naming that check (evidence: `executed`), the status afterwards as it was before.
+Every path in the feature map exists and every command in `AGENTS.md` was run as written.
 
 - **A workflow no pull request has run, and a forge setting not read back, are
   `inspected`**. Each says why, and is `UNVERIFIED` until one is
