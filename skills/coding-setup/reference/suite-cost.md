@@ -30,14 +30,14 @@ garden pass, and the budget is the human's number.
 
 ## Moves, cheapest loss first
 
-1. **Run it less often.** A test that reaches nothing in the change leaves the
-   default run: the related command, or a slow tier only `--full` runs. CI still runs it
+1. **Run it less often.** A test that reaches nothing in the change leaves the default run: the related command, or a slow tier only `--full` runs.
+   A slow test the change reaches still runs by default; a tier fixed by name or marker alone skips it. CI still runs it
 2. **Make it cheaper.** A real sleep, a real network call, a fixture rebuilt per
    test, a whole app started for one function: `coding-test`, asserting what it asserted
 3. **Run it in parallel.** The runner's own workers or shards (`jest --maxWorkers`,
    `go test -p`). A plugin that adds them is a new dependency: the human's
-4. **Retire it.** Only a test that buys nothing alone, on the evidence below,
-   each one agreed by a person. `coding-test` removes it
+4. **Retire it.** Only a test that buys nothing alone, on the evidence below, each one agreed by a person. `coding-test` removes it.
+   A request to delete is not that agreement: the reply shows the rung its evidence reaches and asks, and deletes nothing
 
 ## When a test buys nothing
 
