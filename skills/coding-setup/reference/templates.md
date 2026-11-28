@@ -1,13 +1,13 @@
 <!-- coding:deferred -->
 # Templates — a starting shape for each file a setup lays
 
-Purpose: One starting shape per file — the agent rules, the feature map, the verify script, the CI workflow, the pull request template and CODEOWNERS — so a setup run edits a shape, never invents one.
+Purpose: One starting shape per file — the agent rules, the feature map, the verify script, the CI workflow, the pull request template, the review rules and CODEOWNERS — so a setup run edits a shape, never invents one.
 
 Read when: about to write one of those files into a host that has none, or checking an existing one for a missing part.
 
 Source: none — these are this set's own shapes. The verify script finds the change with git (`diff --name-only`, `merge-base`, `ls-files --others`). The workflow names two hosted actions by major version as an example; the host's own pins replace them.
 
-Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored; the default run is shown to run only the related check, to widen to every check on a widening or deleted path, to write the timings, to report a default run over its budget without failing on it, and to leave a baseline only from a full run over a tree with nothing uncommitted. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map and CODEOWNERS have no automated check.
+Verified: 2026-11-12 — the verify script is re-run by the set's test_setup_templates suite on every check: green, red on a planted break with the check named, and the tree restored; the default run is shown to run only the related check, to widen to every check on a widening or deleted path, to write the timings, to report a default run over its budget without failing on it, and to leave a baseline only from a full run over a tree with nothing uncommitted. The same suite holds the workflow's triggers and its artefact settings. The agent rules, the feature map, the review rules and CODEOWNERS have no automated check.
 
 Every `<…>` is replaced by what the host does, and a line with nothing to
 replace it is deleted. A shape copied whole is a set of claims nobody checked.
@@ -183,6 +183,28 @@ jobs:
 <low, medium or high — decided by the paths touched>
 ```
 
+## The review rules
+
+`REVIEW.md` at the root, read by Claude Code Review from the pull request's base branch when a ruleset
+protects it, else from the default branch; never from the pull request. Only what changes a review: the
+rules every task needs stay in `AGENTS.md` (the local `/code-review` reads `CLAUDE.md`, not this file).
+
+```markdown
+# REVIEW.md
+
+## What Important means here
+- A behaviour break, a data leak, a blocked rollback
+- Any change under <the high-risk paths CODEOWNERS guards> without its owner's evidence
+
+## Do not report
+- What `./scripts/verify.sh` checks: <its check names>
+- <generated paths>
+
+## Always check
+- <each rule under the Discipline heading of AGENTS.md, by name>
+- Each finding cites `file:line`
+```
+
 ## CODEOWNERS
 
 `.github/CODEOWNERS`. The last matching line wins, so the general owner is
@@ -199,5 +221,6 @@ first and the guarded paths follow it.
 
 /AGENTS.md                <owner>
 /scripts/verify.sh        <owner>
+/REVIEW.md                <owner>
 /.github/                 <owner>
 ```

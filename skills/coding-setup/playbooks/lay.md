@@ -12,8 +12,8 @@ run can stop after any step with what exists so far still working.
 2. `AGENTS.md`: what an agent may do, what it must do, and what it must ask about
 3. `docs/feature-map.md`: where each feature's code and tests are
 4. The CI workflow: runs the verify script on every pull request
-5. The pull request template and CODEOWNERS: what a person is shown, and
-   which person
+5. The pull request template, CODEOWNERS and `REVIEW.md`: what a person is
+   shown, which person, and what the review bot flags
 6. Self-verification: a setup script, a smoke test, failure artefacts
 7. Forge settings: written out for the human, applied only on a go-ahead
 
@@ -29,6 +29,7 @@ one with all seven half done.
 | `docs/feature-map.md` | One row per feature, named as issues name it: the entry paths and the tests, and the narrowest command that runs only those tests | A path in it is missing, or it lists every file. That is a copy of the tree, and the tree is already there |
 | The CI workflow | On every pull request: install as the manifest says, run the verify script, keep the failure artefacts. The least permissions that allow that | It lists the checks itself. The second list is the one that drifts |
 | The pull request template | Purpose, what changed, the verification that was run and its result, what was not verified, known risks, the risk class | It is a column of boxes to tick. A box records that it was ticked |
+| `REVIEW.md` | Review-only rules derived from this tree: Important is the high risk class's paths; not reported is what the verify script checks and what is generated; always checked is each rule of `AGENTS.md` that is discipline, by name | It restates `AGENTS.md` or the linter, names a path or check that is gone, or omits a guarded path. It applies once merged to the branch a review reads it from, the base branch a ruleset protects or else the default branch: until a review has run on a pull request it is `inspected` and `UNVERIFIED` |
 | CODEOWNERS | An owner for every path whose change needs a person: schema and migrations, dependency manifests and lockfiles, authentication, infrastructure, and the gate's own files | It has one catch-all line, or names someone the human did not confirm |
 | The setup and smoke scripts | From a clean checkout to a running product, then one request or command that shows it is alive, with logs at a path the rules name | A step needs knowledge that is not in the repository |
 

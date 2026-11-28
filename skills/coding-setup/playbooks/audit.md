@@ -17,7 +17,7 @@ means little when the checks under it pass on broken code.
 | 2. Mechanical checks | Format, lint, types, unit tests, build, security scan, rules for the module boundaries the code already keeps | Each has a command that exits non-zero on a planted break, and CI runs the same command on every pull request | The verify script and the workflow that calls it |
 | 3. Rules for agents | `AGENTS.md`, the feature map, procedures for recurring tasks | Every command in the rules runs as written and every path exists. No rule contradicts what the code does | `AGENTS.md` and `docs/feature-map.md` |
 | 4. Self-verification | A local run, a smoke test, end-to-end tests, logs, traces, screenshots | An agent can start the product with no human, and a failed run leaves its output at a path the rules name | The setup and smoke scripts, and failure artefacts kept by CI |
-| 5. Human review by risk | CODEOWNERS, the pull request template, risk classes, a protected branch, merge conditions | The default branch cannot be merged to with a red check, and the paths whose change needs a person have one | CODEOWNERS and the template, with the forge settings the human applies |
+| 5. Human review by risk | CODEOWNERS, the pull request template, `REVIEW.md`, risk classes, a protected branch, merge conditions | The default branch cannot be merged to with a red check, the paths whose change needs a person have one, and every path and check `REVIEW.md` names exists | CODEOWNERS, the template and `REVIEW.md`, with the forge settings the human applies |
 
 ## The grades
 

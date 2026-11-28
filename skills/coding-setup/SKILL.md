@@ -109,7 +109,7 @@ in `registry/capabilities.yaml`.
 
 `scripts/verify.sh` exits zero on the untouched tree, with `--full` too, and for each check it wraps one planted
 break made it exit non-zero naming that check (evidence: `executed`), the status afterwards as it was before.
-Every path in the feature map exists and every command in `AGENTS.md` was run as written.
+Every path in the feature map and `REVIEW.md` exists and every command in `AGENTS.md` was run as written.
 
 - **A workflow no pull request has run, and a forge setting not read back, are
   `inspected`**. Each says why, and is `UNVERIFIED` until one is

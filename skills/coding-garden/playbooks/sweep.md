@@ -25,7 +25,10 @@ what the host already has. Nothing here installs, edits or regenerates.
    listed, not run. Generated docs (an API schema, a CLI's help, an API report)
    are regenerated in a `cp -R` copy outside the checkout and diffed, on those
    paths only, against the committed ones; uncommitted edits, or a copy that
-   cannot run the generator, leave it unchecked. Doc examples run where they can
+   cannot run the generator, leave it unchecked. Doc examples run where they can.
+   `REVIEW.md` is held against the tree ([checks](checks.md)): each line it
+   needs changed is one finding for `coding-setup`, which rewrites it. No
+   `REVIEW.md` is itself one finding for `coding-setup`
 5. **The architecture.** The host's declared boundary rules run, and cycles are
    counted. No declared rules is a finding for `coding-setup`, which declares the
    ones the code keeps, never a licence to infer them and judge against the guess
@@ -42,7 +45,7 @@ what the host already has. Nothing here installs, edits or regenerates.
 |---|---|
 | The gate absent, or red in the area about to change; a check silent | Dead code, duplication, complexity, comments; suppressions grown, a threshold raised; a default run over its budget, a test that buys nothing alone |
 | A test red in the area about to change | A test red elsewhere, with its area; a test skipped |
-| A command or path in the agent rules that fails: the next agent follows it | Drift in docs written for people |
+| A command or path in the agent rules that fails: the next agent follows it | Drift in docs written for people; `REVIEW.md` out of step with the tree |
 | A boundary violation in the area about to change | Violations elsewhere, and cycles |
 | An advisory the human says blocks | Outdated dependencies; edits not yet committed |
 
@@ -53,7 +56,7 @@ Anything on neither list is recorded. The human may move a row; the pass may not
 | Finding | Goes to |
 |---|---|
 | The gate or a test is red | `coding-debug`; `coding-test` once the cause is the test itself |
-| The gate absent; a check silent, broken or missing; a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails | `coding-setup` |
+| The gate absent; a check silent, broken or missing; a threshold raised; a category with no tool; a command or path in the agent rules or the feature map that fails; `REVIEW.md` absent or out of step with the tree | `coding-setup` |
 | A test skipped, disabled, or asserting nothing | `coding-test` |
 | A default run over its budget, a slow test, a test that buys nothing alone | `coding-test`: made cheaper first, retired only on mutation evidence, each one agreed by the human. No budget, no per-test times, or no slow tier to move it to: `coding-setup` |
 | A boundary violation, a cycle, dead code, duplication, complexity over threshold; suppressions grown, each cleared by fixing the code under it | `coding-refactor` if behaviour is unchanged, else `coding-implement` |

@@ -40,6 +40,7 @@ run; a missing one is reported, never installed.
 | A doc generated from code | Regenerate in a throwaway copy, then `git diff --exit-code` on the result: an API schema, a CLI's help text, an API report (api-extractor, cargo-public-api) | Anything written by hand |
 | Code inside docs | doctest (Python), rustdoc tests, Go `Example` functions | Prose around the example |
 | Paths, links and commands | Path existence; lychee `--offline` for links, or online on the go-ahead; each read-only command in the agent rules run as written | Whether the command still does what the sentence says |
+| `REVIEW.md` against the tree | Each path it names exists; its not-reported checks against the verify script's `==` names; its Important paths against CODEOWNERS' guarded paths and the migrations, manifests and auth paths present; its always-checked rules against the Discipline heading of `AGENTS.md` | Whether a rule still matters to the team |
 | Docstrings against signatures | pydoclint; eslint-plugin-jsdoc `check-param-names` | Whether the description is still true |
 | Meaning | Nothing mechanical. A reading, as a Question for the human | |
 

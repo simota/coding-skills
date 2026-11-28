@@ -34,8 +34,9 @@ limits:
   # reference/ has no budget of its own and is counted here. Each raise has
   # been one new skill's measured size, or one reference page's (coding-test
   # proofs.md; coding-setup suite-cost.md with the garden rows that read its
-  # output); how each was derived is in git history.
-  repo_md_lines_total: 6174
+  # output; coding-setup REVIEW.md with the garden rows that hold it to the
+  # tree); how each was derived is in git history.
+  repo_md_lines_total: 6202
 
 permission_classes:
   read-only:
@@ -175,7 +176,7 @@ verified_markers:
 
 # Paths that belong to the host project, not to this set.
 external_paths: [".agents/", "CLAUDE.md", "AGENTS.md", "GEMINI.md", "settings.json", "docs/plans/",
-                 "docs/feature-map.md", ".github/"]
+                 "docs/feature-map.md", ".github/", "REVIEW.md"]
 
 # Content that goes stale belongs outside the budget, not in a playbook.
 # The validator flags these patterns in playbooks.

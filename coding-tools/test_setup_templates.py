@@ -77,6 +77,27 @@ class PullRequestTemplate(unittest.TestCase):
         self.assertRegex(shape("The pull request template"), r"how many tests ran")
 
 
+class ReviewRules(unittest.TestCase):
+    def test_the_review_rules_are_one_of_the_gate_files_owned(self) -> None:
+        """Unowned, a pull request widening `Do not report` merges without the
+        gate's owner, and every later review is weaker."""
+        self.assertRegex(shape("CODEOWNERS"), r"(?m)^/REVIEW\.md\s+<owner>")
+
+    def test_the_copy_read_is_the_protected_base_branch_or_the_default(self) -> None:
+        """Code Review reads REVIEW.md from a base branch a ruleset protects;
+        merged only to the default branch, a release branch keeps the old rules."""
+        row = next(line for line in LAY.splitlines() if line.startswith("| `REVIEW.md` |"))
+        for text in (section(TEMPLATES, "The review rules"), row):
+            self.assertIn("base branch", " ".join(text.split()))
+
+    def test_garden_files_a_missing_review_rules_file(self) -> None:
+        """The routing table sends an absent REVIEW.md to setup; the step that
+        files findings must produce one, or a host without it yields none."""
+        sweep = (ROOT / "skills" / "coding-garden" / "playbooks" / "sweep.md").read_text(encoding="utf-8")
+        self.assertIn("`REVIEW.md` absent", section(sweep, "Who takes each finding"))
+        self.assertRegex(" ".join(step(sweep, "The order", 4).split()), r"[Nn]o `REVIEW\.md`")
+
+
 class Proof(unittest.TestCase):
     """The proof is run where it will be run: straight after lay, with the
     files lay wrote still uncommitted."""
